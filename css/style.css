@@ -381,6 +381,14 @@ body {
   border-color: rgba(204, 120, 92, 0.5);
   color: #f3c9b4;
 }
+.section-dark .tag-local {
+  border-style: dashed;
+}
+.section-dark .card:hover .tag-local {
+  background: transparent;
+  border-color: rgba(240, 238, 230, 0.45);
+  color: rgba(240, 238, 230, 0.75);
+}
 
 .section-dark .card-link { color: #e8a586; }
 
@@ -462,6 +470,18 @@ body {
   color: var(--accent-deep);
 }
 .card:hover .tag-live { background: var(--accent-deep); color: var(--card); }
+
+/* 本地运行标记：虚线边框，提示需下载源码 */
+.tag-local {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  cursor: help;
+}
+.card:hover .tag-local {
+  background: transparent;
+  border-color: var(--ink-55);
+  color: var(--ink-70);
+}
 
 .card-title {
   font-size: 22px;

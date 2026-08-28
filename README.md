@@ -21,6 +21,17 @@ Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站，纯
 - 魔法幸存者正式版：https://rougelike-13h.pages.dev（源码 [Fihag/rougelike](https://github.com/Fihag/rougelike)）
 - TokenGacha：https://tokengacha.pages.dev（源码 [Fihag/TokenGacha-Enhanced](https://github.com/Fihag/TokenGacha-Enhanced)）
 
+## 需要手动下载源码本地运行的项目
+
+以下项目没有线上版本（或有功能缺失），卡片上标有虚线「需本地运行 / 本地跑存档」标签：
+
+| 项目 | 仓库 | 本地运行方式 | 说明 |
+|---|---|---|---|
+| 海龟汤在线推理 | [Fihag/cc-web](https://github.com/Fihag/cc-web/tree/master/turtle-soup) `turtle-soup/` | `npm install` → `npm start`（一键构建+后端+ngrok），或 `npm run dev` 开发模式 | React + Socket.IO 联机游戏，无法纯静态部署；管理功能需设 `ADMIN_PASSWORD` 环境变量 |
+| Poll API | [Fihag/cc-web](https://github.com/Fihag/cc-web/tree/master/poll) `poll/` | `node server.js`（默认读 config.json，可 `--config my.json --port 8080`） | Node 服务端项目，聚合多上游 API，Web 管理后台在 `/admin` |
+| 数字航海（云存档功能） | [Fihag/shuzihanghai](https://github.com/Fihag/shuzihanghai) | `node server.js`（端口 8080） | 站内 `/hanghai/` 可直接玩，但云端存档依赖 server.js 写 `saves/` 目录，纯静态部署下存档不可用 |
+| 魔法幸存者·Debug | 本仓库 `/pigeon/debug.html` | 浏览器直接打开，游戏内按 F1 开调试面板 | 无需下载，站内即用；正式版源码在 [Fihag/rougelike](https://github.com/Fihag/rougelike) |
+
 ## 特效
 
 | 特效 | 触发 | 降级 |
