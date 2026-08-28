@@ -1,0 +1,27 @@
+{
+  "port": 7891,
+  "host": "0.0.0.0",
+  "downstreamKeys": [],
+  "adminUser": "admin",
+  "adminPass": "change-me",
+  "strategy": "weighted-round-robin",
+  "retryOnFail": true,
+  "maxRetries": 2,
+  "cooldownSeconds": 30,
+  "cooldownMaxSeconds": 300,
+  "balanceInterval": 3600,
+  "testModel": "",
+  "accounts": [
+    {
+      "id": "example-0",
+      "name": "example",
+      "type": "openai-compatible",
+      "baseURL": "https://api.deepseek.com",
+      "apiKey": "sk-your-key",
+      "weight": 1,
+      "models": [],
+      "enabled": true,
+      "note": "复制本文件为 config.json 后填写真实信息"
+    }
+  ]
+}

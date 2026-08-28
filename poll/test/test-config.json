@@ -1,0 +1,93 @@
+{
+  "port": 3100,
+  "host": "127.0.0.1",
+  "downstreamKeys": [
+    "sk-test-master"
+  ],
+  "adminUser": "admin",
+  "adminPass": "test123",
+  "strategy": "weighted-round-robin",
+  "retryOnFail": true,
+  "maxRetries": 2,
+  "cooldownSeconds": 5,
+  "cooldownMaxSeconds": 20,
+  "balanceInterval": 0,
+  "testModel": "",
+  "accounts": [
+    {
+      "id": "normal",
+      "name": "normal",
+      "type": "openai-compatible",
+      "baseURL": "http://127.0.0.1:9101",
+      "apiKey": "sk-normal",
+      "weight": 2,
+      "models": [
+        "m-common"
+      ],
+      "enabled": true,
+      "note": "",
+      "balance": 12.34,
+      "balanceCheckedAt": 1787759631226
+    },
+    {
+      "id": "fail",
+      "name": "fail",
+      "type": "openai-compatible",
+      "baseURL": "http://127.0.0.1:9102",
+      "apiKey": "sk-fail",
+      "weight": 1,
+      "models": [
+        "m-common"
+      ],
+      "enabled": true,
+      "note": "",
+      "balance": null,
+      "balanceCheckedAt": 0
+    },
+    {
+      "id": "stream",
+      "name": "stream",
+      "type": "openai-compatible",
+      "baseURL": "http://127.0.0.1:9104",
+      "apiKey": "sk-stream",
+      "weight": 1,
+      "models": [
+        "m-common"
+      ],
+      "enabled": true,
+      "note": "",
+      "balance": null,
+      "balanceCheckedAt": 0
+    },
+    {
+      "id": "claude",
+      "name": "claude",
+      "type": "anthropic",
+      "baseURL": "http://127.0.0.1:9103",
+      "apiKey": "sk-claude",
+      "weight": 1,
+      "models": [
+        "m-claude"
+      ],
+      "enabled": true,
+      "note": "",
+      "balance": null,
+      "balanceCheckedAt": 0
+    },
+    {
+      "id": "gemini",
+      "name": "gemini",
+      "type": "gemini",
+      "baseURL": "http://127.0.0.1:9105",
+      "apiKey": "sk-gemini",
+      "weight": 1,
+      "models": [
+        "m-gemini"
+      ],
+      "enabled": true,
+      "note": "",
+      "balance": null,
+      "balanceCheckedAt": 0
+    }
+  ]
+}

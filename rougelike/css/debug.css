@@ -1,0 +1,64 @@
+        /* ===== Debug 隐藏功能区 ===== */
+
+        #dbg-toggle svg { width: 20px; height: 20px; }
+        #levelup-panel .card .icon svg { width: 36px; height: 36px; display: block; margin: 0 auto 4px; color: var(--orange-deep); }
+        #bossdrop-panel .card .icon svg { width: 36px; height: 36px; display: block; margin: 0 auto 4px; color: #c07a1a; }
+        .chip svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
+
+        #dbg-toggle {
+            position: fixed; left: 10px; bottom: 10px; z-index: 60;
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 3px solid var(--line); background: rgba(255,246,232,0.88);
+            color: var(--brown); font-size: 20px; cursor: pointer;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2); user-select: none;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0; line-height: 1;
+        }
+        #dbg-toggle:hover { transform: translateY(-1px); }
+        #debug-panel {
+            display: none; position: fixed; left: 10px; bottom: 62px; z-index: 61;
+            width: 300px; max-height: 78vh; overflow-y: auto;
+            background: var(--cream); border: 3px solid var(--orange-deep);
+            border-radius: 14px; padding: 10px 12px 12px; color: var(--brown);
+            box-shadow: 0 8px 0 rgba(0,0,0,0.22); font-size: 13px; line-height: 1.7;
+            scrollbar-width: thin;
+        }
+        #debug-panel::-webkit-scrollbar { width: 6px; }
+        #debug-panel::-webkit-scrollbar-thumb { background: #d9b07e; border-radius: 3px; }
+        #debug-panel .dbg-head {
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; color: var(--orange-deep); font-size: 15px;
+            border-bottom: 2px solid var(--line); padding-bottom: 6px; margin-bottom: 6px;
+        }
+        #debug-panel .dbg-head button { background: none; border: none; color: var(--coral); font-size: 15px; cursor: pointer; }
+        #debug-panel .dbg-sec {
+            border: 1px solid var(--line); border-radius: 8px;
+            padding: 6px 8px; margin-bottom: 8px; background: rgba(255,255,255,0.4);
+        }
+        #debug-panel .dbg-title { color: var(--orange-deep); font-weight: bold; font-size: 12px; letter-spacing: 0.05em; }
+        #debug-panel .dbg-title2 { color: #b06a1f; font-weight: bold; font-size: 11px; margin-top: 4px; }
+        #debug-panel label { display: flex; align-items: center; gap: 6px; margin: 3px 0; white-space: nowrap; }
+        #debug-panel label.chk { cursor: pointer; }
+        #debug-panel input[type=number] {
+            width: 64px; background: #fff; color: var(--brown); border: 2px solid var(--line);
+            border-radius: 6px; padding: 2px 4px; font-size: 12px; text-align: center;
+        }
+        #debug-panel input[type=number].w100 { width: 100px; }
+        #debug-panel input[type=checkbox] { accent-color: var(--orange); }
+        #debug-panel select {
+            background: #fff; color: var(--brown); border: 2px solid var(--line);
+            border-radius: 6px; padding: 2px 4px; font-size: 12px; max-width: 130px;
+        }
+        #debug-panel button {
+            background: #ffe0b0; color: var(--brown); border: 2px solid var(--line); border-radius: 6px;
+            padding: 3px 10px; font-size: 12px; cursor: pointer; margin: 2px 4px 2px 0;
+        }
+        #debug-panel button:hover { background: var(--orange); color: #fff; }
+        #debug-panel .dbg-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+        #debug-panel .dbg-hint { color: var(--brown-soft); font-size: 11px; }
+        #debug-panel .dbg-foot { text-align: center; color: var(--brown-soft); font-size: 11px; border-top: 1px solid var(--line); padding-top: 5px; }
+        #debug-panel .dbg-wlist { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+        #debug-panel .dbg-wlist .dbg-row { justify-content: space-between; flex-wrap: nowrap; }
+        #debug-panel .dbg-wlist .dbg-name { flex: 1; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #debug-panel .dbg-wlist button { flex: 0 0 auto; margin: 0; }
+        #debug-panel .dbg-mini { color: var(--orange-deep); }

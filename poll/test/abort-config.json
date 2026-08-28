@@ -1,0 +1,31 @@
+{
+  "port": 3200,
+  "host": "127.0.0.1",
+  "downstreamKeys": [
+    "sk-t"
+  ],
+  "adminUser": "a",
+  "adminPass": "p",
+  "strategy": "weighted-round-robin",
+  "retryOnFail": true,
+  "maxRetries": 0,
+  "cooldownSeconds": 5,
+  "cooldownMaxSeconds": 20,
+  "balanceInterval": 0,
+  "testModel": "",
+  "accounts": [
+    {
+      "id": "st",
+      "name": "st",
+      "type": "openai-compatible",
+      "baseURL": "http://127.0.0.1:9104",
+      "apiKey": "k",
+      "weight": 1,
+      "models": [],
+      "enabled": true,
+      "note": "",
+      "balance": null,
+      "balanceCheckedAt": 0
+    }
+  ]
+}

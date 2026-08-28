@@ -1,0 +1,28 @@
+{
+  "name": "rougelike",
+  "version": "1.0.0",
+  "description": "魔法幸存者 · Canvas Roguelite - 零构建可双击，开发期可选工具链",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "dev:vite": "vite",
+    "serve": "npx serve . -l 8123",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "format": "prettier --write \"**/*.{js,json,css,html,md}\"",
+    "format:check": "prettier --check \"**/*.{js,json,css,html,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jsdom": "^24.1.0",
+    "prettier": "^3.3.3",
+    "vite": "^5.4.21",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

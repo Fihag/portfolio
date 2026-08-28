@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>用户账号管理(本地)</title>
+<style>
+  :root {
+    --paper: #f7efdc;
+    --paper-2: #efe4c9;
+    --card: #fffdf4;
+    --ink: #43372a;
+    --ink-soft: #75664c;
+    --line: #d6c79c;
+    --wax-yellow: #ffd166;
+    --wax-orange: #f4a261;
+    --wax-green: #8fcb9b;
+    --wax-red: #ef8178;
+    --wax-blue: #8db9dc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(rgba(67,55,42,.045) 1px, transparent 1.2px),
+      radial-gradient(rgba(67,55,42,.03) 1px, transparent 1.2px);
+    background-size: 22px 22px, 34px 34px;
+    color: var(--ink);
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 30px 16px 70px; }
+  h1 {
+    font-size: 30px;
+    margin: 0 0 6px;
+    transform: rotate(-1deg);
+    letter-spacing: 2px;
+    position: relative;
+    display: inline-block;
+    background: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 18px 6px 20px 8px;
+    padding: 6px 20px;
+    box-shadow: 5px 5px 0 rgba(67,55,42,.28);
+  }
+  h1::before {
+    content: "";
+    position: absolute;
+    top: -13px;
+    left: 30%;
+    width: 90px;
+    height: 26px;
+    background: rgba(255,209,102,.6);
+    border-left: 2px dashed rgba(67,55,42,.25);
+    border-right: 2px dashed rgba(67,55,42,.25);
+    transform: rotate(-2deg);
+  }
+  .sub { color: var(--ink-soft); font-size: 14px; margin: 8px 0 22px; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  input[type="password"], input[type="text"], select {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 12px 4px 14px 6px / 6px 14px 4px 12px;
+    color: var(--ink);
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus, select:focus { border-color: var(--ink); border-width: 2.5px; }
+  button {
+    font-family: inherit;
+    background: var(--card);
+    color: var(--ink);
+    border: 2.5px solid var(--ink);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    padding: 7px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s;
+  }
+  button:hover { transform: translate(-1px,-1px) rotate(-.6deg); box-shadow: 4px 4px 0 var(--ink); }
+  button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  button.ghost { background: transparent; border-style: dashed; box-shadow: none; }
+  button.good { background: var(--wax-green); }
+  button.bad { background: var(--wax-red); }
+  button.small { padding: 3px 10px; font-size: 12.5px; }
+  .msg {
+    padding: 9px 14px;
+    border-radius: 12px 4px 14px 6px;
+    margin: 10px 0;
+    font-size: 14px;
+    border: 2.5px dashed var(--ink);
+  }
+  .msg.err { background: #fdecea; color: #a33; border-color: var(--wax-red); }
+  .msg.ok { background: #eaf6ec; color: #2f6b3f; border-color: var(--wax-green); }
+  /* 页签 */
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tab {
+    border: 2.5px solid var(--ink);
+    background: var(--card);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    padding: 8px 18px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .tab.on { background: var(--wax-yellow); }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 2.5px solid var(--ink); border-radius: 16px 6px 18px 8px; overflow: hidden; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 2px dashed var(--line); vertical-align: middle; }
+  th { background: var(--paper-2); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    border: 2px solid var(--ink);
+    border-radius: 8px 2px 10px 4px;
+    padding: 0 8px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge.normal { background: var(--wax-green); }
+  .badge.frozen { background: var(--wax-blue); }
+  .badge.banned { background: var(--wax-red); }
+  .badge.online { background: var(--wax-green); }
+  .badge.offline { background: var(--paper-2); }
+  .badge.waiting { background: var(--wax-yellow); }
+  .badge.playing { background: var(--wax-green); }
+  .badge.revealed { background: var(--wax-orange); }
+  .badge.pending { background: var(--wax-yellow); }
+  .badge.approved { background: var(--wax-green); }
+  .badge.rejected { background: var(--wax-red); }
+  .count { font-size: 13px; color: var(--ink-soft); margin-bottom: 10px; }
+  /* 长按拖选批量勾选:激活时行高亮 + 十字光标(账号表/申诉表通用) */
+  .drag-sel #userRows tr, .drag-sel #appealRows tr { cursor: crosshair; }
+  .drag-sel #userRows tr:hover td, .drag-sel #appealRows tr:hover td { background: rgba(255, 209, 102, 0.28); }
+  .drag-sel #userRows tr.row-selected td, .drag-sel #appealRows tr.row-selected td { background: rgba(143, 203, 155, 0.35); }
+  .uname-link { color: var(--ink); text-decoration: underline wavy var(--wax-orange) 2px; text-underline-offset: 3px; }
+  .uname-link:hover { color: #a3562a; }
+  .empty { text-align: center; color: var(--ink-soft); padding: 30px 0; }
+  /* 对话框 */
+  .dlg-mask {
+    position: fixed; inset: 0; background: rgba(67,55,42,.45);
+    display: flex; align-items: center; justify-content: center; z-index: 99;
+  }
+  .dlg-card {
+    background: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 18px 6px 20px 8px;
+    padding: 18px 20px;
+    max-width: 92vw; width: 420px;
+    box-shadow: 6px 6px 0 rgba(67,55,42,.3);
+    transform: rotate(-.5deg);
+  }
+  .dlg-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .dlg-msg { font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; }
+  .dlg-input { width: 100%; margin-bottom: 12px; }
+  .dlg-btns { display: flex; justify-content: flex-end; gap: 10px; }
+  .note-line { font-size: 12.5px; color: var(--ink-soft); border-top: 2px dashed var(--line); margin-top: 14px; padding-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🖍️ 用户账号管理</h1>
+  <div class="sub">本地管理页 · 账号 / IP / 房间 · 密码以加密哈希存储,只可重置不可查看</div>
+
+  <div id="loginBox" class="bar">
+    <input type="password" id="pwdInput" placeholder="管理员密码" style="min-width:220px" />
+    <button id="loginBtn">登录</button>
+    <span id="loginMsg" class="msg" style="display:none"></span>
+  </div>
+
+  <div id="mainBox" style="display:none">
+    <div class="bar">
+      <button class="ghost" id="logoutBtn">退出登录</button>
+      <span id="statusMsg" style="color:var(--ink-soft)"></span>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-tab="users">👤 账号</div>
+      <div class="tab" data-tab="ips">🌐 IP</div>
+      <div class="tab" data-tab="rooms">🏠 房间</div>
+      <div class="tab" data-tab="online">🟢 在线</div>
+      <div class="tab" data-tab="appeals">📮 申诉</div>
+    </div>
+
+    <!-- 账号 -->
+    <div class="panel on" id="panel-users">
+      <div class="bar">
+        <input type="text" id="userFilter" placeholder="按用户名筛选…(支持多个,空格分隔)" style="min-width:200px" />
+        <select id="statusFilter" style="min-width:100px">
+          <option value="">全部状态</option>
+          <option value="normal">正常</option>
+          <option value="frozen">冻结</option>
+          <option value="banned">封禁</option>
+        </select>
+        <input type="text" id="ipFilter" placeholder="按注册 IP 筛…" style="min-width:130px" />
+        <button class="bad" id="delSelectedBtn" disabled>🗑 删除选中(0)</button>
+        <button class="bad" id="banSelectedBtn" disabled>⛔ 封禁选中(0)</button>
+        <button id="freezeSelectedBtn" disabled>🧊 冻结选中(0)</button>
+        <span id="userCount" style="color:var(--ink-soft)"></span>
+      </div>
+      <table>
+        <thead><tr><th style="width:36px"><input type="checkbox" id="selAll" title="全选当前筛选结果" /></th><th>用户名</th><th>状态</th><th>注册 IP</th><th>最后登录</th><th>登录/收藏/AI</th><th>操作</th></tr></thead>
+        <tbody id="userRows"></tbody>
+      </table>
+      <div class="note-line">💡 点击用户名查看详情(登录日志/同IP账号);封禁/冻结/删除均可批量;密码哈希不可逆,只能重置。<b>长按鼠标不放约 0.2 秒后滑动,可拖选批量勾选账号(按钮/勾选框上按下不会触发)。</b></div>
+    </div>
+
+    <!-- IP -->
+    <div class="panel" id="panel-ips">
+      <div class="count" id="ipCount"></div>
+      <table>
+        <thead><tr><th>IP</th><th>注册账号数</th><th>状态</th><th>封禁理由</th><th>操作</th></tr></thead>
+        <tbody id="ipRows"></tbody>
+      </table>
+      <div class="bar" style="margin-top:12px">
+        <input type="text" id="banIpInput" placeholder="输入要封禁的 IP" style="min-width:200px" />
+        <button class="bad" id="banIpBtn">封禁该 IP</button>
+      </div>
+      <div class="note-line">💡 同一 IP 最多注册 5 个账号;封禁 IP 后该 IP 无法注册与登录。</div>
+    </div>
+
+    <!-- 房间 -->
+    <div class="panel" id="panel-rooms">
+      <div class="count" id="roomCount"></div>
+      <table>
+        <thead><tr><th>房间码</th><th>房主</th><th>状态</th><th>人数</th><th>题目</th><th>玩家</th><th>操作</th></tr></thead>
+        <tbody id="roomRows"></tbody>
+      </table>
+      <div class="count" style="margin-top:18px">封禁记录(按房主累计警告,可删除单条)</div>
+      <table>
+        <thead><tr><th>时间</th><th>房主</th><th>房间码</th><th>累计警告</th><th>理由</th><th>操作</th></tr></thead>
+        <tbody id="bannedRows"></tbody>
+      </table>
+      <div class="note-line">💡 封禁房间 = 解散 + 给房主记一次封禁记录,并弹出对应次数的手绘警告(第 1 次 / 第 2 次 / 第 3 次为最后警告);删除记录后该房主下次封禁次数按剩余记录重算。</div>
+    </div>
+
+    <!-- 在线 -->
+    <div class="panel" id="panel-online">
+      <div class="bar">
+        <span id="onlineCount" style="color:var(--ink-soft)"></span>
+        <button class="small" id="refreshOnlineBtn">🔄 刷新</button>
+      </div>
+      <table>
+        <thead><tr><th>用户名</th><th>IP</th><th>所在房间</th><th>上线时间</th><th>操作</th></tr></thead>
+        <tbody id="onlineRows"></tbody>
+      </table>
+      <div class="note-line">💡 踢下线 = 撤销其全部登录并断开连接(可重新登录);封禁 = 踢下线 + 账号封禁,立即生效。</div>
+    </div>
+
+    <!-- 申诉 -->
+    <div class="panel" id="panel-appeals">
+      <div class="bar">
+        <span id="appealCount" style="color:var(--ink-soft)"></span>
+        <button class="small" id="refreshAppealsBtn">🔄 刷新</button>
+        <button class="ghost" id="appealSelPageBtn">☑ 全选本页</button>
+        <button class="bad" id="appealDelSel" disabled>🗑 删除选中(0)</button>
+      </div>
+      <table>
+        <thead><tr><th style="width:36px"><input type="checkbox" id="appealSelAll" title="全选当前筛选结果" /></th><th>时间</th><th>类型</th><th>对象</th><th>申诉内容</th><th>状态</th><th>管理员回复</th><th>操作</th></tr></thead>
+        <tbody id="appealRows"></tbody>
+      </table>
+      <div class="note-line">💡 账号申诉:通过 = 账号立即恢复正常并通知玩家(每账号仅一次申诉);IP 申诉:通过 = 立即解封该 IP(无账号可通知)。玩家在登录页「申诉中心」提交。</div>
+    </div>
+  </div>
+</div>
+
+<!-- 对话框 -->
+<div id="dlgMask" class="dlg-mask" style="display:none">
+  <div class="dlg-card">
+    <div class="dlg-title" id="dlgTitle">确认操作</div>
+    <div class="dlg-msg" id="dlgMsg"></div>
+    <input type="text" id="dlgInput" class="dlg-input" style="display:none" />
+    <div class="dlg-btns">
+      <button id="dlgCancel">取消</button>
+      <button id="dlgOk">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div id="detailMask" class="dlg-mask" style="display:none">
+  <div class="dlg-card" style="width:520px;max-width:94vw">
+    <div class="dlg-title" id="detailTitle">账号详情</div>
+    <div class="dlg-msg" id="detailBody" style="max-height:56vh;overflow:auto"></div>
+    <div class="dlg-btns">
+      <button id="detailSameIp" style="display:none">⛔ 封禁同IP账号</button>
+      <button id="detailClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const API = "http://127.0.0.1:3000";
+const $ = (id) => document.getElementById(id);
+let token = localStorage.getItem("ua_token") || "";
+let users = [], ips = [], rooms = [], banned = [], online = [], appeals = [];
+let detailUser = null; // 详情弹窗当前账号
+
+function showMsg(el, text, ok) {
+  el.style.display = "inline-block";
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+  setTimeout(() => { el.style.display = "none"; }, 3200);
+}
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function fmt(ts) {
+  if (!ts) return "-";
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+const STATUS_LABEL = { normal: "正常", frozen: "冻结", banned: "封禁" };
+const ROOM_STATUS = { waiting: "等待中", playing: "进行中", revealed: "已揭晓" };
+
+// ---------- 对话框 ----------
+let dlgCb = null;
+function askConfirm(title, message, cb) {
+  dlgCb = cb;
+  $("dlgTitle").textContent = title;
+  $("dlgMsg").textContent = message;
+  $("dlgInput").style.display = "none";
+  $("dlgMask").style.display = "flex";
+}
+function askInput(title, message, placeholder, cb) {
+  dlgCb = cb;
+  $("dlgTitle").textContent = title;
+  $("dlgMsg").textContent = message;
+  $("dlgInput").placeholder = placeholder || "";
+  $("dlgInput").value = "";
+  $("dlgInput").style.display = "block";
+  $("dlgMask").style.display = "flex";
+  setTimeout(() => $("dlgInput").focus(), 50);
+}
+function closeDlg() {
+  $("dlgMask").style.display = "none";
+  dlgCb = null;
+}
+$("dlgCancel").addEventListener("click", closeDlg);
+$("dlgOk").addEventListener("click", () => {
+  const cb = dlgCb;
+  const val = $("dlgInput").value;
+  closeDlg();
+  cb && cb(val);
+});
+
+// ---------- 登录 ----------
+async function login() {
+  try {
+    const r = await fetch(API + "/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: $("pwdInput").value }),
+    });
+    const d = await r.json();
+    if (!r.ok) return showMsg($("loginMsg"), "❌ " + (d.error || "登录失败"), false);
+    token = d.token;
+    localStorage.setItem("ua_token", token);
+    enter();
+  } catch (e) {
+    showMsg($("loginMsg"), "❌ 连接失败:" + e.message, false);
+  }
+}
+$("loginBtn").addEventListener("click", login);
+$("pwdInput").addEventListener("keydown", (e) => e.key === "Enter" && login());
+$("logoutBtn").addEventListener("click", () => {
+  token = "";
+  localStorage.removeItem("ua_token");
+  $("mainBox").style.display = "none";
+  $("loginBox").style.display = "flex";
+});
+
+function enter() {
+  $("loginBox").style.display = "none";
+  $("mainBox").style.display = "block";
+  $("statusMsg").textContent = "已登录";
+  loadAll();
+}
+
+// ---------- 数据加载 ----------
+async function api(path, method = "GET", body) {
+  const r = await fetch(API + path, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Token": token,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) {
+    token = "";
+    localStorage.removeItem("ua_token");
+    $("mainBox").style.display = "none";
+    $("loginBox").style.display = "flex";
+    showMsg($("loginMsg"), "❌ 登录已失效,请重新输入管理密码", false);
+    throw new Error("unauthorized");
+  }
+  if (!r.ok) throw new Error(d.error || "请求失败");
+  return d;
+}
+
+async function loadAll() {
+  try {
+    const [u, i, r, o, a] = await Promise.all([
+      api("/api/admin/users"),
+      api("/api/admin/ips"),
+      api("/api/admin/rooms"),
+      api("/api/admin/online"),
+      api("/api/admin/appeals"),
+    ]);
+    users = u; ips = i; rooms = r.rooms; banned = r.bans || []; online = o; appeals = a;
+    renderUsers(); renderIps(); renderRooms(); renderOnline(); renderAppeals();
+  } catch (e) {
+    if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false);
+  }
+}
+
+// ---------- 账号 ----------
+let userFilter = "", statusFilter = "", ipFilter = "";
+function userMatches(u) {
+  if (userFilter) {
+    const keys = userFilter.toLowerCase().split(/\s+/).filter(Boolean);
+    const name = u.username.toLowerCase();
+    if (!keys.every((k) => name.includes(k))) return false;
+  }
+  if (statusFilter && u.status !== statusFilter) return false;
+  if (ipFilter && !String(u.regIp || "").includes(ipFilter)) return false;
+  return true;
+}
+function updateSelUI() {
+  const boxes = document.querySelectorAll("#userRows .row-sel");
+  const checked = [...boxes].filter((b) => b.checked).length;
+  $("delSelectedBtn").disabled = checked === 0;
+  $("delSelectedBtn").textContent = "🗑 删除选中(" + checked + ")";
+  $("banSelectedBtn").disabled = checked === 0;
+  $("banSelectedBtn").textContent = "⛔ 封禁选中(" + checked + ")";
+  $("freezeSelectedBtn").disabled = checked === 0;
+  $("freezeSelectedBtn").textContent = "🧊 冻结选中(" + checked + ")";
+  $("selAll").checked = boxes.length > 0 && checked === boxes.length;
+  updateRowSelClass();
+}
+function selectedNames() {
+  return [...document.querySelectorAll("#userRows .row-sel")]
+    .filter((b) => b.checked)
+    .map((b) => b.dataset.name);
+}
+function renderUsers() {
+  const rows = [...users]
+    .filter(userMatches)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  $("userCount").textContent = "共 " + users.length + " 个账号" + (userFilter || statusFilter || ipFilter ? ",筛选后 " + rows.length + " 个" : "");
+  if (!rows.length) {
+    $("userRows").innerHTML = '<tr><td colspan="7" class="empty">' + (userFilter || statusFilter || ipFilter ? "没有匹配的账号" : "暂无账号") + "</td></tr>";
+    updateSelUI();
+    return;
+  }
+  $("userRows").innerHTML = "";
+  for (const u of rows) {
+    const tr = document.createElement("tr");
+    let ops;
+    if (u.status === "normal") {
+      ops =
+        '<button class="small bad" data-op="banned">封禁</button> ' +
+        '<button class="small" data-op="frozen">冻结</button> ' +
+        '<button class="small good" data-op="reset">重置密码</button> ' +
+        '<button class="small bad" data-op="delete">删除</button>';
+    } else if (u.status === "frozen") {
+      ops =
+        '<button class="small good" data-op="normal">解冻</button> ' +
+        '<button class="small bad" data-op="banned">封禁</button> ' +
+        '<button class="small good" data-op="reset">重置密码</button> ' +
+        '<button class="small bad" data-op="delete">删除</button>';
+    } else {
+      ops =
+        '<button class="small good" data-op="normal">解封</button> ' +
+        '<button class="small" data-op="frozen">冻结</button> ' +
+        '<button class="small good" data-op="reset">重置密码</button> ' +
+        '<button class="small bad" data-op="delete">删除</button>';
+    }
+    tr.innerHTML =
+      '<td><input type="checkbox" class="row-sel" data-name="' + escapeHtml(u.username) + '" /></td>' +
+      '<td><a href="#" class="uname-link" data-name="' + escapeHtml(u.username) + '"><b>' + escapeHtml(u.username) + "</b></a></td>" +
+      '<td><span class="badge ' + u.status + '">' + STATUS_LABEL[u.status] + "</span></td>" +
+      "<td>" + escapeHtml(u.regIp || "-") + "</td>" +
+      "<td>" + fmt(u.lastLoginAt) + "</td>" +
+      '<td title="登录 ' + (u.loginCount || 0) + " 次 · 收藏 " + u.favCount + " · AI " + u.aiCount + '">' +
+      (u.loginCount || 0) + " / " + u.favCount + " / " + u.aiCount + "</td>" +
+      "<td>" + ops + "</td>";
+    tr.querySelectorAll("[data-op]").forEach((b) =>
+      b.addEventListener("click", () => userOp(u, b.dataset.op)),
+    );
+    tr.querySelector(".uname-link").addEventListener("click", (e) => {
+      e.preventDefault();
+      showDetail(u);
+    });
+    tr.querySelector(".row-sel").addEventListener("change", updateSelUI);
+    $("userRows").appendChild(tr);
+  }
+  updateSelUI();
+}
+$("userFilter").addEventListener("input", (e) => { userFilter = e.target.value.trim(); renderUsers(); });
+$("statusFilter").addEventListener("change", (e) => { statusFilter = e.target.value; renderUsers(); });
+$("ipFilter").addEventListener("input", (e) => { ipFilter = e.target.value.trim(); renderUsers(); });
+$("selAll").addEventListener("change", (e) => {
+  document.querySelectorAll("#userRows .row-sel").forEach((b) => (b.checked = e.target.checked));
+  updateSelUI();
+});
+
+// 批量操作:封禁 / 冻结 / 删除
+function batchUserOp(action) {
+  const names = selectedNames();
+  if (!names.length) return;
+  const label = action === "banned" ? "封禁" : action === "frozen" ? "冻结" : "删除";
+  const tip = action === "banned" ? "封禁后这些账号无法登录,已登录的立即掉线,可解封恢复" :
+    action === "frozen" ? "冻结后暂时无法登录,可随时解冻" :
+    "删除不可恢复:账号、收藏、消息全部清除,已登录的立即掉线";
+  const preview = names.slice(0, 5).map((n) => "「" + n + "」").join("、") + (names.length > 5 ? " 等" : "");
+  if (action === "delete") {
+    askConfirm("批量" + label + "账号", "确定" + label + "选中的 " + names.length + " 个账号吗?\n" + preview + "\n" + tip, async () => {
+      try {
+        const results = await Promise.allSettled(
+          names.map((n) => api("/api/admin/users/" + encodeURIComponent(n), "DELETE")),
+        );
+        const fail = results.filter((r) => r.status === "rejected").length;
+        showMsg($("statusMsg"), fail ? `✅ 已${label} ${names.length - fail} 个,${fail} 个失败` : "✅ 已" + label + " " + names.length + " 个账号", fail === 0);
+        loadAll();
+      } catch (e) {
+        if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false);
+      }
+    });
+    return;
+  }
+  askInput("批量" + label + "账号", "确定" + label + "选中的 " + names.length + " 个账号吗?\n" + preview + "\n" + tip + "\n可填写统一理由(选填,会显示给玩家):", label + "理由…(选填)", async (reason) => {
+    try {
+      const results = await Promise.allSettled(
+        names.map((n) => api("/api/admin/users/" + encodeURIComponent(n) + "/status", "POST", { status: action, reason })),
+      );
+      const fail = results.filter((r) => r.status === "rejected").length;
+      showMsg($("statusMsg"), fail ? `✅ 已${label} ${names.length - fail} 个,${fail} 个失败` : "✅ 已" + label + " " + names.length + " 个账号", fail === 0);
+      loadAll();
+    } catch (e) {
+      if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false);
+    }
+  });
+}
+$("banSelectedBtn").addEventListener("click", () => batchUserOp("banned"));
+$("freezeSelectedBtn").addEventListener("click", () => batchUserOp("frozen"));
+$("delSelectedBtn").addEventListener("click", () => batchUserOp("delete"));
+
+// ---------- 长按鼠标滑动批量勾选(拖选模式) ----------
+// 在账号表格上按住鼠标不放约 220ms 进入拖选,之后划过的行自动勾选;松开结束。
+// 交互元素(按钮/链接/勾选框/输入框)上按下不会触发。
+const DRAG_DELAY = 220;
+let dragSel = { active: false, timer: null, hovered: null };
+const userTbody = $("userRows");
+function updateRowSelClass() {
+  document.querySelectorAll("#userRows tr").forEach((tr) => {
+    const cb = tr.querySelector(".row-sel");
+    tr.classList.toggle("row-selected", !!(cb && cb.checked));
+  });
+}
+function endDragSel() {
+  if (dragSel.timer) { clearTimeout(dragSel.timer); dragSel.timer = null; }
+  if (dragSel.active) {
+    dragSel.active = false;
+    document.body.classList.remove("drag-sel");
+    document.body.style.userSelect = "";
+    dragSel.hovered = null;
+  }
+}
+userTbody.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  if (e.target.closest("button, a, input, select, label")) return; // 不干扰交互元素
+  endDragSel();
+  dragSel.timer = setTimeout(() => {
+    dragSel.active = true;
+    document.body.classList.add("drag-sel");
+    document.body.style.userSelect = "none";
+    const cb = e.target.closest("tr")?.querySelector(".row-sel");
+    if (cb && !cb.checked) {
+      cb.checked = true;
+      updateSelUI();
+    }
+    updateRowSelClass();
+  }, DRAG_DELAY);
+});
+userTbody.addEventListener("mouseover", (e) => {
+  if (!dragSel.active) return;
+  const tr = e.target.closest("tr");
+  if (!tr || tr === dragSel.hovered) return;
+  dragSel.hovered = tr;
+  const cb = tr.querySelector(".row-sel");
+  if (cb && !cb.checked) {
+    cb.checked = true;
+    updateSelUI();
+    updateRowSelClass();
+  }
+});
+userTbody.addEventListener("mouseup", endDragSel);
+userTbody.addEventListener("mouseleave", endDragSel);
+
+function userOp(u, op) {
+  if (op === "banned") {
+    askInput("封禁账号", "封禁「" + u.username + "」?\n封禁后该账号无法登录,已登录的立即失效。\n可填写封禁理由(选填,会显示给玩家):", "封禁理由…(选填)", async (reason) => {
+      try {
+        await api("/api/admin/users/" + encodeURIComponent(u.username) + "/status", "POST", { status: "banned", reason });
+        showMsg($("statusMsg"), "✅ 已封禁 " + u.username, true);
+        loadAll();
+      } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+    });
+  } else if (op === "frozen") {
+    askInput("冻结账号", "冻结「" + u.username + "」?\n冻结后暂时无法登录,可随时解冻。\n可填写冻结理由(选填,会显示给玩家):", "冻结理由…(选填)", async (reason) => {
+      try {
+        await api("/api/admin/users/" + encodeURIComponent(u.username) + "/status", "POST", { status: "frozen", reason });
+        showMsg($("statusMsg"), "✅ 已冻结 " + u.username, true);
+        loadAll();
+      } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+    });
+  } else if (op === "normal") {
+    api("/api/admin/users/" + encodeURIComponent(u.username) + "/status", "POST", { status: "normal" })
+      .then(() => { showMsg($("statusMsg"), "✅ 已恢复 " + u.username, true); loadAll(); })
+      .catch((e) => showMsg($("statusMsg"), "❌ " + e.message, false));
+  } else if (op === "delete") {
+    askConfirm("删除账号", "确定删除账号「" + u.username + "」吗?\n此操作不可恢复:账号、收藏与消息记录将全部清除,该用户已登录也会立即掉线。", async () => {
+      try {
+        await api("/api/admin/users/" + encodeURIComponent(u.username), "DELETE");
+        showMsg($("statusMsg"), "✅ 已删除 " + u.username, true);
+        loadAll();
+      } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+    });
+  } else if (op === "reset") {
+    askInput("重置密码", "为「" + u.username + "」设置新密码(4~64 位):", "新密码…", async (pwd) => {
+      if (!pwd) return;
+      try {
+        await api("/api/admin/users/" + encodeURIComponent(u.username) + "/reset-password", "POST", { password: pwd });
+        showMsg($("statusMsg"), "✅ 已重置 " + u.username + " 的密码(对方需重新登录)", true);
+        loadAll();
+      } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+    });
+  }
+}
+
+// ---------- IP ----------
+function renderIps() {
+  $("ipCount").textContent = "共 " + ips.length + " 个 IP";
+  if (!ips.length) {
+    $("ipRows").innerHTML = '<tr><td colspan="5" class="empty">暂无 IP 记录</td></tr>';
+    return;
+  }
+  $("ipRows").innerHTML = "";
+  for (const it of ips) {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      "<td><b>" + escapeHtml(it.ip) + "</b></td>" +
+      "<td>" + it.regCount + " 个</td>" +
+      '<td><span class="badge ' + (it.banned ? "banned" : "normal") + '">' + (it.banned ? "已封禁" : "正常") + "</span></td>" +
+      "<td>" + (it.reason ? escapeHtml(it.reason) : '<span style="color:var(--ink-soft)">-</span>') + "</td>" +
+      "<td>" +
+      (it.banned
+        ? '<button class="small good" data-op="unban">解封</button>'
+        : '<button class="small bad" data-op="ban">封禁</button>') +
+      "</td>";
+    tr.querySelector("[data-op]").addEventListener("click", () => {
+      if (it.banned) {
+        api("/api/admin/ips/" + encodeURIComponent(it.ip), "DELETE")
+          .then(() => { showMsg($("statusMsg"), "✅ 已解封 " + it.ip, true); loadAll(); })
+          .catch((e) => showMsg($("statusMsg"), "❌ " + e.message, false));
+      } else {
+        askInput("封禁 IP", "封禁 IP「" + it.ip + "」?\n该 IP 下所有账号将无法登录,也无法注册新账号。\n可填写封禁理由(选填,玩家申诉时可见):", "封禁理由…(选填)", async (reason) => {
+          try {
+            await api("/api/admin/ips/ban", "POST", { ip: it.ip, reason });
+            showMsg($("statusMsg"), "✅ 已封禁 " + it.ip, true);
+            loadAll();
+          } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+        });
+      }
+    });
+    $("ipRows").appendChild(tr);
+  }
+}
+$("banIpBtn").addEventListener("click", async () => {
+  const ip = $("banIpInput").value.trim();
+  if (!ip) return;
+  askInput("封禁 IP", "封禁 IP「" + ip + "」?\n可填写封禁理由(选填,玩家申诉时可见):", "封禁理由…(选填)", async (reason) => {
+    try {
+      await api("/api/admin/ips/ban", "POST", { ip, reason });
+      $("banIpInput").value = "";
+      showMsg($("statusMsg"), "✅ 已封禁 " + ip, true);
+      loadAll();
+    } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+  });
+});
+
+// ---------- 房间 ----------
+function renderRooms() {
+  $("roomCount").textContent = "在线房间 " + rooms.length + " 个";
+  if (!rooms.length) {
+    $("roomRows").innerHTML = '<tr><td colspan="7" class="empty">当前没有在线房间</td></tr>';
+  } else {
+    $("roomRows").innerHTML = "";
+    for (const r of rooms) {
+      const tr = document.createElement("tr");
+      const pl = (r.players || []).map((p) => escapeHtml(p.name) + (p.online ? "" : "(离线)")).join("、") || "-";
+      tr.innerHTML =
+        "<td><b>" + escapeHtml(r.code) + "</b></td>" +
+        "<td>" + escapeHtml(r.hostName) + "</td>" +
+        '<td><span class="badge ' + r.status + '">' + (ROOM_STATUS[r.status] || r.status) + "</span></td>" +
+        "<td>" + r.players.length + "/" + (r.maxPlayers || "-") + "</td>" +
+        "<td>" + escapeHtml(r.soupTitle || "-") + "</td>" +
+        "<td>" + pl + "</td>" +
+        "<td>" +
+        '<button class="small" data-op="close">强制解散</button> ' +
+        '<button class="small bad" data-op="ban">封禁房间</button>' +
+        "</td>";
+      tr.querySelector('[data-op="close"]').addEventListener("click", () => {
+        askInput("强制解散", "强制解散房间 #" + r.code + "?\n房间内所有玩家会被移出。\n可填写解散理由(选填,会显示给玩家):", "解散理由…(选填)", async (reason) => {
+          try {
+            await api("/api/admin/rooms/" + r.code + "/close", "POST", { reason });
+            showMsg($("statusMsg"), "✅ 已解散房间 #" + r.code, true);
+            loadAll();
+          } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+        });
+      });
+      tr.querySelector('[data-op="ban"]').addEventListener("click", () => {
+        // 计算该房主将收到的警告次数(已有记录 + 1)
+        const prevCount = banned.filter((b) => b.username === r.hostName).length;
+        const nextCount = prevCount + 1;
+        const warnTxt = nextCount >= 3 ? "第 " + nextCount + " 次(最后警告,将自动冻结账号!)" : "第 " + nextCount + " 次警告";
+        askInput("封禁房间", "封禁房间 #" + r.code + "?\n房间立即解散,给房主「" + r.hostName + "」记一次封禁记录(累计" + warnTxt + "),房主会收到手绘警告弹窗。\n可填写封禁理由(选填,会显示给玩家):", "封禁理由…(选填)", async (reason) => {
+          try {
+            await api("/api/admin/rooms/" + r.code + "/ban", "POST", { reason });
+            showMsg($("statusMsg"), "✅ 已封禁房间 #" + r.code + ",已警告房主", true);
+            loadAll();
+          } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+        });
+      });
+      $("roomRows").appendChild(tr);
+    }
+  }
+  if (!banned.length) {
+    $("bannedRows").innerHTML = '<tr><td colspan="5" class="empty">暂无封禁记录</td></tr>';
+  } else {
+    $("bannedRows").innerHTML = "";
+    for (const b of banned) {
+      const tr = document.createElement("tr");
+      const warnLabel = b.count >= 3 ? "第 " + b.count + " 次(最后警告)" : "第 " + b.count + " 次";
+      tr.innerHTML =
+        "<td>" + fmt(b.at) + "</td>" +
+        "<td><b>" + escapeHtml(b.username) + "</b></td>" +
+        "<td>#" + escapeHtml(b.code) + "</td>" +
+        "<td><span class=\"badge " + (b.count >= 3 ? "banned" : b.count === 2 ? "frozen" : "normal") + "\">" + warnLabel + "</span></td>" +
+        "<td>" + (b.reason ? escapeHtml(b.reason) : '<span style="color:var(--ink-soft)">-</span>') + "</td>" +
+        '<td><button class="small bad" data-op="del">删除记录</button></td>';
+      tr.querySelector("[data-op]").addEventListener("click", () => {
+        askConfirm("删除封禁记录", "确定删除「" + b.username + "」在 #" + b.code + " 的这条封禁记录吗?\n删除后该房主下次封禁的警告次数将按剩余记录重算。", async () => {
+          try {
+            await api("/api/admin/bans/" + encodeURIComponent(b.id), "DELETE");
+            showMsg($("statusMsg"), "✅ 已删除封禁记录", true);
+            loadAll();
+          } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+        });
+      });
+      $("bannedRows").appendChild(tr);
+    }
+  }
+}
+
+// ---------- 在线用户 ----------
+function renderOnline() {
+  $("onlineCount").textContent = "当前在线 " + online.length + " 人";
+  if (!online.length) {
+    $("onlineRows").innerHTML = '<tr><td colspan="5" class="empty">当前没有在线用户</td></tr>';
+    return;
+  }
+  $("onlineRows").innerHTML = "";
+  for (const u of online) {
+    const tr = document.createElement("tr");
+    const roomTxt = u.roomCode ? escapeHtml("#" + u.roomCode + (u.roomTitle ? " " + u.roomTitle : "")) : "大厅";
+    tr.innerHTML =
+      "<td><b>" + escapeHtml(u.username) + "</b></td>" +
+      "<td>" + escapeHtml(u.ip) + "</td>" +
+      "<td>" + roomTxt + "</td>" +
+      "<td>" + fmt(u.joinedAt) + "</td>" +
+      '<td><button class="small" data-op="kick">踢下线</button> <button class="small bad" data-op="ban">封禁</button></td>';
+    tr.querySelector('[data-op="kick"]').addEventListener("click", () => {
+      askConfirm("踢下线", "确定将「" + u.username + "」踢下线吗?\n其全部登录将失效、连接断开,可重新登录。", async () => {
+        try {
+          await api("/api/admin/users/" + encodeURIComponent(u.username) + "/kick", "POST");
+          showMsg($("statusMsg"), "✅ 已踢下线 " + u.username, true);
+          loadAll();
+        } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+      });
+    });
+    tr.querySelector('[data-op="ban"]').addEventListener("click", () => {
+      askInput("封禁账号", "封禁「" + u.username + "」?\n将立即踢下线且无法再登录,可解封恢复。\n可填写封禁理由(选填,会显示给玩家):", "封禁理由…(选填)", async (reason) => {
+        try {
+          await api("/api/admin/users/" + encodeURIComponent(u.username) + "/status", "POST", { status: "banned", reason });
+          showMsg($("statusMsg"), "✅ 已封禁 " + u.username, true);
+          loadAll();
+        } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+      });
+    });
+    $("onlineRows").appendChild(tr);
+  }
+}
+$("refreshOnlineBtn").addEventListener("click", () => {
+  api("/api/admin/online")
+    .then((o) => { online = o; renderOnline(); })
+    .catch((e) => { if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false); });
+});
+
+// ---------- 账号详情 ----------
+function showDetail(u) {
+  detailUser = u;
+  $("detailTitle").textContent = "账号详情:" + u.username;
+  const logs = (u.loginLog || []).slice().reverse().map((l) =>
+    "<div>" + fmt(l.at) + " · " + escapeHtml(l.ip || "-") + "</div>").join("") || '<div style="color:var(--ink-soft)">暂无登录记录(旧账号)</div>';
+  const sameIp = users.filter((x) => x.regIp && x.regIp === u.regIp);
+  $("detailBody").innerHTML =
+    "<table style='border:none;background:transparent'>" +
+    "<tr><td style='width:110px'>状态</td><td><span class='badge " + u.status + "'>" + STATUS_LABEL[u.status] + "</span></td></tr>" +
+    (u.lastPenalty ? "<tr><td>惩罚理由</td><td>" + escapeHtml(u.lastPenalty.reason || "(未填写)") + " · " + fmt(u.lastPenalty.at) + "</td></tr>" : "") +
+    "<tr><td>注册时间</td><td>" + fmt(u.createdAt) + "</td></tr>" +
+    "<tr><td>注册 IP</td><td>" + escapeHtml(u.regIp || "-") + "</td></tr>" +
+    "<tr><td>最后登录</td><td>" + fmt(u.lastLoginAt) + "</td></tr>" +
+    "<tr><td>最后登录 IP</td><td>" + escapeHtml(u.lastLoginIp || "-") + "</td></tr>" +
+    "<tr><td>登录次数</td><td>" + (u.loginCount || 0) + " 次</td></tr>" +
+    "<tr><td>收藏数</td><td>" + u.favCount + " 题</td></tr>" +
+    "<tr><td>AI 生成</td><td>" + u.aiCount + " 次</td></tr>" +
+    "</table>" +
+    "<div style='margin-top:6px;font-weight:700'>密码哈希(单向不可逆,无法还原明文)</div>" +
+    "<div style='background:var(--paper);border:2px dashed var(--line);border-radius:8px;padding:6px 10px;font-family:Consolas,monospace;font-size:11px;word-break:break-all'>" +
+    "salt: " + escapeHtml(u.salt || "-") + "<br/>hash: " + escapeHtml(u.hash || "-") + "</div>" +
+    "<div style='margin-top:6px;font-weight:700'>最近登录记录</div>" +
+    "<div style='max-height:140px;overflow:auto;background:var(--paper);border:2px dashed var(--line);border-radius:8px;padding:6px 10px'>" + logs + "</div>" +
+    (sameIp.length > 1 ? "<div style='margin-top:6px;color:var(--ink-soft)'>同 IP(" + escapeHtml(u.regIp) + ")账号 " + sameIp.length + " 个:" + sameIp.map((x) => escapeHtml(x.username)).join("、") + "</div>" : "");
+  $("detailSameIp").style.display = u.regIp && sameIp.length > 1 ? "inline-block" : "none";
+  $("detailMask").style.display = "flex";
+}
+$("detailClose").addEventListener("click", () => { $("detailMask").style.display = "none"; detailUser = null; });
+$("detailMask").addEventListener("click", (e) => e.target === $("detailMask") && ($("detailMask").style.display = "none"));
+$("detailSameIp").addEventListener("click", () => {
+  const u = detailUser;
+  if (!u || !u.regIp) return;
+  const same = users.filter((x) => x.regIp === u.regIp);
+  askConfirm("封禁同 IP 账号", "确定封禁 IP「" + u.regIp + "」下的 " + same.length + " 个账号吗?\n" + same.map((x) => "「" + x.username + "」").join("、"), async () => {
+    try {
+      const results = await Promise.allSettled(
+        same.map((x) => api("/api/admin/users/" + encodeURIComponent(x.username) + "/status", "POST", { status: "banned" })),
+      );
+      const fail = results.filter((r) => r.status === "rejected").length;
+      showMsg($("statusMsg"), fail ? `✅ 已封禁 ${same.length - fail} 个,${fail} 个失败` : "✅ 已封禁同 IP 全部 " + same.length + " 个账号", fail === 0);
+      $("detailMask").style.display = "none";
+      loadAll();
+    } catch (e) { if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false); }
+  });
+});
+
+// ---------- 申诉审核 ----------
+const APPEAL_STATUS = { pending: "待审核", approved: "已通过", rejected: "已拒绝" };
+const appealSel = new Set(); // 选中的申诉 id
+function updateAppealSelUI() {
+  const btn = $("appealDelSel");
+  btn.disabled = appealSel.size === 0;
+  btn.textContent = "🗑 删除选中(" + appealSel.size + ")";
+  const boxes = document.querySelectorAll("#appealRows .app-sel");
+  const checked = [...boxes].filter((b) => b.checked).length;
+  $("appealSelAll").checked = boxes.length > 0 && checked === boxes.length;
+  updateAppealRowSelClass();
+}
+function renderAppeals() {
+  const pendingCount = appeals.filter((a) => a.status === "pending").length;
+  $("appealCount").textContent = "共 " + appeals.length + " 条申诉" + (pendingCount ? ",待审核 " + pendingCount + " 条" : "");
+  if (!appeals.length) {
+    $("appealRows").innerHTML = '<tr><td colspan="8" class="empty">暂无申诉</td></tr>';
+    updateAppealSelUI();
+    return;
+  }
+  $("appealRows").innerHTML = "";
+  for (const a of appeals) {
+    const tr = document.createElement("tr");
+    const canAct = a.status === "pending";
+    const isIp = a.type === "ip";
+    const selected = appealSel.has(a.id);
+    if (selected) tr.className = "row-selected";
+    const ops = canAct
+      ? '<button class="small good" data-op="approve">通过</button> <button class="small bad" data-op="reject">拒绝</button>'
+      : '<button class="small bad" data-op="del">删除</button>';
+    tr.innerHTML =
+      '<td><input type="checkbox" class="app-sel" data-id="' + escapeHtml(a.id) + '"' + (selected ? " checked" : "") + ' /></td>' +
+      "<td>" + fmt(a.at) + "</td>" +
+      '<td><span class="badge ' + (isIp ? "waiting" : "normal") + '">' + (isIp ? "IP 封禁" : "账号") + "</span></td>" +
+      "<td><b>" + escapeHtml(isIp ? a.ip : a.username) + "</b></td>" +
+      '<td style="max-width:240px">' + escapeHtml(a.content) + "</td>" +
+      '<td><span class="badge ' + a.status + '">' + APPEAL_STATUS[a.status] + "</span></td>" +
+      "<td>" + (a.reply ? escapeHtml(a.reply) : '<span style="color:var(--ink-soft)">-</span>') + "</td>" +
+      "<td>" + ops + "</td>";
+    tr.querySelector(".app-sel").addEventListener("change", (e) => {
+      if (e.target.checked) appealSel.add(a.id);
+      else appealSel.delete(a.id);
+      updateAppealSelUI();
+    });
+    tr.querySelector('[data-op="del"]')?.addEventListener("click", () => {
+      askConfirm("删除申诉", "确定删除「" + (isIp ? a.ip : a.username) + "」的这条申诉记录吗?", async () => {
+        try {
+          await api("/api/admin/appeals/" + encodeURIComponent(a.id), "DELETE");
+          appealSel.delete(a.id);
+          showMsg($("statusMsg"), "✅ 已删除申诉记录", true);
+          loadAll();
+        } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+      });
+    });
+    if (canAct) {
+      tr.querySelector('[data-op="approve"]').addEventListener("click", () => {
+        const what = isIp ? "IP「" + a.ip + "」" : "「" + a.username + "」的申诉";
+        const effect = isIp ? "该 IP 将立即解封" : "账号将立即恢复正常";
+        askInput("通过申诉", "通过" + what + "?\n" + effect + "。" + (isIp ? "" : "\n可给玩家一句回复(可选):"), isIp ? "" : "给玩家的回复…", async (reply) => {
+          try {
+            await api("/api/admin/appeals/" + encodeURIComponent(a.id) + "/approve", "POST", { reply });
+            showMsg($("statusMsg"), "✅ 已通过申诉," + (isIp ? a.ip + " 已解封" : a.username + " 的账号已恢复"), true);
+            loadAll();
+          } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+        });
+      });
+      tr.querySelector('[data-op="reject"]').addEventListener("click", () => {
+        const what = isIp ? "IP「" + a.ip + "」" : "「" + a.username + "」";
+        askInput("拒绝申诉", "拒绝" + what + "的申诉?" + (isIp ? "" : "\n请填写给玩家的回复:"), isIp ? "回复(可选)…" : "拒绝原因…", async (reply) => {
+          if (!isIp && !reply) return;
+          try {
+            await api("/api/admin/appeals/" + encodeURIComponent(a.id) + "/reject", "POST", { reply });
+            showMsg($("statusMsg"), "✅ 已拒绝申诉", true);
+            loadAll();
+          } catch (e) { showMsg($("statusMsg"), "❌ " + e.message, false); }
+        });
+      });
+    }
+    $("appealRows").appendChild(tr);
+  }
+  updateAppealSelUI();
+}
+$("appealSelAll").addEventListener("change", (e) => {
+  document.querySelectorAll("#appealRows .app-sel").forEach((b) => {
+    b.checked = e.target.checked;
+    if (e.target.checked) appealSel.add(b.dataset.id);
+    else appealSel.delete(b.dataset.id);
+  });
+  updateAppealSelUI();
+});
+$("appealSelPageBtn").addEventListener("click", () => {
+  const boxes = [...document.querySelectorAll("#appealRows .app-sel")];
+  const allChecked = boxes.length > 0 && boxes.every((b) => b.checked);
+  boxes.forEach((b) => {
+    b.checked = !allChecked;
+    if (!allChecked) appealSel.add(b.dataset.id);
+    else appealSel.delete(b.dataset.id);
+  });
+  updateAppealSelUI();
+});
+$("appealDelSel").addEventListener("click", () => {
+  const ids = [...appealSel];
+  if (!ids.length) return;
+  askConfirm("批量删除申诉", "确定删除选中的 " + ids.length + " 条申诉记录吗?\n此操作不可恢复(已通过的申诉记录删除不影响已恢复的账号/IP)。", async () => {
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => api("/api/admin/appeals/" + encodeURIComponent(id), "DELETE")),
+      );
+      const fail = results.filter((r) => r.status === "rejected").length;
+      appealSel.clear();
+      showMsg($("statusMsg"), fail ? `✅ 已删除 ${ids.length - fail} 条,${fail} 条失败` : "✅ 已删除 " + ids.length + " 条申诉记录", fail === 0);
+      loadAll();
+    } catch (e) {
+      if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false);
+    }
+  });
+});
+
+// ---------- 申诉表长按拖选批量勾选(与账号表同款) ----------
+function updateAppealRowSelClass() {
+  document.querySelectorAll("#appealRows tr").forEach((tr) => {
+    const cb = tr.querySelector(".app-sel");
+    tr.classList.toggle("row-selected", !!(cb && cb.checked));
+  });
+}
+let appealDrag = { active: false, timer: null, hovered: null };
+const appealTbody = $("appealRows");
+function endAppealDrag() {
+  if (appealDrag.timer) { clearTimeout(appealDrag.timer); appealDrag.timer = null; }
+  if (appealDrag.active) {
+    appealDrag.active = false;
+    document.body.classList.remove("drag-sel");
+    document.body.style.userSelect = "";
+    appealDrag.hovered = null;
+  }
+}
+appealTbody.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  if (e.target.closest("button, a, input, select, label")) return; // 不干扰交互元素
+  endAppealDrag();
+  appealDrag.timer = setTimeout(() => {
+    appealDrag.active = true;
+    document.body.classList.add("drag-sel");
+    document.body.style.userSelect = "none";
+    const cb = e.target.closest("tr")?.querySelector(".app-sel");
+    if (cb && !cb.checked) {
+      cb.checked = true;
+      appealSel.add(cb.dataset.id);
+      updateAppealSelUI();
+    }
+    updateAppealRowSelClass();
+  }, 220);
+});
+appealTbody.addEventListener("mouseover", (e) => {
+  if (!appealDrag.active) return;
+  const tr = e.target.closest("tr");
+  if (!tr || tr === appealDrag.hovered) return;
+  appealDrag.hovered = tr;
+  const cb = tr.querySelector(".app-sel");
+  if (cb && !cb.checked) {
+    cb.checked = true;
+    appealSel.add(cb.dataset.id);
+    updateAppealSelUI();
+    updateAppealRowSelClass();
+  }
+});
+appealTbody.addEventListener("mouseup", endAppealDrag);
+appealTbody.addEventListener("mouseleave", endAppealDrag);
+$("refreshAppealsBtn").addEventListener("click", () => {
+  api("/api/admin/appeals")
+    .then((a) => { appeals = a; renderAppeals(); })
+    .catch((e) => { if (e.message !== "unauthorized") showMsg($("statusMsg"), "❌ " + e.message, false); });
+});
+
+// ---------- 页签切换 ----------
+document.querySelectorAll(".tab").forEach((t) =>
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((x) => x.classList.remove("on"));
+    document.querySelectorAll(".panel").forEach((x) => x.classList.remove("on"));
+    t.classList.add("on");
+    $("panel-" + t.dataset.tab).classList.add("on");
+  }),
+);
+
+// ---------- 启动 ----------
+if (token) {
+  try { enter(); } catch { /* 401 时自动回到登录 */ }
+}
+</script>
+</body>
+</html>

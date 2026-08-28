@@ -1,0 +1,14 @@
+{
+  "name": "poll-api",
+  "version": "1.0.0",
+  "description": "多 API 账户轮询代理: 下游一个 Key 轮询切换多个上游账户, 兼容 OpenAI / Anthropic / Gemini 格式",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js --config config.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

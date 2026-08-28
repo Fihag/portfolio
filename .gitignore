@@ -2,3 +2,8 @@
 Thumbs.db
 node_modules/
 *.log
+
+# 服务端本地配置（含真实上游 key）
+poll/config.json
+hanghai/saves/
+

@@ -1,0 +1,362 @@
+        /* ===== 升级面板 ===== */
+        #levelup-panel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; pointer-events: all; z-index: 20;
+            flex-direction: column; align-items: center; gap: 14px;
+            background: var(--cream); border: 4px solid var(--orange-deep);
+            border-radius: 22px; padding: 22px 20px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,140,60,0.45);
+            min-width: 320px; max-width: 95vw;
+        }
+        #levelup-panel h2 {
+            color: var(--orange-deep); font-size: 1.5em; text-align: center;
+            letter-spacing: 0.05em; margin: 0; text-shadow: 0 2px 0 rgba(255,255,255,0.55);
+        }
+        #levelup-panel .cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        #levelup-panel .card {
+            background: linear-gradient(160deg, var(--cream-2), #ffe0b0);
+            border: 3px solid var(--orange); border-radius: 16px; padding: 14px 10px;
+            cursor: pointer; width: 122px; text-align: center; transition: all 0.18s;
+            color: var(--brown); position: relative; overflow: hidden;
+            box-shadow: 0 5px 0 rgba(180,90,20,0.35);
+        }
+        #levelup-panel .card:hover { border-color: var(--orange-deep); transform: translateY(-4px); box-shadow: 0 9px 0 rgba(180,90,20,0.35); }
+        #levelup-panel .card:active { transform: translateY(1px) scale(0.97); box-shadow: 0 2px 0 rgba(180,90,20,0.35); }
+        #levelup-panel .card .icon { font-size: 2.1em; display: block; margin-bottom: 4px; }
+        #levelup-panel .card .name { display: block; font-weight: bold; font-size: 0.92em; margin-bottom: 4px; color: var(--brown); }
+        #levelup-panel .card .desc { display: block; font-size: 0.72em; color: var(--brown-soft); line-height: 1.3; }
+        #levelup-panel .card .level-tag {
+            display: inline-block; background: var(--orange); color: #fff;
+            font-size: 0.66em; font-weight: bold; padding: 2px 9px; border-radius: 10px; margin-top: 7px;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+        }
+        #levelup-panel .skip-btn {
+            background: var(--cream-2); border: 2px dashed var(--brown-soft); color: var(--brown-soft);
+            padding: 8px 26px; border-radius: 20px; font-size: 0.9em; cursor: pointer;
+            transition: all 0.15s; margin-top: 4px;
+        }
+        #levelup-panel .skip-btn:hover { border-color: var(--orange-deep); color: var(--orange-deep); }
+        #levelup-panel .lv-btns { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 4px; }
+        #levelup-panel .lv-btns .skip-btn { margin-top: 0; }
+        #levelup-panel .skip-xp { border-style: solid; border-color: var(--orange); color: var(--orange-deep); background: #ffe3b0; font-weight: bold; }
+        /* ===== 移动端（≤600px 或横屏矮窗口）：升级/Boss掉落卡片改为整行大卡 ===== */
+        @media (max-width: 600px), (min-width: 601px) and (max-height: 520px) {
+            #levelup-panel, #bossdrop-panel {
+                width: 96vw; max-width: 96vw; max-height: 88vh;
+                padding: 14px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+                gap: 10px; min-width: 0; overflow-y: auto;
+            }
+            #levelup-panel h2 { font-size: 1.25em; margin-bottom: 2px; }
+            #bossdrop-panel h2 { font-size: 1.15em; margin-bottom: 2px; }
+            #levelup-panel .cards, #bossdrop-panel .cards {
+                flex-direction: column; align-items: stretch; width: 100%;
+                gap: 9px; flex-wrap: nowrap;
+            }
+            #levelup-panel .card, #bossdrop-panel .card {
+                width: 100%; max-width: none; min-height: 66px;
+                display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px;
+                padding: 10px 12px; text-align: left; border-radius: 14px;
+            }
+            #levelup-panel .card:active, #bossdrop-panel .card:active { transform: none; }
+            #levelup-panel .card .icon, #bossdrop-panel .card .icon {
+                flex: 0 0 36px; width: 36px; height: 36px; margin: 0;
+                display: flex; align-items: center; justify-content: center; font-size: 1.5em;
+            }
+            #levelup-panel .card .icon svg, #bossdrop-panel .card .icon svg { width: 32px; height: 32px; }
+            #levelup-panel .card .name, #bossdrop-panel .card .name {
+                flex: 1 1 auto; min-width: 0; font-size: 1em; margin: 0;
+            }
+            #levelup-panel .card .level-tag {
+                flex: 0 0 auto; margin: 0; font-size: 0.68em; padding: 2px 8px;
+            }
+            #levelup-panel .card .desc, #bossdrop-panel .card .desc {
+                flex: 1 1 100%; font-size: 0.82em; line-height: 1.35; margin: 2px 0 0 46px;
+            }
+            #levelup-panel .lv-btns { width: 100%; gap: 8px; margin-top: 2px; }
+            #levelup-panel .lv-btns .skip-btn { flex: 1; padding: 11px 8px; font-size: 0.9em; margin-top: 0; }
+            #levelup-panel .key-hint { display: none; }
+        }
+
+        /* ===== 移动端：主菜单 / 暂停 / 结算 / 宝库 ===== */
+        @media (max-width: 600px) {
+            .menu-box { padding: 18px 14px; width: 96vw; max-width: 96vw; }
+            .menu-logo { font-size: 26px; }
+            .menu-sub { font-size: 12px; margin-bottom: 12px; }
+            .menu-row button { padding: 9px 12px; font-size: 14px; min-height: 46px; }
+            .menu-row button .w-ico { font-size: 22px; }
+            .menu-row button .w-ico svg { width: 24px; height: 24px; }
+            .menu-start { font-size: 18px; padding: 13px 0; }
+            .menu-hint { font-size: 11px; }
+            .menu-meta-btn { padding: 9px 12px; }
+            .pause-box { padding: 18px 16px; max-width: 92vw; }
+            .pause-title { font-size: 22px; }
+            .pause-sub { font-size: 12px; }
+            #gameover-overlay { padding: 20px 16px; max-width: 94vw; }
+            #gameover-overlay h2 { font-size: 1.6em; }
+            #gameover-overlay .go-btns { flex-direction: column; width: 100%; gap: 8px; }
+            #gameover-overlay button { padding: 12px 20px; font-size: 1em; }
+            #meta-panel .meta-box { padding: 14px 12px; }
+            .meta-item { flex-direction: column; align-items: stretch; gap: 8px; }
+            .meta-item button { width: 100%; padding: 10px 14px; }
+            .meta-btns { flex-direction: column; gap: 8px; }
+            .meta-btns button { width: 100%; }
+            .dm-modal-box { padding: 16px 14px; }
+        }
+
+        /* ===== Boss掉落面板 ===== */
+        #bossdrop-panel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; pointer-events: all; z-index: 20;
+            flex-direction: column; align-items: center; gap: 14px;
+            background: var(--cream); border: 4px solid var(--amber);
+            border-radius: 22px; padding: 22px 18px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,209,102,0.5);
+            min-width: 320px; max-width: 95vw;
+        }
+        #bossdrop-panel h2 { color: #c07a1a; font-size: 1.4em; text-align: center; letter-spacing: 0.04em; text-shadow: 0 2px 0 rgba(255,255,255,0.55); margin: 0; }
+        #bossdrop-panel .cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        #bossdrop-panel .card {
+            background: linear-gradient(160deg, var(--cream-2), #ffe0b0);
+            border: 3px solid var(--amber); border-radius: 16px; padding: 12px 10px;
+            cursor: pointer; width: 122px; text-align: center; transition: all 0.18s;
+            color: var(--brown); position: relative; overflow: hidden;
+            box-shadow: 0 5px 0 rgba(160,105,30,0.35);
+        }
+        #bossdrop-panel .card:hover { border-color: #e09a1a; transform: translateY(-4px); box-shadow: 0 9px 0 rgba(160,105,30,0.35); }
+        #bossdrop-panel .card:active { transform: translateY(1px) scale(0.97); box-shadow: 0 2px 0 rgba(160,105,30,0.35); }
+        #bossdrop-panel .card .icon { font-size: 2em; display: block; margin-bottom: 4px; }
+        #bossdrop-panel .card .name { display: block; font-weight: bold; font-size: 0.9em; margin-bottom: 4px; color: #c07a1a; }
+        #bossdrop-panel .card .desc { display: block; font-size: 0.7em; color: var(--brown-soft); line-height: 1.3; }
+
+        /* ===== 结算界面 ===== */
+        #gameover-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; pointer-events: all; z-index: 20;
+            flex-direction: column; align-items: center; gap: 14px;
+            background: var(--cream); border: 4px solid var(--coral);
+            border-radius: 22px; padding: 26px 26px; text-align: center; color: var(--brown);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,107,107,0.45);
+        }
+        #gameover-overlay h2 { color: var(--coral); font-size: 1.9em; margin: 0; text-shadow: 0 2px 0 rgba(255,255,255,0.55); }
+        #gameover-overlay .stat { color: var(--brown-soft); font-size: 0.95em; margin: 3px 0; }
+        #gameover-overlay .stat strong { color: var(--orange-deep); }
+        #gameover-overlay #go-newrecord { color: var(--amber); font-weight: bold; text-shadow: 0 2px 0 rgba(0,0,0,0.15); font-size: 1.1em; }
+        #gameover-overlay button {
+            padding: 13px 34px; font-size: 1.05em; border: 3px solid var(--brown);
+            border-radius: 26px; cursor: pointer; background: linear-gradient(180deg, var(--amber), var(--orange));
+            color: #fff; font-weight: bold; letter-spacing: 0.04em; transition: all 0.15s;
+            box-shadow: 0 5px 0 #a86a10;
+        }
+        #gameover-overlay button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #a86a10; }
+        #gameover-overlay button:active { transform: translateY(3px); box-shadow: 0 1px 0 #a86a10; }
+        #gameover-overlay .go-btns { display: flex; gap: 10px; }
+        #gameover-overlay #menu-btn { background: transparent; color: var(--brown-soft); box-shadow: none; border-color: var(--line); }
+        #gameover-overlay #menu-btn:hover { color: var(--brown); border-color: var(--orange-deep); background: var(--cream-2); }
+
+        /* ===== 主菜单 ===== */
+        #menu-overlay {
+            position: absolute; inset: 0; z-index: 40;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(43,26,18,0.72);
+            backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+        }
+        .menu-box {
+            background: var(--cream); border: 5px solid var(--orange-deep);
+            border-radius: 26px; padding: 26px 30px; text-align: center;
+            box-shadow: 0 12px 0 rgba(0,0,0,0.25), 0 0 60px rgba(255,140,60,0.5);
+            width: min(480px, 92vw); max-height: 92vh; overflow-y: auto;
+        }
+        .menu-logo { font-size: 34px; font-weight: bold; color: var(--orange-deep); letter-spacing: 0.06em; text-shadow: 0 2px 0 rgba(255,255,255,0.6); }
+        .menu-sub { font-size: 13px; color: var(--brown-soft); margin-bottom: 14px; }
+        .menu-sec { margin-bottom: 12px; }
+        .menu-label { font-size: 13px; font-weight: bold; color: var(--brown); margin-bottom: 6px; }
+        .menu-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .menu-row button {
+            background: var(--cream-2); border: 2px solid var(--line); color: var(--brown);
+            border-radius: 12px; padding: 7px 14px; font-size: 13px; font-weight: bold;
+            cursor: pointer; transition: all 0.15s; box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+        }
+        .menu-row button:hover { border-color: var(--orange); transform: translateY(-1px); }
+        .menu-row button.active { background: var(--orange); border-color: var(--orange-deep); color: #fff; box-shadow: 0 3px 0 rgba(160,80,10,0.5); }
+        .menu-row button .w-ico { display: block; font-size: 20px; line-height: 1; margin-bottom: 3px; }
+        .menu-row button .w-ico svg { width: 22px; height: 22px; }
+        .menu-best { color: var(--brown-soft); font-size: 13px; margin: 4px 0 12px; }
+        .menu-start {
+            display: block; width: 100%; padding: 14px 0; font-size: 20px; font-weight: bold;
+            border: 3px solid var(--brown); border-radius: 18px; cursor: pointer;
+            background: linear-gradient(180deg, var(--amber), var(--orange)); color: #fff;
+            letter-spacing: 0.08em; box-shadow: 0 6px 0 #a86a10; transition: all 0.15s;
+        }
+        .menu-start:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #a86a10; }
+        .menu-start:active { transform: translateY(3px); box-shadow: 0 1px 0 #a86a10; }
+        .menu-hint { margin-top: 12px; font-size: 12px; color: var(--brown-soft); }
+        .menu-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 8px 0; }
+        .menu-shards { color: var(--orange-deep); font-weight: bold; font-size: 14px; }
+        .menu-meta-btn {
+            padding: 6px 14px; border-radius: 12px; border: 2px solid var(--orange);
+            background: var(--cream-2); color: var(--brown); font-size: 13px; font-weight: bold;
+            cursor: pointer; transition: all 0.15s; box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+        }
+        .menu-meta-btn:hover { border-color: var(--orange-deep); transform: translateY(-1px); }
+
+        /* ===== 灵魂宝库（与全局奶油橙风格统一） ===== */
+        #meta-panel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; pointer-events: all; z-index: 100;
+        }
+        #meta-panel .meta-box {
+            background: var(--cream); border: 4px solid var(--orange-deep);
+            border-radius: 22px; padding: 20px 22px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,140,60,0.45);
+            width: min(440px, 92vw); max-width: 92vw; max-height: 86vh; overflow-y: auto;
+            text-align: center;
+        }
+        #meta-panel h2 {
+            color: var(--orange-deep); font-size: 1.5em; margin: 0 0 6px;
+            letter-spacing: 0.05em; text-shadow: 0 2px 0 rgba(255,255,255,0.55);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .meta-shards {
+            display: inline-block; background: var(--cream-2); color: var(--orange-deep);
+            font-weight: bold; font-size: 13px; padding: 4px 14px; border-radius: 14px;
+            border: 2px solid var(--orange); margin-bottom: 12px;
+        }
+        .meta-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        /* 宝库分区按钮：左天赋 / 右圣物 */
+        .meta-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .meta-tab {
+            flex: 1; padding: 9px 0; font-size: 14px; font-weight: bold; letter-spacing: 0.1em;
+            border-radius: 12px; border: 2px solid var(--orange); background: var(--cream-2);
+            color: var(--brown-soft); cursor: pointer; transition: all 0.15s;
+            box-shadow: 0 3px 0 rgba(180,90,20,0.25);
+        }
+        .meta-tab:hover { background: #ffefd6; transform: translateY(-1px); }
+        .meta-tab.active {
+            background: linear-gradient(180deg, var(--orange), #e8862a); color: #fff;
+            border-color: var(--orange-deep); box-shadow: 0 3px 0 #a86a10; transform: translateY(-1px);
+            text-shadow: 0 1px 0 rgba(120,60,0,0.4);
+        }
+        .meta-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 12px 14px; border-radius: 16px; text-align: left;
+            background: linear-gradient(160deg, var(--cream-2), #ffe0b0);
+            border: 3px solid var(--orange); box-shadow: 0 4px 0 rgba(180,90,20,0.3);
+            transition: all 0.15s;
+        }
+        .meta-item:hover { border-color: var(--orange-deep); }
+        .meta-item .mi-info { flex: 1; min-width: 0; }
+        .meta-item .mi-name { font-weight: bold; color: var(--brown); font-size: 14px; display: flex; align-items: center; gap: 6px; }
+        .meta-item .mi-name .title-ico { margin-right: 0; }
+        .meta-item .mi-desc { color: var(--brown-soft); font-size: 12px; margin-top: 3px; line-height: 1.4; }
+        .meta-item .mi-lv { display: inline-block; background: var(--orange); color: #fff; font-size: 11px; font-weight: bold; padding: 2px 10px; border-radius: 10px; margin-top: 6px; box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+        .meta-item button {
+            flex: 0 0 auto; padding: 8px 18px; border-radius: 14px; font-size: 13px; font-weight: bold;
+            border: 3px solid var(--brown); color: #fff; cursor: pointer; transition: all 0.15s;
+            background: linear-gradient(180deg, var(--amber), var(--orange)); box-shadow: 0 4px 0 #a86a10;
+        }
+        .meta-item button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 #a86a10; }
+        .meta-item button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #a86a10; }
+        .meta-item button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .meta-btns { margin-top: 14px; display: flex; justify-content: center; gap: 10px; }
+        .meta-btns button {
+            padding: 10px 30px; font-size: 15px; border: 3px solid var(--brown);
+            border-radius: 22px; cursor: pointer; background: linear-gradient(180deg, var(--amber), var(--orange));
+            color: #fff; font-weight: bold; transition: all 0.15s; box-shadow: 0 5px 0 #a86a10;
+        }
+        .meta-btns button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #a86a10; }
+        .meta-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 #a86a10; }
+        /* ===== 开源图标 (Lucide, ISC License) ===== */
+        .title-ico { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
+        .title-ico svg { width: 20px; height: 20px; }
+        .btn-ico { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
+        .btn-ico svg { width: 16px; height: 16px; }
+        .hud-ico { display: inline-flex; vertical-align: -2px; margin-right: 5px; }
+        .hud-ico svg { width: 14px; height: 14px; color: var(--amber); }
+        #ui-buttons button { display: flex; align-items: center; justify-content: center; }
+        #ui-buttons button svg { width: 18px; height: 18px; }
+
+/* ===== 死神之指购买弹窗（与灵魂宝库风格统一） ===== */
+#dm-buy-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: none; pointer-events: all; z-index: 120;
+}
+.dm-modal-box {
+    background: var(--cream); border: 4px solid var(--orange-deep);
+    border-radius: 22px; padding: 20px 24px;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,60,60,0.4);
+    width: min(440px, 92vw); max-width: 92vw; max-height: 86vh; overflow-y: auto;
+    text-align: center;
+}
+.dm-modal-title {
+    color: #c0392b; font-size: 1.5em; margin: 0 0 8px; font-weight: bold;
+    letter-spacing: 0.05em; text-shadow: 0 2px 0 rgba(255,255,255,0.55);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.dm-modal-desc { color: var(--brown); font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
+.dm-modal-modes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.dm-mode {
+    border-radius: 14px; padding: 10px 14px; text-align: left;
+    border: 3px solid var(--orange); box-shadow: 0 3px 0 rgba(180,90,20,0.25);
+}
+.dm-mode-manual { background: linear-gradient(160deg, var(--cream-2), #ffe0b0); }
+.dm-mode-auto { background: linear-gradient(160deg, #f3e2f5, #e6c9ee); border-color: #b06aff; box-shadow: 0 3px 0 rgba(120,60,190,0.25); }
+.dm-mode-name { font-weight: bold; color: var(--brown); font-size: 14px; margin-bottom: 3px; }
+.dm-mode-auto .dm-mode-name { color: #5a2a7a; }
+.dm-mode-desc { color: var(--brown-soft); font-size: 12px; line-height: 1.5; }
+.dm-mode-note { color: #c0392b; font-size: 12px; line-height: 1.5; margin-top: 4px; font-weight: bold; }
+.dm-mode-auto .dm-mode-note { color: #8a4bd8; }
+.dm-modal-foot { color: var(--brown-soft); font-size: 12px; margin-bottom: 14px; line-height: 1.5; }
+.dm-modal-warn {
+    color: #c0392b; font-size: 12px; font-weight: bold; line-height: 1.6; margin-bottom: 14px;
+    background: rgba(255,60,60,0.08); border: 2px solid rgba(214,48,49,0.4);
+    border-radius: 10px; padding: 8px 10px;
+}
+.dm-modal-btns { display: flex; justify-content: center; gap: 10px; }
+.dm-modal-btns button {
+    padding: 10px 22px; font-size: 14px; border: 3px solid var(--brown);
+    border-radius: 22px; cursor: pointer; font-weight: bold; transition: all 0.15s;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+}
+.dm-btn-cancel { background: linear-gradient(180deg, #e8e0d8, #c8bdb2); color: var(--brown); }
+.dm-btn-confirm { background: linear-gradient(180deg, #ff8a5c, #d63031); color: #fff; }
+.dm-modal-btns button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 rgba(0,0,0,0.25); }
+.dm-modal-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+
+/* ===== 暂停面板：返回主菜单按钮 ===== */
+.pause-btns { margin-top: 14px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.pause-btn {
+    padding: 8px 22px; font-size: 14px; font-weight: bold;
+    border: 3px solid var(--brown); border-radius: 16px; cursor: pointer;
+    background: linear-gradient(180deg, var(--amber), var(--orange)); color: #fff;
+    box-shadow: 0 4px 0 #a86a10; transition: all 0.15s;
+}
+.pause-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #a86a10; }
+.pause-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a86a10; }
+
+/* ===== 升级点击保护（1.5 秒防误触） ===== */
+        #levelup-panel.locked { pointer-events: none; }
+        #levelup-panel.locked .cards { opacity: 0.55; }
+        .lv-lock-hint {
+            display: inline-block; margin-left: 8px; font-size: 0.62em; font-weight: normal;
+            background: var(--orange); color: #fff; border-radius: 12px; padding: 3px 10px;
+            vertical-align: middle; letter-spacing: 0.02em;
+        }
+
+        /* ===== 圣物穿戴/卸下切换 ===== */
+        .meta-item .meta-toggle {
+            flex: 0 0 auto; padding: 8px 14px; border-radius: 14px; font-size: 12px; font-weight: bold;
+            border: 2px solid var(--line); background: var(--cream-2); color: var(--brown-soft);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .meta-item .meta-toggle:hover { border-color: var(--orange-deep); color: var(--orange-deep); }
+        .meta-item.relic-off { opacity: 0.72; }
+        /* 圣物卡片：信息在上、按钮行在下（避免长按钮文字挤压名称竖排） */
+        .meta-item.relic-card { flex-direction: column; align-items: stretch; gap: 8px; }
+        .meta-item .meta-btnrow { display: flex; gap: 8px; }
+        .meta-item .meta-btnrow button { flex: 1; }
+
+        /* ===== 触屏模式：加大触击区域 ===== */
+.touch-mode #ui-buttons button { width: 46px; height: 46px; font-size: 20px; }
+.touch-mode #ui-buttons button svg { width: 24px; height: 24px; }
+.touch-mode .pause-btn { padding: 12px 26px; font-size: 16px; }
+.touch-mode .card { padding: 16px 18px; }

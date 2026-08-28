@@ -1,6 +1,6 @@
-# Fihag · 作品集站点
+# Fihag · 作品集 monorepo
 
-Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站，纯 HTML/CSS/JS，零构建零依赖。
+Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站 + 全部 8 个项目源码，一个仓库 = 一个站点，纯 HTML/CSS/JS 为主，零构建。
 
 **线上**：https://fihag-portfolio.pages.dev
 
@@ -8,29 +8,31 @@ Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站，纯
 
 本仓库根目录即 Cloudflare Pages 部署根，目录名就是线上 URL 路径：
 
-```
-/                    ← 作品集首页（导航 + 8 个项目卡片）
-/hanghai/            ← 数字航海（猜数冒险，玻璃拟态）
-/pigeon/debug.html   ← 魔法幸存者·Debug（F1 调试面板）
-/pinbei/             ← 拼豆库存统计（手绘风管理工具）
-/web-terminal/       ← WebTerminal（浏览器终端模拟器）
-```
+| 路径 | 项目 | 访问方式 |
+|---|---|---|
+| `/` | 作品集首页（导航 + 8 张卡片） | 直接访问 |
+| `/rougelike/` | 魔法幸存者（Canvas 肉鸽生存） | 站内直接玩 |
+| `/tokengacha/` | TokenGacha（LLM API 盲盒经营，PWA） | 站内直接玩 |
+| `/hanghai/` | 数字航海（玻璃拟态猜数冒险） | 站内直接玩 |
+| `/pigeon/debug.html` | 魔法幸存者·Debug（F1 调试面板） | 站内直接玩 |
+| `/pinbei/` | 拼豆库存统计（手绘风管理工具） | 站内直接用 |
+| `/web-terminal/` | WebTerminal（浏览器终端模拟器） | 站内直接玩 |
+| `/turtle-soup/` | 海龟汤在线推理（源码） | 需本地运行 |
+| `/poll/` | Poll API（源码） | 需本地运行 |
 
-已单独上线的项目走外链，不在本仓库内：
+## 需要本地运行的项目
 
-- 魔法幸存者正式版：https://rougelike-13h.pages.dev（源码 [Fihag/rougelike](https://github.com/Fihag/rougelike)）
-- TokenGacha：https://tokengacha.pages.dev（源码 [Fihag/TokenGacha-Enhanced](https://github.com/Fihag/TokenGacha-Enhanced)）
+| 项目 | 本地运行方式 | 说明 |
+|---|---|---|
+| 海龟汤在线推理 | 进 `turtle-soup/`：`npm install` → `npm start`（一键构建+后端+ngrok），或 `npm run dev` | React + Socket.IO 联机，无法纯静态部署；管理功能需设 `ADMIN_PASSWORD` 环境变量 |
+| Poll API | 进 `poll/`：`node server.js`（默认读 config.json，可 `--config my.json --port 8080`） | Node 服务端项目，管理后台在 `/admin`；**注意 `poll/config.json` 含真实上游配置，勿公开分发** |
+| 数字航海（云存档） | 进 `hanghai/`：`node server.js`（端口 8080） | 站内可直接玩，但云端存档依赖 server.js 写 `saves/`，纯静态部署下存档功能不可用 |
 
-## 需要手动下载源码本地运行的项目
+## 历史仓库
 
-以下项目没有线上版本（或有功能缺失），卡片上标有虚线「需本地运行 / 本地跑存档」标签：
-
-| 项目 | 仓库 | 本地运行方式 | 说明 |
-|---|---|---|---|
-| 海龟汤在线推理 | [Fihag/cc-web](https://github.com/Fihag/cc-web/tree/master/turtle-soup) `turtle-soup/` | `npm install` → `npm start`（一键构建+后端+ngrok），或 `npm run dev` 开发模式 | React + Socket.IO 联机游戏，无法纯静态部署；管理功能需设 `ADMIN_PASSWORD` 环境变量 |
-| Poll API | [Fihag/cc-web](https://github.com/Fihag/cc-web/tree/master/poll) `poll/` | `node server.js`（默认读 config.json，可 `--config my.json --port 8080`） | Node 服务端项目，聚合多上游 API，Web 管理后台在 `/admin` |
-| 数字航海（云存档功能） | [Fihag/shuzihanghai](https://github.com/Fihag/shuzihanghai) | `node server.js`（端口 8080） | 站内 `/hanghai/` 可直接玩，但云端存档依赖 server.js 写 `saves/` 目录，纯静态部署下存档不可用 |
-| 魔法幸存者·Debug | 本仓库 `/pigeon/debug.html` | 浏览器直接打开，游戏内按 F1 开调试面板 | 无需下载，站内即用；正式版源码在 [Fihag/rougelike](https://github.com/Fihag/rougelike) |
+- 历史归档（早期提交记录）：[Fihag/cc-web](https://github.com/Fihag/cc-web)
+- 魔法幸存者正式版开发仓（Pigeon 为其副本）：[Fihag/rougelike](https://github.com/Fihag/rougelike)（已冻结，以本仓库为准）
+- TokenGacha 开发仓：[Fihag/TokenGacha-Enhanced](https://github.com/Fihag/TokenGacha-Enhanced)（已冻结，以本仓库为准）
 
 ## 特效
 
@@ -53,7 +55,7 @@ Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站，纯
 
 ## 部署
 
-- **Git 集成（推荐）**：Cloudflare Pages 连接本仓库，构建命令留空，输出目录填 `/`（根目录），push 即部署
+- **Git 集成（当前使用）**：Cloudflare Pages 连接本仓库，构建命令留空，输出目录 `/`，push 即部署
 - **CLI 直传**：`npx wrangler pages deploy . --project-name fihag-portfolio`
 
 ## 本地预览

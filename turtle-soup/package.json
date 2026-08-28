@@ -1,0 +1,20 @@
+{
+  "name": "turtle-soup",
+  "version": "1.0.0",
+  "private": true,
+  "description": "海龟汤在线推理游戏 - React + Node.js + Socket.IO + cloudflared",
+  "workspaces": [
+    "web",
+    "server"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build --workspace web",
+    "start": "node server/index.js",
+    "test": "node tests/smoke.mjs",
+    "parse:soups": "node scripts/parse-soups.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

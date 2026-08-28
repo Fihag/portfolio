@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TokenGacha · LLM API 中转站 — 抽卡模拟器</title>
+    <meta
+      name="description"
+      content="TokenGacha 是一家虚构的 LLM API 中转站盲盒模拟器：花游戏币抽卡（N/ R/ SR/ SSR/ UR/ UTR），用 token 接 vibe coding 私活变现，形成 抽卡→工作→赚钱→再抽卡 的循环。70% 玩家最终破产，你能成为那 30% 吗？"
+    />
+    <meta name="keywords" content="TokenGacha, LLM, API中转, 抽卡模拟器, gacha, vibe coding, AI模型" />
+    <meta name="author" content="Fihag" />
+    <meta name="theme-color" content="#2f6bff" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TokenGacha · LLM API 中转站" />
+    <meta
+      property="og:description"
+      content="一家不按量计费只卖盲盒的中转站。抽到顶级模型还是电子垃圾全看命，抽到的卡会变成 token 拿去接私活变现。"
+    />
+    <meta property="og:url" content="https://tokengacha.pages.dev" />
+    <meta property="og:image" content="https://tokengacha.pages.dev/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TokenGacha · LLM API 中转站" />
+    <meta
+      name="twitter:description"
+      content="LLM API 抽卡模拟器 — 70% 玩家最终破产，你能成为持续赚钱的那 30% 吗？"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="css/style.css?v=2" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">跳到主要内容</a>
+    <canvas id="fx" aria-hidden="true"></canvas>
+
+    <header role="banner">
+      <div class="logo" aria-label="TokenGacha LLM API 中转站">
+        <span class="mark" aria-hidden="true">🎰</span>TokenGacha<small>LLM API 中转站</small>
+      </div>
+      <nav class="top-nav" aria-label="主导航" role="navigation">
+        <button data-page="buy" aria-label="购买 Token" aria-current="page">购买Token</button>
+        <button data-page="work" aria-label="工作">工作</button>
+        <button data-page="balance" aria-label="余额">余额</button>
+        <button data-page="activity" aria-label="活动">活动</button>
+        <button data-page="data" aria-label="数据">数据</button>
+      </nav>
+      <div class="stat-chips" aria-live="polite" aria-atomic="true">
+        <div class="chip money" aria-label="余额">余额 <b id="h-money">¥0</b></div>
+        <div class="chip" aria-label="剩余 Token">⚡ <b id="h-tokens">0</b></div>
+        <div class="chip hide-m" aria-label="抽卡次数">抽卡 <b id="h-pulls">0</b></div>
+      </div>
+      <button class="hbtn" id="btn-skin" aria-label="皮肤中心">🎨<span class="lbl"> 皮肤</span></button>
+      <button class="hbtn" id="btn-mute" aria-label="切换音效">🔊<span class="lbl"> 音效</span></button>
+      <button class="hbtn" id="btn-rates" aria-label="概率公示">📊<span class="lbl"> 概率公示</span></button>
+      <button class="hbtn" id="btn-dex" aria-label="模型图鉴">📖<span class="lbl"> 图鉴</span></button>
+      <button class="hbtn" id="btn-help" aria-label="玩法说明">❓<span class="lbl"> 玩法</span></button>
+    </header>
+
+    <main id="main">
+      <!-- ============ 页面1: 购买Token ============ -->
+      <div class="page" id="page-buy" role="tabpanel" aria-label="购买 Token">
+        <div class="page-head">
+          <h2>购买 Token</h2>
+          <p>盲盒计费 · 抽到顶级模型还是电子垃圾全看命 · 明码标价 · 概不退换</p>
+        </div>
+        <div class="notice">
+          <span class="dot"></span
+          ><span id="notice-text">📢 公告：限定池每日 00:00+08 轮换，当前赛季见倒计时。</span>
+        </div>
+        <div class="pool-cards" id="pool-cards"></div>
+        <div class="pool-scroll-dots" id="pool-dots" aria-hidden="true"></div>
+        <div class="pool-scroll-hint">← 左右滑动查看更多卡池 →</div>
+        <div class="buy-hint">
+          💡 当前持有 <b id="buy-tokens">0 tokens</b>（约 <b id="buy-tasks">0</b> 单工作量）<button
+            class="go"
+            id="go-work"
+          >
+            去「工作」变现 →
+          </button>
+        </div>
+        <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+          <label
+            style="
+              display: flex;
+              gap: 6px;
+              align-items: center;
+              font-size: 12.5px;
+              color: var(--dim);
+              background: var(--panel);
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              padding: 7px 12px;
+              cursor: pointer;
+              user-select: none;
+            "
+            ><input type="checkbox" id="chk-auto-skip-buy" /> 自动跳过抽卡动画</label
+          ><span style="font-size: 11px; color: var(--faint)">勾选后抽卡直接展示结果</span>
+        </div>
+        <div class="panel panel-pad" style="margin-top: 14px">
+          <div class="panel-title">🧪 模拟抽卡<span class="right">不消耗余额/不计入统计</span></div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px">
+            <select id="sim-pool" class="inv-sort" style="margin-left: 0">
+              <option value="standard">白银盲盒</option>
+              <option value="newbie">青铜盲盒</option>
+              <option value="flagship">王者盲盒</option>
+              <option value="banner">限定池</option>
+            </select>
+            <select id="sim-count" class="inv-sort">
+              <option value="10">10 抽</option>
+              <option value="100" selected>100 抽</option>
+              <option value="1000">1000 抽</option>
+            </select>
+            <button class="mini-btn on" id="btn-sim">开始模拟</button>
+            <span style="font-size: 11px; color: var(--faint)">仅演示概率，不影响真实存档</span>
+          </div>
+          <div
+            id="sim-result"
+            style="
+              min-height: 64px;
+              background: var(--panel2);
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              padding: 10px 12px;
+              font-size: 12.5px;
+              line-height: 1.7;
+              color: var(--dim);
+            "
+          >
+            选择卡池与次数，点击“开始模拟”查看分布与回本率对比。
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 页面2: 工作 ============ -->
+      <div class="page" id="page-work">
+        <div class="page-head">
+          <h2>工作</h2>
+          <p>vibe coding 接单 · 系统自动按稀有度从高到低消耗 token · 每单 200K tokens</p>
+        </div>
+        <div class="work-grid">
+          <div class="work-side">
+            <div class="stat-row">
+              <div class="stat-card cyan">
+                <div class="lb">⚡ 剩余 Token</div>
+                <div class="vl" id="w-tokens">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="lb">📦 可接单量</div>
+                <div class="vl" id="w-tasks">0 <small>单</small></div>
+              </div>
+              <div class="stat-card green">
+                <div class="lb">💹 预计可赚</div>
+                <div class="vl" id="w-est">¥0</div>
+              </div>
+            </div>
+            <div class="panel panel-pad">
+              <div class="panel-title">📊 Token 构成<span class="right">消耗顺序 UTR → N</span></div>
+              <div class="rarity-rows" id="rarity-rows"></div>
+            </div>
+          </div>
+          <div class="work-main">
+            <div class="terminal">
+              <div class="tbar">
+                <i style="background: #ff5f56"></i><i style="background: #ffbd2e"></i
+                ><i style="background: #27c93f"></i><span id="term-title">agent — 自动调度（稀有度优先）</span
+                ><span class="tprog" id="tprog" hidden
+                  ><span id="tprog-txt">0/0</span
+                  ><span class="bar"><i id="tprog-bar" style="width: 0%"></i></span></span
+                ><button id="btn-skip" class="skip" hidden>⏭ 跳过</button>
+              </div>
+              <pre id="term-body">> 等待接单…<span class="cursor"></span></pre>
+            </div>
+            <div class="work-actions">
+              <button class="work-btn manual" id="btn-work">开始工作<small id="work-sub"></small></button>
+              <button class="work-btn auto" id="btn-auto">
+                ⚡ 自动模式 · 一键梭哈<small id="auto-sub"></small>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="work-log" id="work-log"></div>
+      </div>
+
+      <!-- ============ 页面3: 余额 ============ -->
+      <div class="page" id="page-balance">
+        <div class="page-head">
+          <h2>余额</h2>
+          <p>钱包 · 收支明细 · 资产持仓</p>
+        </div>
+        <div class="apikey">
+          🔑 API 令牌：<span>sk-tokengacha-••••••••••••••••3f9a</span
+          ><button class="cp" id="btn-copy-key">复制</button>
+        </div>
+        <div class="bal-hero">
+          <div class="big">
+            <div class="lb">账户余额 <span id="b-cheat"></span></div>
+            <div class="vl" id="b-money">¥0</div>
+          </div>
+          <div class="sub-stats">
+            <div class="cell">
+              <div class="lb">累计收入</div>
+              <div class="vl" style="color: var(--green)" id="b-earn">¥0</div>
+            </div>
+            <div class="cell">
+              <div class="lb">累计氪金</div>
+              <div class="vl" style="color: var(--red)" id="b-spent">¥0</div>
+            </div>
+            <div class="cell">
+              <div class="lb">Token 估值</div>
+              <div class="vl" style="color: var(--cyan)" id="b-tokval">¥0</div>
+            </div>
+          </div>
+          <button
+            class="hbtn"
+            id="btn-topup"
+            style="background: #fffbeb; border-color: #fde68a; color: #92600a; font-weight: 800"
+          >
+            💳<span class="lbl"> 充值</span>
+          </button>
+          <button class="hbtn" id="btn-share">📣<span class="lbl"> 分享战绩</span></button>
+          <div class="free-progress">
+            <div class="lb"><span>🏆 财富自由进度</span><span id="b-free-txt"></span></div>
+            <div class="bar"><i id="b-free-bar"></i></div>
+          </div>
+        </div>
+        <div class="panel panel-pad" id="achieve-panel" style="margin-bottom: 14px">
+          <div class="panel-title">🏅 成就墙<span class="right" id="achieve-progress"></span></div>
+          <div class="achieve-grid" id="achieve-grid"></div>
+        </div>
+        <div class="two-col">
+          <div class="panel panel-pad">
+            <div class="panel-title">🧾 收支明细<span class="right">最近 80 条</span></div>
+            <div class="ledger-list" id="ledger-list"></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="panel-title">📈 战绩统计</div>
+            <div class="stat-grid" id="stat-grid"></div>
+            <div class="panel-title" style="margin-top: 14px">
+              📡 渠道状态<span class="right">实时监控（并不）</span>
+            </div>
+            <div class="channels" id="channels"></div>
+          </div>
+        </div>
+        <div class="panel panel-pad">
+          <div class="panel-title">
+            🗃️ 我的模型卡<span class="right" id="inv-total"></span
+            ><select class="inv-sort" id="inv-sort">
+              <option value="rarity">按稀有度</option>
+              <option value="tokens">按剩余token</option>
+              <option value="idx">按智能指数</option>
+            </select>
+            <button class="mini-btn" id="btn-batch-toggle" style="margin-left: 8px">☑️ 批量</button>
+          </div>
+          <div class="inv-filter" id="inv-filter">
+            <button data-f="all" class="on">全部</button>
+            <button data-f="UTR">UTR</button>
+            <button data-f="UR">UR</button>
+            <button data-f="SSR">SSR</button>
+            <button data-f="R">R</button>
+            <button data-f="N">N</button>
+            <button data-f="half">体验</button>
+            <button data-f="residue">残卡</button>
+            <button data-f="locked">🔒 锁定</button>
+            <button id="btn-clear-n" title="一键销毁全部 N 卡">🗑️ 清N</button>
+          </div>
+          <div
+            id="inv-batch-bar"
+            hidden
+            style="
+              display: flex;
+              gap: 8px;
+              align-items: center;
+              margin: 8px 0;
+              padding: 8px 10px;
+              background: var(--panel2);
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              flex-wrap: wrap;
+            "
+          >
+            <span id="inv-batch-cnt" style="font-size: 12px; color: var(--dim)">已选 0 张</span>
+            <button class="mini-btn" id="btn-batch-all">全选</button>
+            <button class="mini-btn" id="btn-batch-lock">🔒 锁定选中</button>
+            <button class="mini-btn" id="btn-batch-unlock">🔓 解锁选中</button>
+            <button class="mini-btn" id="btn-batch-destroy" style="color: var(--red); border-color: #fecaca">
+              🗑️ 销毁选中
+            </button>
+            <button class="mini-btn" id="btn-batch-cancel">取消</button>
+          </div>
+          <div class="inv-grid" id="inv-grid"></div>
+        </div>
+        <div class="panel panel-pad" id="trade-panel">
+          <div class="panel-title">
+            🛠️ 交易工坊
+            <span class="right" style="display: flex; gap: 6px; align-items: center">
+              <button class="mini-btn on" data-trade="craft">🔧 合成台</button>
+              <button class="mini-btn" data-trade="market">🏦 黑市</button>
+              <span id="market-countdown" style="margin-left: 8px"></span>
+            </span>
+          </div>
+          <div id="trade-craft">
+            <div style="font-size: 11px; color: var(--faint); margin-bottom: 8px">
+              同厂商×3合高一档 · 同模型×5升星 · 禁止跨vendor · 星级上限3收益+5%/星
+            </div>
+            <div class="craft-recipes" id="craft-recipes"></div>
+          </div>
+          <div id="trade-market" hidden>
+            <div class="market-list" id="market-list"></div>
+            <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center">
+              <button class="mini-btn" id="btn-market-refresh">🔄 刷新 (每小时自动)</button
+              ><span class="note" style="margin-left: auto"
+                >溢价 1.10–1.50×（在估值之上，已含限定×2/星级）· 一键卖卡</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 页面4: 活动(签到+任务) ============ -->
+      <div class="page" id="page-activity">
+        <div class="page-head">
+          <h2>活动</h2>
+          <p>每日签到 · 日常任务 · 皮肤券攒起来</p>
+        </div>
+        <div class="act-grid">
+          <div class="panel panel-pad" id="daily-sign"></div>
+          <div class="panel panel-pad" id="daily-tasks"></div>
+        </div>
+        <div class="notice" style="margin-top: 12px">
+          <span class="dot"></span
+          ><span
+            >🎫 当前持有皮肤券 <b id="skin-tickets" style="color: var(--gold)">0</b> 张 · 点右上角 🎨
+            兑换皮肤或转换为钱(1张=¥500)</span
+          ><button class="mini-btn" id="btn-quick-convert" style="margin-left: auto">转换为钱</button>
+        </div>
+      </div>
+
+      <!-- ============ 页面5: 数据 ============ -->
+      <div class="page" id="page-data">
+        <div class="page-head">
+          <h2>数据</h2>
+          <p>抽卡分布 · 收支走势 · 图鉴进度 · 全部本地统计（并不实时）</p>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap">
+          <button class="mini-btn" id="btn-export-ledger">📥 导出收支CSV</button
+          ><button class="mini-btn" id="btn-export-hist">📥 导出出货CSV</button
+          ><span style="font-size: 11px; color: var(--faint); align-self: center"
+            >含当前全部本地记录（收支80/出货100）</span
+          >
+        </div>
+        <div class="data-grid">
+          <div class="panel panel-pad">
+            <div class="panel-title">📊 抽卡分布</div>
+            <div id="wrap-chart-bar"><canvas id="chart-bar"></canvas></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="panel-title">📈 余额走势</div>
+            <div id="wrap-chart-line"><canvas id="chart-line"></canvas></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="panel-title">🍩 稀有度占比</div>
+            <div id="wrap-chart-donut"><canvas id="chart-donut"></canvas></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="panel-title">🗂️ 图鉴进度</div>
+            <div id="wrap-chart-dex"><canvas id="chart-dex"></canvas></div>
+          </div>
+          <div class="panel panel-pad" style="grid-column: 1/-1">
+            <div class="panel-title">🏭 厂商分布（已获得）</div>
+            <div id="wrap-chart-vendor"><canvas id="chart-vendor"></canvas></div>
+          </div>
+          <div class="panel panel-pad" style="grid-column: 1/-1">
+            <div class="panel-title">🎲 出货记录（最近 100 次）</div>
+            <div id="gacha-hist"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      TokenGacha 中转站 · 本站为抽卡模拟器，与任何真实中转站无关<br />模型与智能指数参考
+      <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis</a> ·
+      图标来自 <a href="https://lobehub.com/icons" target="_blank">@lobehub/icons</a>
+    </footer>
+    <div
+      style="text-align: center; color: var(--faint); font-size: 10px; line-height: 1.9; padding-bottom: 12px"
+    >
+      原项目--<a href="https://github.com/Animnia/TokenGacha" target="_blank">GitHub</a><br />
+      本项目--<a href="https://github.com/Fihag/TokenGacha-Enhanced" target="_blank">Github</a>
+    </div>
+
+    <!-- 抽卡动画层 -->
+    <div id="overlay" role="dialog" aria-modal="true" aria-label="抽卡结果">
+      <button id="skip-btn" aria-label="跳过动画">跳过 ▶▶</button>
+      <label
+        style="
+          position: absolute;
+          top: 18px;
+          left: 22px;
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          font-size: 12.5px;
+          color: var(--dim);
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: 10px;
+          padding: 8px 12px;
+          cursor: pointer;
+          user-select: none;
+        "
+        ><input type="checkbox" id="chk-auto-skip" /> 自动跳过动画</label
+      >
+      <h2 id="overlay-title">✨ 抽卡结果 ✨</h2>
+      <div class="gacha-row" id="gacha-row"></div>
+      <div class="gacha-summary" id="gacha-summary"></div>
+      <button id="close-overlay">收入卡库</button>
+    </div>
+
+    <!-- 彩蛋层 -->
+    <div id="goldflash"></div>
+    <div class="cooling" id="cooling" hidden>
+      <div class="cool-box">
+        <div class="cool-txt">🧊 数据中心冷却中...</div>
+        <div class="cool-bar"><i></i></div>
+      </div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="modal-mask" id="modal-mask" role="dialog" aria-modal="true" aria-label="弹窗">
+      <div class="modal" id="modal-box" role="document"></div>
+    </div>
+
+    <script src="js/config.js?v=2"></script>
+    <script src="js/validate.js?v=2"></script>
+    <script src="js/fx.js?v=2"></script>
+    <script src="js/state.js?v=2"></script>
+    <script src="js/economy.js?v=2"></script>
+    <script src="js/core.js?v=2"></script>
+    <script src="js/craft.js?v=2"></script>
+    <script src="js/market.js?v=2"></script>
+    <script src="js/ui/router.js?v=2"></script>
+    <script src="js/ui/render.js?v=2"></script>
+    <script src="js/ui/gacha.js?v=2"></script>
+    <script src="js/ui/work.js?v=2"></script>
+    <script src="js/ui/modals.js?v=2"></script>
+    <script src="js/ui/share.js?v=2"></script>
+    <script src="js/ui/boot.js?v=2"></script>
+    <script src="js/banner.js?v=2"></script>
+    <script src="js/daily.js?v=2"></script>
+    <script src="js/skins.js?v=2"></script>
+    <script src="js/analytics.js?v=2"></script>
+    <script>
+      // PWA
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+      }
+      // 极简埋点（控制台可见，预留 Cloudflare GA）
+      window.tgTrack = function (evt, data) {
+        try {
+          console.debug("[TG]", evt, data || "");
+        } catch (e) {}
+      };
+      document.addEventListener("DOMContentLoaded", () =>
+        window.tgTrack("page_view", { hash: location.hash || "#buy" })
+      );
+      window.addEventListener("hashchange", () => window.tgTrack("nav", { hash: location.hash }));
+    </script>
+  </body>
+</html>

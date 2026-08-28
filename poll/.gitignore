@@ -1,0 +1,10 @@
+# 运行配置(含真实 API Key / 密码, 不进仓库)
+config.json
+
+# 日志与临时文件
+*.log
+test/out.txt
+test/*.txt
+
+# 依赖
+node_modules/

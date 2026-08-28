@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poll API · 多账户轮询代理</title>
+<link rel="stylesheet" href="/admin/style.css">
+</head>
+<body>
+<div id="login-view" class="login-wrap hidden">
+  <div class="login-box">
+    <h2>Poll API 管理后台</h2>
+    <input id="login-user" placeholder="用户名" autocomplete="username">
+    <input id="login-pass" type="password" placeholder="密码" autocomplete="current-password">
+    <button id="login-btn" class="btn primary">登 录</button>
+    <div id="login-err" class="err"></div>
+  </div>
+</div>
+
+<div id="main-view" class="hidden">
+  <header>
+    <div class="brand"><span class="logo">⟳</span> Poll API <span class="tag">多账户轮询代理</span></div>
+    <div class="header-right">
+      <span class="endpoint" id="endpoint-hint"></span>
+      <button id="refresh-btn" class="btn">刷新</button>
+      <button id="settings-btn" class="btn">设置</button>
+      <button id="logout-btn" class="btn ghost">登出</button>
+    </div>
+  </header>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>账户列表</h3>
+      <button id="add-account-btn" class="btn primary">+ 添加账户</button>
+    </div>
+    <table id="acc-table">
+      <thead>
+        <tr>
+          <th>名称</th><th>类型</th><th>权重</th><th>模型</th><th>余额</th>
+          <th>请求/成功/失败</th><th>Tokens(进/出)</th><th>状态</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h3>最近日志</h3></div>
+    <div id="log-box" class="log-box"></div>
+  </section>
+</div>
+
+<!-- 账户编辑弹窗 -->
+<div id="acc-modal" class="modal-mask hidden">
+  <div class="modal">
+    <h3 id="acc-modal-title">添加账户</h3>
+    <div class="form-grid">
+      <label>名称 <input id="f-name" placeholder="如 deepseek-a"></label>
+      <label>类型
+        <select id="f-type">
+          <option value="openai-compatible">openai-compatible</option>
+          <option value="anthropic">anthropic</option>
+          <option value="gemini">gemini</option>
+        </select>
+      </label>
+      <label class="span2">上游 BaseURL <input id="f-baseurl" placeholder="基础地址, 不要带 /v1/chat/completions, 如 https://api.deepseek.com"></label>
+      <label class="span2">API Key <input id="f-apikey" placeholder="sk-..."></label>
+      <label>权重(1-99) <input id="f-weight" type="number" value="1" min="1" max="99"></label>
+      <label>启用 <select id="f-enabled"><option value="1">是</option><option value="0">否</option></select></label>
+      <label class="span2">模型白名单(搜索添加, 留空=全部)
+        <div class="cat-picker" id="f-models-picker"></div></label>
+      <label class="span2">备注 <input id="f-note" placeholder="可选"></label>
+    </div>
+    <div class="modal-actions">
+      <button id="acc-save" class="btn primary">保存</button>
+      <button id="acc-cancel" class="btn">取消</button>
+    </div>
+    <div id="acc-err" class="err"></div>
+  </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div id="set-modal" class="modal-mask hidden">
+  <div class="modal">
+    <h3>全局设置</h3>
+    <div class="form-grid">
+      <label class="span2">下游 API Keys(逗号分隔, 留空=开放)
+        <input id="s-keys" placeholder="sk-master-1, sk-master-2"></label>
+      <label>管理员用户名 <input id="s-adminuser"></label>
+      <label>管理员密码 <input id="s-adminpass"></label>
+      <label>失败重试次数 <input id="s-maxretries" type="number" min="0"></label>
+      <label>冷却秒数(基数) <input id="s-cooldown" type="number" min="1"></label>
+      <label>冷却最大秒数 <input id="s-cooldownmax" type="number" min="1"></label>
+      <label>余额检查间隔(秒) <input id="s-balinterval" type="number" min="60"></label>
+      <label class="span2">测试模型(测试连接时用它发真实对话, 留空=仅测连通性)
+        <div class="cat-picker" id="s-testmodel-picker"></div></label>
+    </div>
+    <p class="tip">端口、轮询策略等修改需编辑 config.json 后重启生效。</p>
+    <div class="modal-actions">
+      <button id="set-save" class="btn primary">保存</button>
+      <button id="set-cancel" class="btn">取消</button>
+    </div>
+    <div id="set-err" class="err"></div>
+  </div>
+</div>
+
+<script src="/admin/app.js"></script>
+</body>
+</html>

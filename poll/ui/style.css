@@ -1,0 +1,186 @@
+:root {
+  --paper: #f6edd8;
+  --card: #fffaf0;
+  --ink: #3f3227;
+  --ink2: #8a7a68;
+  --line: #e6d9bd;
+  --accent: #d95b2b;
+  --accent-deep: #7a2d16;
+  --green: #3a7d44;
+  --red: #c0392b;
+  --yellow: #b7791f;
+  --shadow: rgba(96, 72, 38, .22);
+  --font: "Comic Sans MS", "Segoe Print", "Chalkboard SE", "KaiTi", "STKaiti", "楷体", "YouYuan", "幼圆", cursive, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+::selection { background: #f7d794; color: var(--ink); }
+
+body {
+  background-color: var(--paper);
+  background-image:
+    repeating-linear-gradient(transparent, transparent 27px, rgba(160, 130, 90, .09) 28px),
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.5), transparent 40%),
+    radial-gradient(circle at 88% 92%, rgba(255,255,255,.4), transparent 45%);
+  color: var(--ink);
+  font: 14px/1.65 var(--font);
+  padding: 0 20px 40px;
+}
+.hidden { display: none !important; }
+
+/* ---- 手绘描边 + 影子 ---- */
+.sketch, .stat, .panel, .login-box, .modal, .btn, .badge {
+  border: 2px solid var(--ink);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 6px; margin-bottom: 22px;
+}
+.brand {
+  font-size: 24px; font-weight: 700; letter-spacing: .5px;
+  color: var(--accent-deep);
+  transform: rotate(-0.6deg);
+  text-shadow: 1px 1px 0 #fff;
+}
+.brand .logo { color: var(--accent); margin-right: 8px; font-size: 26px; }
+.brand .tag {
+  font-size: 13px; font-weight: 400; color: var(--ink2);
+  border: 2px dashed var(--ink2); border-radius: 10px;
+  padding: 1px 10px; margin-left: 10px;
+  transform: rotate(0.8deg);
+}
+.header-right { display: flex; gap: 10px; align-items: center; }
+.endpoint { color: var(--ink2); font-size: 12px; margin-right: 8px; }
+
+/* ---- 统计卡片: 相册贴纸感 ---- */
+.stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat { background: var(--card); padding: 12px 14px; }
+.stat:nth-child(odd) { transform: rotate(-1deg); }
+.stat:nth-child(even) { transform: rotate(1deg); }
+.stat:nth-child(3n) { transform: rotate(0.4deg); }
+.stat .v { font-size: 24px; font-weight: 700; color: var(--accent-deep); }
+.stat .k { color: var(--ink2); font-size: 12px; }
+
+/* ---- 面板 ---- */
+.panel { background: var(--card); padding: 16px 18px; margin-bottom: 22px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.panel-head h3 {
+  font-size: 16px; color: var(--accent-deep);
+  border-bottom: 2px dashed var(--ink2); padding-bottom: 2px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 10px; vertical-align: middle; }
+th { color: var(--ink2); font-size: 12px; font-weight: 700; border-bottom: 2px dashed var(--ink); white-space: nowrap; }
+td { font-size: 13px; border-bottom: 1px dashed var(--line); }
+tr:hover td { background: rgba(247, 215, 148, .22); }
+
+.tag {
+  display: inline-block; background: #fdf6e3; border: 1.5px solid var(--ink);
+  border-radius: 8px 4px 8px 4px; padding: 0 6px; font-size: 11px; margin: 1px 2px; color: var(--ink);
+}
+.badge { border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; padding: 1px 9px; font-size: 11px; font-weight: 700; }
+.badge.on { background: rgba(58,125,68,.16); color: var(--green); }
+.badge.off { background: rgba(138,122,104,.16); color: var(--ink2); }
+.badge.cooldown { background: rgba(183,121,31,.16); color: var(--yellow); }
+.muted { color: var(--ink2); }
+
+/* ---- 按钮: 马克笔手绘 ---- */
+.btn {
+  font-family: inherit; color: var(--ink);
+  background: #fffdf5; border: 2px solid var(--ink);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  box-shadow: 2px 2px 0 var(--shadow);
+  padding: 5px 14px; cursor: pointer; font-size: 13px;
+  transition: transform .06s, box-shadow .06s;
+}
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shadow); background: #ffefce; }
+.btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--shadow); }
+.btn.primary { background: var(--accent); border-color: var(--accent-deep); color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.2); }
+.btn.ghost { background: transparent; box-shadow: none; }
+.btn.danger { color: var(--red); border-color: var(--red); background: #fff7f4; }
+.btn.sm { padding: 2px 9px; font-size: 12px; }
+
+.log-box {
+  max-height: 260px; overflow-y: auto;
+  font-family: Consolas, "Courier New", monospace; font-size: 12px; color: var(--ink2);
+  background: repeating-linear-gradient(transparent, transparent 20px, rgba(160,130,90,.10) 21px);
+}
+.log-box div { padding: 2px 4px; }
+.log-box .fail { color: var(--red); font-weight: 700; }
+
+.err { color: var(--red); font-size: 12px; margin-top: 10px; min-height: 16px; font-weight: 700; }
+
+/* ---- 登录 ---- */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.login-box {
+  width: 340px; background: var(--card); padding: 30px;
+  display: flex; flex-direction: column; gap: 12px;
+  transform: rotate(-0.5deg);
+}
+.login-box h2 { text-align: center; margin-bottom: 8px; color: var(--accent-deep); }
+.login-box input { padding: 10px; border: 2px solid var(--ink); border-radius: 10px 6px 10px 6px; background: #fffdf7; color: var(--ink); font-family: inherit; }
+
+/* ---- 弹窗 ---- */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(63, 50, 39, .45);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal {
+  width: 660px; max-width: 94vw; background: var(--card);
+  padding: 24px; max-height: 90vh; overflow-y: auto;
+  transform: rotate(-0.4deg);
+}
+.modal h3 { margin-bottom: 14px; color: var(--accent-deep); border-bottom: 2px dashed var(--ink2); padding-bottom: 4px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid .span2 { grid-column: span 2; }
+.form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink2); }
+.form-grid input, .form-grid select {
+  padding: 8px; border: 2px solid var(--ink); border-radius: 10px 6px 10px 6px;
+  background: #fffdf7; color: var(--ink); font-family: inherit; font-size: 13px;
+}
+.form-grid input:focus, .form-grid select:focus { outline: none; border-color: var(--accent); background: #fff6e0; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.tip { color: var(--ink2); font-size: 12px; margin-top: 12px; }
+.mono { font-family: Consolas, monospace; }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb { background: #d8c49a; border: 2px solid var(--ink); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- 可搜索模型选择器 ---- */
+.cat-picker { position: relative; }
+.cat-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+.mchip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #fdf3d9; border: 2px solid var(--ink); color: var(--ink);
+  border-radius: 8px 4px 8px 4px; padding: 1px 7px; font-size: 12px; font-weight: 700;
+  box-shadow: 1px 1px 0 var(--shadow);
+}
+.mchip i {
+  font-style: normal; cursor: pointer; color: var(--red);
+  font-size: 13px; line-height: 1; padding: 0 1px;
+}
+.mchip i:hover { color: #fff; background: var(--red); border-radius: 50%; }
+.cat-input {
+  width: 100%; padding: 8px; border: 2px solid var(--ink);
+  border-radius: 10px 6px 10px 6px; background: #fffdf7; color: var(--ink);
+  font-family: inherit; font-size: 13px;
+}
+.cat-input:focus { outline: none; border-color: var(--accent); background: #fff6e0; }
+.cat-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
+  max-height: 260px; overflow-y: auto;
+  background: #fffaf0; border: 2px solid var(--ink);
+  border-radius: 10px 4px 10px 4px; box-shadow: 3px 3px 0 var(--shadow);
+}
+.cat-item {
+  padding: 7px 10px; cursor: pointer; font-size: 13px; color: var(--ink);
+  border-bottom: 1px dashed var(--line);
+}
+.cat-item:hover { background: rgba(247, 215, 148, .4); }
+.cat-item.sel { background: rgba(217, 91, 43, .15); color: var(--accent-deep); }
+.cat-item.sel::after { content: ' ✓'; color: var(--accent); font-weight: 700; }
+.cat-empty { padding: 10px; color: var(--ink2); font-size: 12px; }

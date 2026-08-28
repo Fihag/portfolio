@@ -1,0 +1,181 @@
+        /* ===== HUD ===== */
+        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
+        #hud-top {
+            position: absolute; top: 10px; left: 12px; right: 12px;
+            display: flex; align-items: flex-start; justify-content: space-between;
+        }
+        .hud-left { display: flex; flex-direction: column; gap: 5px; }
+        .hud-bar {
+            position: relative; width: 190px; height: 20px;
+            border-radius: 12px; overflow: hidden;
+            background: #4a2c14;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.35), 0 2px 0 rgba(255,255,255,0.12);
+        }
+        .hud-fill { position: absolute; top: 0; left: 0; bottom: 0; border-radius: 12px; width: 100%; transition: width 0.15s linear; }
+        .hud-hp .hud-fill { background: linear-gradient(180deg, #ff9494, #ff5a5a); }
+        .hud-xp { height: 14px; }
+        .hud-xp .hud-fill { background: linear-gradient(180deg, #ffd96b, #ffb93c); }
+        .hud-text {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 11px; font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.65); letter-spacing: 0.03em;
+        }
+        .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+        .hud-stat {
+            background: rgba(91,52,22,0.65); border: 2px solid var(--line);
+            border-radius: 14px; padding: 3px 12px;
+            color: var(--cream); font-size: 13px; font-weight: bold;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+        }
+        #hud-boss {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: min(420px, 58vw); display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .hud-boss-name { color: var(--cream); font-weight: bold; font-size: 13px; text-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+        .hud-boss-bar { width: 100%; height: 12px; }
+        .hud-boss-bar .hud-fill { background: linear-gradient(180deg, #ff7d7d, #d63b3b); }
+        #hud-shield {
+            height: 6px; border-radius: 4px; display: none;
+            background: linear-gradient(90deg, #c86bff, #ff7be0);
+            box-shadow: 0 0 8px rgba(200,107,255,0.8);
+        }
+        #hud-weps {
+            position: absolute; left: 12px; bottom: 10px;
+            display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+            font-size: 12px; color: var(--cream);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+        .chip {
+            display: inline-block; background: rgba(255,227,194,0.92);
+            color: var(--brown); border: 2px solid var(--line);
+            border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: bold;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.18);
+        }
+        #hud-warning {
+            position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            font-size: 26px; font-weight: bold; color: var(--coral);
+            text-shadow: 0 3px 0 rgba(0,0,0,0.35), 0 0 14px rgba(255,107,107,0.5);
+            display: none; letter-spacing: 0.04em; white-space: nowrap;
+        }
+        #hud-hint {
+            position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
+            font-size: 12px; color: rgba(255,246,232,0.78); display: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6); white-space: nowrap;
+        }
+
+        /* ===== 暂停遮罩 ===== */
+        #pause-overlay {
+            position: absolute; inset: 0; z-index: 25;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(43,26,18,0.6);
+        }
+        .pause-box {
+            background: var(--cream); border: 4px solid var(--orange-deep);
+            border-radius: 20px; padding: 22px 40px; text-align: center;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.25), 0 0 40px rgba(255,140,60,0.35);
+        }
+        .pause-title { font-size: 26px; font-weight: bold; color: var(--brown); margin-bottom: 6px; }
+        .pause-sub { font-size: 13px; color: var(--brown-soft); }
+
+        /* ===== 顶部按钮 ===== */
+        #ui-buttons {
+            position: absolute; top: 74px; right: 10px; z-index: 30;
+            display: flex; gap: 6px; pointer-events: all;
+        }
+        #ui-buttons button {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid var(--line); background: rgba(255,246,232,0.85);
+            color: var(--brown); font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2); transition: all 0.15s;
+        }
+        #ui-buttons button:hover { transform: translateY(-1px) scale(1.05); border-color: var(--orange); }
+        #ui-buttons button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+        #ui-btn-gap { width: 26px; }
+
+        /* ===== 全屏按钮（独立右下角，避免与右上角暂停/静音/死神之指挤在一起） ===== */
+        #btn-fs {
+            position: absolute; right: calc(12px + env(safe-area-inset-right, 0px));
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            z-index: 45; width: 44px; height: 44px; border-radius: 50%;
+            border: 2px solid var(--line); background: rgba(255,246,232,0.85);
+            color: var(--brown); cursor: pointer; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2); transition: all 0.15s;
+        }
+        #btn-fs svg { width: 22px; height: 22px; }
+        #btn-fs:hover { transform: translateY(-1px) scale(1.05); border-color: var(--orange); }
+        #btn-fs:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+        .touch-mode #btn-fs { width: 54px; height: 54px; }
+        .touch-mode #btn-fs svg { width: 26px; height: 26px; }
+
+        /* ===== 全屏提示浮层 ===== */
+        #fs-toast {
+            position: absolute; left: 50%; bottom: 20%; transform: translateX(-50%) translateY(8px);
+            background: rgba(43,26,18,0.88); color: var(--cream);
+            border: 2px solid var(--line); border-radius: 12px;
+            padding: 8px 18px; font-size: 13px; z-index: 60; pointer-events: none;
+            opacity: 0; transition: opacity 0.2s, transform 0.2s; white-space: nowrap;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+        }
+        #fs-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ===== 移动端 HUD 适配 ===== */
+        @media (max-width: 600px) {
+            #hud-top { top: calc(8px + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; }
+            .hud-left { gap: 4px; }
+            .hud-bar { width: min(180px, 38vw); height: 18px; border-radius: 10px; }
+            .hud-xp { height: 12px; }
+            .hud-text { font-size: 10px; }
+            .hud-stat { font-size: 12px; padding: 2px 10px; border-radius: 12px; }
+            #hud-boss { width: min(320px, 50vw); gap: 2px; }
+            .hud-boss-name { font-size: 12px; }
+            #hud-weps { left: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); gap: 4px; font-size: 11px; }
+            .chip { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+            #hud-warning { font-size: 20px; top: 26%; }
+            #hud-hint { bottom: 30px; font-size: 11px; }
+            #ui-buttons { top: calc(70px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); }
+            #btn-fs { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+        }
+        .touch-mode #hud-weps { font-size: 13px; }
+        .touch-mode .chip { font-size: 12px; padding: 3px 9px; }
+        .touch-mode #hud-hint { font-size: 13px; }
+
+        /* ===== 死神之指（隐藏功能） ===== */
+        #btn-death-mark {
+            position: relative; overflow: hidden;
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 2px solid #7a0000; background: radial-gradient(circle at 30% 30%, #b30000, #5a0000);
+            color: #ffd0d0; font-size: 18px; line-height: 1; cursor: pointer; padding: 0;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.5), 0 0 12px rgba(255,0,0,0.45);
+            transition: all 0.15s;
+        }
+        #btn-death-mark:hover { transform: translateY(-1px) scale(1.08); border-color: #ff2222; box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 18px rgba(255,0,0,0.7); }
+        #btn-death-mark:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+        #btn-death-mark.death-auto { box-shadow: 0 3px 0 rgba(0,0,0,0.5), 0 0 12px rgba(255,0,0,0.45), 0 0 0 3px rgba(255,60,60,0.55); }
+
+        #death-panel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; pointer-events: all; z-index: 25;
+            flex-direction: column; align-items: center; gap: 12px;
+            min-width: 340px; max-width: 92vw; padding: 22px 20px;
+            background: radial-gradient(ellipse at 50% 0%, #3a0000, #140000 70%);
+            border: 3px solid #8b0000; border-radius: 16px;
+            box-shadow: 0 0 60px rgba(255,0,0,0.5), inset 0 0 40px rgba(120,0,0,0.4);
+            color: #ffdada; text-align: center;
+        }
+        #death-panel h2 {
+            margin: 0; font-size: 22px; color: #ff4444; letter-spacing: 0.12em;
+            text-shadow: 0 0 14px rgba(255,0,0,0.8); display: flex; align-items: center; gap: 8px;
+        }
+        #death-panel .dp-desc { font-size: 13px; color: #ffb0b0; line-height: 1.6; }
+        #death-panel .dp-desc b { color: #ff7777; }
+        #death-panel .dp-cost { font-size: 14px; color: #ff5555; font-weight: bold; margin-top: 2px; }
+        #death-panel .dp-btns { display: flex; gap: 12px; margin-top: 4px; }
+        #death-panel .dp-btns button {
+            padding: 8px 20px; border-radius: 8px; border: 2px solid #7a0000;
+            background: #4a0000; color: #ffc0c0; font-size: 14px; cursor: pointer; transition: all 0.15s;
+        }
+        #death-panel .dp-btns button:hover { background: #6a0000; border-color: #ff2222; transform: scale(1.04); }
+        #death-panel .dp-btns button.dp-confirm { background: linear-gradient(180deg, #8b0000, #4a0000); border-color: #ff3333; font-weight: bold; }
+        #death-panel .dp-tip { font-size: 11px; color: #a06060; }

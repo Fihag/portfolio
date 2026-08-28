@@ -1,0 +1,22 @@
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #2b1a12;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw; overflow: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            user-select: none; -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+        }
+        #game-wrapper {
+            position: relative; width: 100vw; height: 100vh;
+            max-width: 900px; max-height: 600px; aspect-ratio: 3/2;
+            border: 4px solid #5b3416;
+            border-radius: 18px; overflow: hidden;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.25), 0 0 60px rgba(255,140,60,0.18);
+            background: #2b1a12;
+        }
+        @media (max-width: 768px) {
+            #game-wrapper { border-radius: 0; border: none; max-width: 100vw; max-height: 100vh; aspect-ratio: auto; height: 100vh; height: 100dvh; }
+        }
+        body.in-fullscreen #game-wrapper { border: none; border-radius: 0; max-width: 100vw; max-height: 100vh; }
+        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
