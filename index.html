@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fihag · 作品集</title>
+  <meta name="description" content="Fihag 的个人作品集：肉鸽生存、抽卡模拟、联机推理、终端模拟器等八个零依赖小项目。">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="cursor-glow" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top">Fihag<span class="brand-dot" aria-hidden="true"></span></a>
+      <nav aria-label="主导航">
+        <ul class="nav-list">
+          <li><a class="nav-link u-link magnetic" href="#games">游戏</a></li>
+          <li><a class="nav-link u-link magnetic" href="#tools">工具</a></li>
+          <li><a class="nav-link u-link magnetic" href="#about">关于</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero container" id="top">
+      <p class="hero-kicker" aria-label="全部亲手写的 · 零依赖"><span class="type-text">全部亲手写的 · 零依赖</span><span class="type-cursor" aria-hidden="true"></span></p>
+      <h1 class="hero-title" data-split>
+        把想法做成<br>
+        <em>可以玩</em>的东西
+      </h1>
+      <p class="hero-sub reveal">
+        从 Canvas 肉鸽生存、抽卡经营模拟，到浏览器里的 Unix 终端和拼豆库存管理。
+        八个项目，全部零依赖、零构建，打开就能玩。
+      </p>
+      <div class="hero-actions reveal">
+        <a class="btn btn-primary magnetic" href="#games">逛逛项目</a>
+        <a class="btn btn-ghost u-link magnetic" href="#about">关于我</a>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="项目数据">
+      <div class="container stats-grid">
+        <div class="stat reveal">
+          <span class="stat-num"><span data-count="8">8</span></span>
+          <span class="stat-label">个项目</span>
+        </div>
+        <div class="stat reveal">
+          <span class="stat-num"><span data-count="2">2</span></span>
+          <span class="stat-label">个已上线</span>
+        </div>
+        <div class="stat reveal">
+          <span class="stat-num"><span data-count="30">30</span>+</span>
+          <span class="stat-label">条终端命令</span>
+        </div>
+        <div class="stat reveal">
+          <span class="stat-num"><span data-count="221">221</span></span>
+          <span class="stat-label">个拼豆色号</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container" id="games" aria-labelledby="games-title">
+      <div class="section-head reveal">
+        <h2 class="section-title" id="games-title">游戏</h2>
+        <p class="section-count" aria-hidden="true">04</p>
+      </div>
+      <div class="card-grid">
+        <article class="card tilt reveal">
+          <span class="card-num" aria-hidden="true">01</span>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="tag tag-live">已上线</span>
+              <span class="tag">Canvas</span>
+            </div>
+            <h3 class="card-title">魔法幸存者</h3>
+            <p class="card-desc">Canvas 肉鸽生存：武器进化、五档难度、Boss 战、灵魂宝库天赋与圣物。</p>
+            <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/rougelike" target="_blank" rel="noopener">源码</a></p>
+          </div>
+          <a class="card-cover" href="https://rougelike-13h.pages.dev" aria-label="打开魔法幸存者（新窗口）" target="_blank" rel="noopener"></a>
+        </article>
+
+        <article class="card tilt reveal">
+          <span class="card-num" aria-hidden="true">02</span>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="tag tag-live">已上线</span>
+              <span class="tag">PWA</span>
+              <span class="tag">模拟经营</span>
+            </div>
+            <h3 class="card-title">TokenGacha</h3>
+            <p class="card-desc">虚构 LLM API 中转站盲盒：抽模型卡变 token 接私活，限定池轮换、黑市与数据图表。</p>
+            <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/tokengacha" target="_blank" rel="noopener">源码</a></p>
+          </div>
+          <a class="card-cover" href="https://tokengacha.pages.dev" aria-label="打开 TokenGacha（新窗口）" target="_blank" rel="noopener"></a>
+        </article>
+
+        <article class="card tilt reveal">
+          <span class="card-num" aria-hidden="true">03</span>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="tag">玻璃拟态</span>
+              <span class="tag">猜数冒险</span>
+            </div>
+            <h3 class="card-title">数字航海</h3>
+            <p class="card-desc">海洋主题猜数冒险：剧情、炼狱、双生、闪电、迷雾、卧底六大海域，道具商店与云端存档。</p>
+            <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/%E6%95%B0%E5%AD%97%E8%88%AA%E6%B5%B7" target="_blank" rel="noopener">源码</a></p>
+          </div>
+          <a class="card-cover" href="/hanghai/" aria-label="打开数字航海（站内部署路径）"></a>
+        </article>
+
+        <article class="card tilt reveal">
+          <span class="card-num" aria-hidden="true">04</span>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="tag">联机</span>
+              <span class="tag">React</span>
+            </div>
+            <h3 class="card-title">海龟汤在线推理</h3>
+            <p class="card-desc">多人联机情景推理：房主出题或 AI 生成，玩家轮流提问，提交汤底由房主判定。</p>
+            <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/turtle-soup" target="_blank" rel="noopener">源码</a></p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <div class="mq-group">
+          <span class="mq-item">JavaScript</span><span class="mq-dot"></span>
+          <span class="mq-item">Canvas</span><span class="mq-dot"></span>
+          <span class="mq-item">PWA</span><span class="mq-dot"></span>
+          <span class="mq-item">React</span><span class="mq-dot"></span>
+          <span class="mq-item">TypeScript</span><span class="mq-dot"></span>
+          <span class="mq-item">Node.js</span><span class="mq-dot"></span>
+          <span class="mq-item">Socket.IO</span><span class="mq-dot"></span>
+          <span class="mq-item">Tailwind CSS</span><span class="mq-dot"></span>
+          <span class="mq-item">Vite</span><span class="mq-dot"></span>
+          <span class="mq-item">Service Worker</span><span class="mq-dot"></span>
+          <span class="mq-item">localStorage</span><span class="mq-dot"></span>
+          <span class="mq-item">手绘 CSS</span><span class="mq-dot"></span>
+        </div>
+        <div class="mq-group">
+          <span class="mq-item">JavaScript</span><span class="mq-dot"></span>
+          <span class="mq-item">Canvas</span><span class="mq-dot"></span>
+          <span class="mq-item">PWA</span><span class="mq-dot"></span>
+          <span class="mq-item">React</span><span class="mq-dot"></span>
+          <span class="mq-item">TypeScript</span><span class="mq-dot"></span>
+          <span class="mq-item">Node.js</span><span class="mq-dot"></span>
+          <span class="mq-item">Socket.IO</span><span class="mq-dot"></span>
+          <span class="mq-item">Tailwind CSS</span><span class="mq-dot"></span>
+          <span class="mq-item">Vite</span><span class="mq-dot"></span>
+          <span class="mq-item">Service Worker</span><span class="mq-dot"></span>
+          <span class="mq-item">localStorage</span><span class="mq-dot"></span>
+          <span class="mq-item">手绘 CSS</span><span class="mq-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <section class="section section-dark" id="tools" aria-labelledby="tools-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2 class="section-title" id="tools-title">工具</h2>
+          <p class="section-count" aria-hidden="true">04</p>
+        </div>
+        <div class="card-grid">
+          <article class="card tilt reveal">
+            <span class="card-num" aria-hidden="true">05</span>
+            <div class="card-body">
+              <div class="card-meta">
+                <span class="tag">纯前端</span>
+                <span class="tag">零依赖</span>
+              </div>
+              <h3 class="card-title">WebTerminal</h3>
+              <p class="card-desc">浏览器里的类 Unix 终端：虚拟文件系统、约 30 个命令、Tab 补全、ANSI 彩色输出与 AI 对话。</p>
+              <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/web-terminal" target="_blank" rel="noopener">源码</a></p>
+            </div>
+            <a class="card-cover" href="/web-terminal/" aria-label="打开 WebTerminal（站内部署路径）"></a>
+          </article>
+
+          <article class="card tilt reveal">
+            <span class="card-num" aria-hidden="true">06</span>
+            <div class="card-body">
+              <div class="card-meta">
+                <span class="tag">手绘风</span>
+                <span class="tag">localStorage</span>
+              </div>
+              <h3 class="card-title">拼豆库存统计</h3>
+              <p class="card-desc">221 色号分组展示、批量消耗录入、低于 400 颗红色预警、历史撤销与 JSON 导入导出。</p>
+              <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/%E6%8B%BC%E8%B1%86%E7%BB%9F%E8%AE%A1" target="_blank" rel="noopener">源码</a></p>
+            </div>
+            <a class="card-cover" href="/pinbei/" aria-label="打开拼豆库存统计（站内部署路径）"></a>
+          </article>
+
+          <article class="card tilt reveal">
+            <span class="card-num" aria-hidden="true">07</span>
+            <div class="card-body">
+              <div class="card-meta">
+                <span class="tag">调试</span>
+                <span class="tag">内部工具</span>
+              </div>
+              <h3 class="card-title">魔法幸存者·Debug</h3>
+              <p class="card-desc">正式版调试副本：F1 面板调时间流速、自由出怪、改玩家与怪物属性、授予圣物。</p>
+              <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/%E8%82%89%E9%B8%BD" target="_blank" rel="noopener">源码</a></p>
+            </div>
+            <a class="card-cover" href="/pigeon/debug.html" aria-label="打开魔法幸存者调试版 debug.html（站内部署路径）"></a>
+          </article>
+
+          <article class="card tilt reveal">
+            <span class="card-num" aria-hidden="true">08</span>
+            <div class="card-body">
+              <div class="card-meta">
+                <span class="tag">Node 服务</span>
+                <span class="tag">API 代理</span>
+              </div>
+              <h3 class="card-title">Poll API</h3>
+              <p class="card-desc">多上游账户聚合轮询代理：平滑加权、故障冷却切换、余额监控与 Web 管理后台。</p>
+              <p class="card-links"><a class="gh-link" href="https://github.com/Fihag/cc-web/tree/master/poll" target="_blank" rel="noopener">源码</a></p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="quote-section" aria-label="一句话">
+      <div class="container">
+        <blockquote class="quote reveal">
+          先让它<em>跑起来</em>，<br>
+          再让它<em>好看</em>，<br>
+          最后让它<em>有意义</em>。
+        </blockquote>
+      </div>
+    </section>
+
+    <section class="section container about" id="about" aria-labelledby="about-title">
+      <div class="section-head reveal">
+        <h2 class="section-title" id="about-title">关于</h2>
+      </div>
+      <p class="about-text reveal">
+        我是 <strong>Fihag</strong>。这里的东西没有路线图，全凭一时兴起：
+        想玩肉鸽，就写了个 Canvas 幸存者；想省下切 API 的麻烦，就写了个聚合轮询代理；
+        连拼豆的库存，都做成了带红色预警的网页。
+      </p>
+      <p class="about-text reveal">
+        原则很简单：<em>能不依赖就不依赖</em>，<em>能本地跑就本地跑</em>，
+        写完顺手部署到 Cloudflare Pages。这个页面本身也一样——
+        原生 HTML、CSS、JavaScript，一个构建步骤都没有。
+      </p>
+      <div class="about-actions reveal">
+        <a class="btn btn-primary magnetic" href="https://github.com/Fihag/cc-web" target="_blank" rel="noopener">GitHub 仓库</a>
+        <a class="btn btn-ghost u-link magnetic" href="https://rougelike-13h.pages.dev" target="_blank" rel="noopener">先玩最成熟的那个</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-brand">Fihag<span class="brand-dot" aria-hidden="true"></span></p>
+      <p class="footer-note">
+        原生 HTML / CSS / JS · 部署在 Cloudflare Pages ·
+        <a class="u-link footer-gh" href="https://github.com/Fihag/cc-web" target="_blank" rel="noopener">github.com/Fihag/cc-web</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>魔法幸存者</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/hud.css">
+    <link rel="stylesheet" href="css/panels.css">
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud">
+            <div id="hud-top">
+                <div class="hud-left">
+                    <div class="hud-bar hud-hp"><div class="hud-fill" id="hud-hp-fill"></div><span class="hud-text" id="hud-hp-text"></span></div>
+                    <div class="hud-bar hud-xp"><div class="hud-fill" id="hud-xp-fill"></div><span class="hud-text" id="hud-xp-text"></span></div>
+                </div>
+                <div id="hud-boss" style="display:none;">
+                    <div class="hud-boss-name" id="hud-boss-name"></div>
+                    <div class="hud-bar hud-boss-bar"><div class="hud-fill" id="hud-boss-fill"></div></div>
+                    <div id="hud-shield" style="display:none;width:100%;"></div>
+                </div>
+                <div class="hud-right">
+                    <div class="hud-stat"><span class="hud-ico" data-ico="clock"></span><b id="hud-time">0s</b></div>
+                    <div class="hud-stat"><span class="hud-ico" data-ico="skull"></span><b id="hud-kills">0</b></div>
+                </div>
+            </div>
+            <div id="hud-weps"></div>
+            <div id="hud-warning"></div>
+            <div id="hud-hint"></div>
+        </div>
+        <div id="pause-overlay">
+            <div class="pause-box">
+                <div class="pause-title"><span class="title-ico" data-ico="pause"></span>已暂停</div>
+                <div class="pause-sub">按 P 或点击右上角按钮继续</div>
+                <div class="pause-btns">
+                    <button class="pause-btn" id="pause-resume-btn">继续游戏</button>
+                    <button class="pause-btn" id="pause-restart-btn">重新开始本局</button>
+                    <button class="pause-btn" id="pause-menu-btn">返回主菜单</button>
+                </div>
+            </div>
+        </div>
+        <div id="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-logo">魔法幸存者</div>
+                <div class="menu-sub">轻量生存小游戏</div>
+                <div class="menu-sec">
+                    <div class="menu-label">选择难度</div>
+                    <div class="menu-row" id="menu-diffs"></div>
+                </div>
+                <div class="menu-sec">
+                    <div class="menu-label">初始武器</div>
+                    <div class="menu-row" id="menu-weapons"></div>
+                </div>
+                <div class="menu-best" id="menu-best"></div>
+                <div class="menu-meta-row">
+                    <span class="menu-shards" id="menu-shards">灵魂碎片：0</span>
+                    <button class="menu-meta-btn" id="btn-open-meta">灵魂宝库</button>
+                </div>
+                <button class="menu-start" id="menu-start">开始游戏</button>
+                <div class="menu-hint">键鼠 / 触屏均可操作</div>
+            </div>
+        </div>
+        <div id="meta-panel">
+            <div class="meta-box">
+                <h2><span class="title-ico" data-ico="gem"></span>灵魂宝库</h2>
+                <div class="meta-shards" id="meta-shards-show">灵魂碎片：0</div>
+                <div class="meta-tabs">
+                    <button class="meta-tab active" id="meta-tab-talent">天赋</button>
+                    <button class="meta-tab" id="meta-tab-relic">圣物</button>
+                </div>
+                <div class="meta-list" id="meta-list"></div>
+                <div class="meta-btns">
+                    <button id="meta-reset" style="background:linear-gradient(180deg,#ff6b6b,#c0392b);">清空存档</button>
+                    <button id="meta-close">返回</button>
+                </div>
+            </div>
+        </div>
+        <div id="dm-buy-modal">
+            <div class="dm-modal-box">
+                <div class="dm-modal-title"><span class="title-ico" data-ico="skull"></span>死神之指</div>
+                <div class="dm-modal-desc">标记目标，短暂延迟后将其抹杀。解锁后每局自动启用，点击右上角骷髅按钮可随时切换模式。</div>
+                <div class="dm-modal-modes">
+                    <div class="dm-mode dm-mode-manual">
+                        <div class="dm-mode-name">手动模式</div>
+                        <div class="dm-mode-desc">点击敌人即可标记（最多同时锁定 3 名），抹杀后立即空出名额。</div>
+                        <div class="dm-mode-note">可标记 Boss：第 1 次削减 25% 生命、第 2 次 40%、第 3 次直接抹杀！</div>
+                    </div>
+                    <div class="dm-mode dm-mode-auto">
+                        <div class="dm-mode-name">自动模式</div>
+                        <div class="dm-mode-desc">自动标记场上生命最高的敌人，抹杀后立即寻找下一目标，无需操作。</div>
+                        <div class="dm-mode-note">不能攻击 Boss，仅手动模式可标记 Boss。</div>
+                    </div>
+                </div>
+                <div class="dm-modal-foot">击杀被标记的敌人会恢复生命（小怪 +5，Boss +30）。</div>
+                <div class="dm-modal-warn">购买后永久解锁，不可取消。若担心破坏平衡性，可在局内切换为手动模式（自动模式较为强势）。</div>
+                <div class="dm-modal-btns">
+                    <button class="dm-btn-cancel" id="dm-buy-cancel">取消</button>
+                    <button class="dm-btn-confirm" id="dm-buy-confirm">购买（5999 碎片）</button>
+                </div>
+            </div>
+        </div>
+        <div id="levelup-panel">
+            <h2><span class="title-ico" data-ico="trending-up"></span>升级！选择一项能力<span id="levelup-lock-hint" class="lv-lock-hint"></span></h2>
+            <div class="cards" id="levelup-cards"></div>
+            <div class="lv-btns">
+                <button class="skip-btn" id="skip-upgrade"><span class="btn-ico" data-ico="shuffle"></span>换一批</button>
+                <button class="skip-btn skip-xp" id="skip-xp"><span class="btn-ico" data-ico="coins"></span>跳过（+50%经验）</button>
+            </div>
+            <p class="key-hint" style="color:#888;font-size:0.7em;margin:0;">按键盘 1 / 2 / 3 / 4 / 5 快速选择</p>
+        </div>
+        <div id="bossdrop-panel" style="display:none;">
+            <h2><span class="title-ico" data-ico="gift"></span>Boss掉落！选择一件道具</h2>
+            <div class="cards" id="bossdrop-cards"></div>
+        </div>
+        <div id="gameover-overlay">
+            <h2><span class="title-ico" data-ico="skull"></span>你倒下了</h2>
+            <p class="stat">存活时间：<strong id="go-time">0</strong> 秒</p>
+            <p class="stat">击杀敌人：<strong id="go-kills">0</strong></p>
+            <p class="stat">最高等级：<strong id="go-level">1</strong></p>
+            <p class="stat">总伤害：<strong id="go-damage">0</strong></p>
+            <p class="stat">本局灵魂碎片：<strong id="go-shards" style="color:#b06aff;">0</strong></p>
+            <p class="stat">最佳记录：存活 <strong id="go-best-time">0</strong> 秒 · <strong id="go-best-kills">0</strong> 击杀</p>
+            <p class="stat" id="go-newrecord" style="display:none;color:#ffd700;font-weight:bold;"><span class="title-ico" data-ico="trophy"></span>新纪录！</p>
+            <div class="go-btns">
+                <button id="restart-btn"><span class="btn-ico" data-ico="rotate-ccw"></span>再来一局</button>
+                <button id="menu-btn">返回主菜单</button>
+            </div>
+        </div>
+        <div id="ui-buttons">
+            <button id="btn-pause" title="暂停 (P)" data-ico="pause"></button>
+            <button id="btn-mute" title="静音 (M)" data-ico="volume-2"></button>
+            <span id="ui-btn-gap"></span>
+            <button id="btn-death-mark" title="死神之指（点击切换自动/手动）" data-ico="skull" style="display:none;"></button>
+        </div>
+        <button id="btn-fs" title="全屏" data-ico="expand"></button>
+        <div id="fs-toast"></div>
+        </div>
+        <script src="js/00-const.js"></script>
+        <script src="js/01-input.js"></script>
+        <script src="js/02-utils.js"></script>
+        <script src="js/03-skills.js"></script>
+        <script src="js/04-meta.js"></script>
+        <script src="js/05-enemies.js"></script>
+        <script src="js/06-player.js"></script>
+        <script src="js/07-projectiles.js"></script>
+        <script src="js/08-upgrades.js"></script>
+        <script src="js/09-deathmark.js"></script>
+        <script src="js/10-events.js"></script>
+        <script src="js/11-game.js"></script>
+    </body>
+</html>

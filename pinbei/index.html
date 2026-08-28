@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼豆库存统计</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <h1 class="title"><span class="underline-hand">拼豆</span>库存<span class="underline-hand">统计</span></h1>
+    <p class="sub">初始库存 1000 颗/色 · 预警线低于 400 · 共 221 色号</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="panel record-panel">
+    <span class="tape"></span>
+    <h2 class="panel-title">📝 记录消耗</h2>
+    <p class="hint">格式宽松,斜杠/空格/冒号都行,支持批量:<span class="code">A01/5 A03 12 B07:3</span> 或 <span class="code">C01/8 D02/4</span></p>
+    <div class="record-row">
+      <textarea id="consumeInput" rows="2" placeholder="例如:A01/5 A03 12 B07:3"></textarea>
+      <div class="record-btns">
+        <button id="restockBtn" class="secondary">补货</button>
+        <button id="consumeBtn" class="primary big">扣除</button>
+      </div>
+    </div>
+    <div id="recordMsg"></div>
+  </section>
+
+  <nav class="series-tabs" id="seriesTabs"></nav>
+
+  <section class="inventory" id="inventory"></section>
+
+  <section class="panel history-panel">
+    <span class="tape"></span>
+    <h2 class="panel-title">🗒️ 消耗历史</h2>
+    <div id="history"></div>
+  </section>
+
+  <section class="panel data-panel">
+    <span class="tape"></span>
+    <h2 class="panel-title">💾 数据管理</h2>
+    <div class="data-actions">
+      <button id="exportBtn" class="secondary">导出 JSON</button>
+      <label class="btn-file secondary">导入 JSON<input type="file" id="importFile" accept=".json" hidden></label>
+      <button id="resetBtn" class="danger">重置库存</button>
+    </div>
+    <p class="hint">数据自动保存在浏览器本地。导出可备份,换设备时导入恢复。</p>
+  </section>
+
+  <footer class="app-footer">手绘风拼豆库存 · 数据存于浏览器 localStorage</footer>
+</div>
+
+<div class="dlg-mask" id="dlgMask" hidden>
+  <div class="dlg-card">
+    <span class="dlg-tape"></span>
+    <h3 class="dlg-title" id="dlgTitle">确认</h3>
+    <p class="dlg-msg" id="dlgMsg"></p>
+    <div class="dlg-btns">
+      <button id="dlgCancel">取消</button>
+      <button id="dlgOk" class="primary danger">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="dlg-mask" id="quickMask" hidden>
+  <div class="dlg-card quick-card">
+    <span class="dlg-tape"></span>
+    <h3 class="dlg-title">快捷调整 <span id="quickCode" class="quick-code"></span></h3>
+    <p class="quick-stock">当前库存:<span id="quickStock" class="quick-stock-num"></span> 颗</p>
+    <div class="quick-amount">
+      <span class="quick-amount-num" id="quickAmount">0</span><span class="quick-amount-unit">颗</span>
+    </div>
+    <div class="quick-presets" id="quickPresets"></div>
+    <div class="quick-input-row">
+      <input type="number" id="quickInput" min="1" placeholder="自定义数量">
+      <button id="quickAddNum" class="secondary small">添加</button>
+    </div>
+    <div class="quick-actions">
+      <button id="quickConsume" class="primary danger">扣除</button>
+      <button id="quickRestock" class="restock">补货</button>
+    </div>
+    <button id="quickClose" class="quick-close">✕ 关闭</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

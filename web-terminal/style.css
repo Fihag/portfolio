@@ -1,0 +1,184 @@
+/* ============ WebTerminal 样式 ============ */
+:root {
+  --bg:        #0b0f19;
+  --bg-alt:    #101624;
+  --text:      #d6deeb;
+  --text-dim:  #6b7a99;
+  --green:     #4fd6be;
+  --green-dim: #2e8f7f;
+  --cyan:      #82e2ff;
+  --blue:      #82aaff;
+  --yellow:    #ffd580;
+  --red:       #ff6b6b;
+  --magenta:   #d18eff;
+  --prompt:    #4fd6be;
+  --cursor:    rgba(196, 245, 235, 0.9);
+  --font-mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New",
+               "Sarasa Mono SC", "Microsoft YaHei", monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部工具条 */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid #1c2438;
+  font-size: 12px;
+  color: var(--text-dim);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+#toolbar .dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+#toolbar .dot.red   { background: #ff5f57; }
+#toolbar .dot.yellow{ background: #febc2e; }
+#toolbar .dot.green { background: #28c840; }
+
+#toolbar .title {
+  color: var(--text);
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+}
+
+#toolbar .status {
+  margin-left: auto;
+}
+
+#toolbar .status .blink { color: var(--green); }
+
+/* 终端主体 */
+#term {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px 18px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  outline: none;
+  cursor: text;
+}
+
+/* 输出行 */
+.out-line   { display: block; min-height: 1.55em; }
+.out-line.dim { color: var(--text-dim); }
+.out-line.success { color: var(--green); }
+.out-line.error   { color: var(--red); }
+
+/* 输入行 */
+.in-line {
+  display: flex;
+  align-items: baseline;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.prompt {
+  color: var(--prompt);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.prompt .host { color: var(--blue); }
+.prompt .path { color: var(--yellow); font-weight: 400; }
+.prompt .dollar { color: var(--green); }
+
+.input-buffer { position: relative; }
+
+/* 块状光标 */
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.05em;
+  background: var(--cursor);
+  vertical-align: text-bottom;
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* 隐藏输入锚点(移动端软键盘) */
+.hidden-input {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px; height: 1px;
+  opacity: 0;
+}
+
+/* ANSI 颜色 */
+.a-30 { color: #2c3444; } .a-90 { color: #8aa0c0; }
+.a-31 { color: var(--red); }     .a-91 { color: #ff9d9d; }
+.a-32 { color: var(--green); }   .a-92 { color: #7ff0dc; }
+.a-33 { color: var(--yellow); }  .a-93 { color: #ffe9b0; }
+.a-34 { color: var(--blue); }    .a-94 { color: #b4ccff; }
+.a-35 { color: var(--magenta); } .a-95 { color: #e3b7ff; }
+.a-36 { color: var(--cyan); }    .a-96 { color: #b8f0ff; }
+.a-37 { color: #e8edf7; }        .a-97 { color: #ffffff; }
+.a-1  { font-weight: 700; }
+.a-4  { text-decoration: underline; }
+
+/* 滚动条 */
+#term::-webkit-scrollbar { width: 10px; }
+#term::-webkit-scrollbar-track { background: var(--bg); }
+#term::-webkit-scrollbar-thumb {
+  background: #223052;
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+#term::-webkit-scrollbar-thumb:hover { background: #2e4068; }
+
+/* 文本选中 */
+#term ::selection { background: rgba(79, 214, 190, 0.25); }
+
+/* matrix 全屏层 */
+#matrix-layer {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 999;
+  overflow: hidden;
+  cursor: default;
+}
+#matrix-layer canvas { display: block; }
+#matrix-hint {
+  position: absolute;
+  bottom: 12px;
+  width: 100%;
+  text-align: center;
+  color: #0f8;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* 移动端 */
+@media (max-width: 640px) {
+  html, body { font-size: 13px; }
+  #term { padding: 8px 10px 16px; }
+  #toolbar .status { display: none; }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "数字航海 · Digital Navigation Adventure",
+  "short_name": "数字航海",
+  "description": "玻璃拟态风格的海洋主题猜数冒险游戏",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0502",
+  "theme_color": "#0A0502",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

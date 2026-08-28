@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>魔法幸存者</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/hud.css">
+    <link rel="stylesheet" href="css/panels.css">    <link rel="stylesheet" href="css/debug.css">
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud">
+            <div id="hud-top">
+                <div class="hud-left">
+                    <div class="hud-bar hud-hp"><div class="hud-fill" id="hud-hp-fill"></div><span class="hud-text" id="hud-hp-text"></span></div>
+                    <div class="hud-bar hud-xp"><div class="hud-fill" id="hud-xp-fill"></div><span class="hud-text" id="hud-xp-text"></span></div>
+                </div>
+                <div id="hud-boss" style="display:none;">
+                    <div class="hud-boss-name" id="hud-boss-name"></div>
+                    <div class="hud-bar hud-boss-bar"><div class="hud-fill" id="hud-boss-fill"></div></div>
+                    <div id="hud-shield" style="display:none;width:100%;"></div>
+                </div>
+                <div class="hud-right">
+                    <div class="hud-stat"><span class="hud-ico" data-ico="clock"></span><b id="hud-time">0s</b></div>
+                    <div class="hud-stat"><span class="hud-ico" data-ico="skull"></span><b id="hud-kills">0</b></div>
+                </div>
+            </div>
+            <div id="hud-weps"></div>
+            <div id="hud-warning"></div>
+            <div id="hud-hint"></div>
+        </div>
+        <div id="pause-overlay">
+            <div class="pause-box">
+                <div class="pause-title"><span class="title-ico" data-ico="pause"></span>已暂停</div>
+                <div class="pause-sub">按 P 或点击右上角按钮继续</div>
+                <div class="pause-btns">
+                    <button class="pause-btn" id="pause-resume-btn">继续游戏</button>
+                    <button class="pause-btn" id="pause-restart-btn">重新开始本局</button>
+                    <button class="pause-btn" id="pause-menu-btn">返回主菜单</button>
+                </div>
+            </div>
+        </div>
+        <div id="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-logo">魔法幸存者</div>
+                <div class="menu-sub">轻量生存小游戏</div>
+                <div class="menu-sec">
+                    <div class="menu-label">选择难度</div>
+                    <div class="menu-row" id="menu-diffs"></div>
+                </div>
+                <div class="menu-sec">
+                    <div class="menu-label">初始武器</div>
+                    <div class="menu-row" id="menu-weapons"></div>
+                </div>
+                <div class="menu-best" id="menu-best"></div>
+                <div class="menu-meta-row">
+                    <span class="menu-shards" id="menu-shards">灵魂碎片：0</span>
+                    <button class="menu-meta-btn" id="btn-open-meta">灵魂宝库</button>
+                </div>
+                <button class="menu-start" id="menu-start">开始游戏</button>
+                <div class="menu-hint">键鼠 / 触屏均可操作</div>
+            </div>
+        </div>
+        <div id="meta-panel">
+            <div class="meta-box">
+                <h2><span class="title-ico" data-ico="gem"></span>灵魂宝库</h2>
+                <div class="meta-shards" id="meta-shards-show">灵魂碎片：0</div>
+                <div class="meta-tabs">
+                    <button class="meta-tab active" id="meta-tab-talent">天赋</button>
+                    <button class="meta-tab" id="meta-tab-relic">圣物</button>
+                </div>
+                <div class="meta-list" id="meta-list"></div>
+                <div class="meta-btns">
+                    <button id="meta-reset" style="background:linear-gradient(180deg,#ff6b6b,#c0392b);">清空存档</button>
+                    <button id="meta-close">返回</button>
+                </div>
+            </div>
+        </div>
+        <div id="dm-buy-modal">
+            <div class="dm-modal-box">
+                <div class="dm-modal-title"><span class="title-ico" data-ico="skull"></span>死神之指</div>
+                <div class="dm-modal-desc">标记目标，短暂延迟后将其抹杀。解锁后每局自动启用，点击右上角骷髅按钮可随时切换模式。</div>
+                <div class="dm-modal-modes">
+                    <div class="dm-mode dm-mode-manual">
+                        <div class="dm-mode-name">手动模式</div>
+                        <div class="dm-mode-desc">点击敌人即可标记（最多同时锁定 3 名），抹杀后立即空出名额。</div>
+                        <div class="dm-mode-note">可标记 Boss：第 1 次削减 25% 生命、第 2 次 40%、第 3 次直接抹杀！</div>
+                    </div>
+                    <div class="dm-mode dm-mode-auto">
+                        <div class="dm-mode-name">自动模式</div>
+                        <div class="dm-mode-desc">自动标记场上生命最高的敌人，抹杀后立即寻找下一目标，无需操作。</div>
+                        <div class="dm-mode-note">不能攻击 Boss，仅手动模式可标记 Boss。</div>
+                    </div>
+                </div>
+                <div class="dm-modal-foot">击杀被标记的敌人会恢复生命（小怪 +5，Boss +30）。</div>
+                <div class="dm-modal-warn">购买后永久解锁，不可取消。若担心破坏平衡性，可在局内切换为手动模式（自动模式较为强势）。</div>
+                <div class="dm-modal-btns">
+                    <button class="dm-btn-cancel" id="dm-buy-cancel">取消</button>
+                    <button class="dm-btn-confirm" id="dm-buy-confirm">购买（5999 碎片）</button>
+                </div>
+            </div>
+        </div>
+        <div id="levelup-panel">
+            <h2><span class="title-ico" data-ico="trending-up"></span>升级！选择一项能力<span id="levelup-lock-hint" class="lv-lock-hint"></span></h2>
+            <div class="cards" id="levelup-cards"></div>
+            <div class="lv-btns">
+                <button class="skip-btn" id="skip-upgrade"><span class="btn-ico" data-ico="shuffle"></span>换一批</button>
+                <button class="skip-btn skip-xp" id="skip-xp"><span class="btn-ico" data-ico="coins"></span>跳过（+50%经验）</button>
+            </div>
+            <p class="key-hint" style="color:#888;font-size:0.7em;margin:0;">按键盘 1 / 2 / 3 / 4 / 5 快速选择</p>
+        </div>
+        <div id="bossdrop-panel" style="display:none;">
+            <h2><span class="title-ico" data-ico="gift"></span>Boss掉落！选择一件道具</h2>
+            <div class="cards" id="bossdrop-cards"></div>
+        </div>
+        <div id="gameover-overlay">
+            <h2><span class="title-ico" data-ico="skull"></span>你倒下了</h2>
+            <p class="stat">存活时间：<strong id="go-time">0</strong> 秒</p>
+            <p class="stat">击杀敌人：<strong id="go-kills">0</strong></p>
+            <p class="stat">最高等级：<strong id="go-level">1</strong></p>
+            <p class="stat">总伤害：<strong id="go-damage">0</strong></p>
+            <p class="stat">本局灵魂碎片：<strong id="go-shards" style="color:#b06aff;">0</strong></p>
+            <p class="stat">最佳记录：存活 <strong id="go-best-time">0</strong> 秒 · <strong id="go-best-kills">0</strong> 击杀</p>
+            <p class="stat" id="go-newrecord" style="display:none;color:#ffd700;font-weight:bold;"><span class="title-ico" data-ico="trophy"></span>新纪录！</p>
+            <div class="go-btns">
+                <button id="restart-btn"><span class="btn-ico" data-ico="rotate-ccw"></span>再来一局</button>
+                <button id="menu-btn">返回主菜单</button>
+            </div>
+        </div>
+        <div id="ui-buttons">
+            <button id="btn-pause" title="暂停 (P)" data-ico="pause"></button>
+            <button id="btn-mute" title="静音 (M)" data-ico="volume-2"></button>
+            <span id="ui-btn-gap"></span>
+            <button id="btn-death-mark" title="死神之指（点击切换自动/手动）" data-ico="skull" style="display:none;"></button>
+        </div>
+        <button id="btn-fs" title="全屏" data-ico="expand"></button>
+        <div id="fs-toast"></div>
+        <!-- ==================== Debug 模式 ==================== -->
+        <button id="dbg-toggle" title="Debug (F1)" data-ico="wrench"></button>
+        <div id="debug-panel">
+            <div class="dbg-head"><span class="title-ico" data-ico="wrench"></span>Debug 调试面板 <span style="font-weight:normal;font-size:11px;color:#888;">FPS <b id="dbg-fps" class="dbg-mini">60</b></span> <button id="dbg-close" data-ico="x"></button></div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="timer"></span>时间流速</div>
+                <label><span>流速</span><input id="dbg-timescale" type="number" step="0.1" min="0" value="1"><span>×</span></label>
+                <label class="chk"><input id="dbg-pause" type="checkbox"> 暂停时间(冻结全场)</label>
+                <label class="chk"><input id="dbg-pausespawn" type="checkbox"> 暂停自动出怪</label>
+                <div class="dbg-hint">流速 0 = 暂停；2 = 两倍速</div>
+            </div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="ghost"></span>自由出怪</div>
+                <div class="dbg-row">
+                    <select id="dbg-enemytype"></select>
+                    <span>x</span><input id="dbg-enemycount" type="number" min="1" value="1">
+                    <button id="dbg-spawn">生成</button>
+                </div>
+                <div class="dbg-row">
+                    <select id="dbg-bosstype"></select>
+                    <button id="dbg-spawnboss">召唤Boss</button>
+                </div>
+                <div class="dbg-row">
+                    <span>出怪间隔</span><input id="dbg-spawninterval" class="w100" type="number" step="0.1" min="0.05" value="1.2">
+                    <button id="dbg-setinterval">设置</button>
+                </div>
+            </div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="gamepad-2"></span>修改玩家</div>
+                <div class="dbg-row"><span>等级</span><input id="dbg-level" type="number" min="1" value="1"><span>生命</span><input id="dbg-hp" type="number" value="120"></div>
+                <div class="dbg-row"><span>最大生命</span><input id="dbg-maxhp" type="number" value="120"><span>移速</span><input id="dbg-speed" type="number" value="270"></div>
+                <div class="dbg-row"><span>伤害倍率</span><input id="dbg-dmgmult" class="w100" type="number" step="0.1" value="1"><button id="dbg-applyplayer">应用</button></div>
+                <div class="dbg-row">
+                    <button id="dbg-heal">回满血</button>
+                    <button id="dbg-levelup">立即升级</button>
+                </div>
+                <div class="dbg-row">
+                    <button id="dbg-bossdrop">Boss掉落</button>
+                    <button id="dbg-teleport">回中心</button>
+                </div>
+                <div class="dbg-row">
+                    <span>经验</span><input id="dbg-xpamt" type="number" min="1" value="100">
+                    <button id="dbg-addxp">+经验</button>
+                </div>
+                <div class="dbg-title2">武器管理（＋添加 ／ －移除 ／ 满级进化）</div>
+                <div class="dbg-wlist" id="dbg-weapons"></div>
+            </div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="skull"></span>修改怪物</div>
+                <div class="dbg-row"><span>HP×</span><input id="dbg-ehpmult" class="w100" type="number" step="0.1" value="1"></div>
+                <div class="dbg-row"><span>伤害×</span><input id="dbg-edmgmult" class="w100" type="number" step="0.1" value="1"></div>
+                <div class="dbg-row"><span>速度×</span><input id="dbg-espeedmult" class="w100" type="number" step="0.1" value="1"></div>
+                <div class="dbg-row"><span>难度级</span><input id="dbg-difficulty" type="number" min="1" value="1"><button id="dbg-applyenemy">应用(对新怪)</button></div>
+                <div class="dbg-row">
+                    <button id="dbg-killall">秒杀全场</button>
+                    <button id="dbg-clear">清空(无掉落)</button>
+                </div>
+                <div class="dbg-hint">HP/伤害/速度倍率只对之后生成的怪物生效</div>
+            </div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="coins"></span>碎片与圣物</div>
+                <div class="dbg-row"><span>碎片</span><b id="dbg-shards-now" class="dbg-mini">0</b></div>
+                <div class="dbg-row"><span>数量</span><input id="dbg-shardamt" class="w100" type="number" step="100" value="1000"><button id="dbg-shard-add">添加</button><button id="dbg-shard-set">设为</button></div>
+                <div class="dbg-row">
+                    <button id="dbg-shard-p100">+100</button>
+                    <button id="dbg-shard-p1000">+1000</button>
+                    <button id="dbg-shard-zero">清零</button>
+                </div>
+                <div class="dbg-row"><select id="dbg-relicsel"></select></div>
+                <div class="dbg-row">
+                    <button id="dbg-relic-grant">授予</button>
+                    <button id="dbg-relic-up">升级</button>
+                    <button id="dbg-relic-max">满级</button>
+                </div>
+                <div class="dbg-row">
+                    <button id="dbg-relic-toggle">穿戴/卸下</button>
+                    <button id="dbg-relic-remove">移除</button>
+                </div>
+                <div class="dbg-hint">局内缓存类圣物（吸血/荆棘/炸弹/护盾/背水/幻影步/分身/时停）授予或升级后下一局生效</div>
+            </div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="flame"></span>不可能模式调试</div>
+                <div class="dbg-row"><span>词缀概率%</span><input id="dbg-affixchance" class="w100" type="number" min="0" max="100" value="50"><button id="dbg-affix-set">设置</button></div>
+                <label class="chk"><input id="dbg-affixanywhere" type="checkbox"> 所有难度出词缀（默认仅不可能模式）</label>
+                <div class="dbg-hint">影响新刷小怪的词缀掷骰；Boss 出场率不受此控制</div>
+            </div>
+
+            <div class="dbg-sec">
+                <div class="dbg-title"><span class="title-ico" data-ico="skull"></span>隐藏功能</div>
+                <label class="chk"><input id="dbg-deathmark" type="checkbox"> 死神之指（死亡标记）</label>
+                <div class="dbg-hint">开启后右上角出现死亡标记按钮。自动=锁血量最高非Boss；手动=点击选敌（最多3名，可锁幽灵）。Boss按标记次数全局结算：25% / 40% / 直接抹杀</div>
+            </div>
+
+            <div class="dbg-foot">F1 开/关调试面板</div>
+        </div>
+        <script src="js/00-const.js"></script>
+        <script src="js/01-input.js"></script>
+        <script src="js/02-utils.js"></script>
+        <script src="js/03-skills.js"></script>
+        <script src="js/04-meta.js"></script>
+        <script src="js/05-enemies.js"></script>
+        <script src="js/06-player.js"></script>
+        <script src="js/07-projectiles.js"></script>
+        <script src="js/08-upgrades.js"></script>
+        <script src="js/09-deathmark.js"></script>
+        <script src="js/10-events.js"></script>
+        <script src="js/debug.js"></script>
+        <script src="js/11-game.js"></script>
+    </body>
+</html>

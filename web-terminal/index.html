@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebTerminal — 类终端系统</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="toolbar">
+    <span class="dot red"></span>
+    <span class="dot yellow"></span>
+    <span class="dot green"></span>
+    <span class="title">user@webterm: ~</span>
+    <span class="status"><span class="blink">●</span> 已连接 · 虚拟文件系统</span>
+  </div>
+  <div id="term" class="terminal" role="log" aria-live="off"></div>
+  <textarea id="hidden-input" class="hidden-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true"></textarea>
+
+  <!-- 按依赖顺序加载(非 module,file:// 可直接打开) -->
+  <script src="js/ai-config.js"></script>
+  <script src="js/fs.js"></script>
+  <script src="js/commands.js"></script>
+  <script src="js/terminal.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
