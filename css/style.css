@@ -24,7 +24,7 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
 
 body {
   background: var(--bg);
@@ -88,6 +88,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  padding-top: env(safe-area-inset-top);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -150,6 +151,11 @@ body {
 }
 .u-link:hover::after,
 .u-link:focus-visible::after { transform: scaleX(1); }
+
+/* ---- Hero ---- */
+.hero {
+  padding-block: clamp(64px, 12vh, 128px);
+}
 
 /* ---- Hero 打字机 kicker ---- */
 .hero-kicker {
@@ -326,7 +332,7 @@ body {
 .btn-ghost::after { bottom: 0; }
 
 /* ---- 分区 ---- */
-.section { padding-block: 40px; position: relative; z-index: 1; }
+.section { padding-block: 40px; position: relative; z-index: 1; scroll-margin-top: 84px; }
 
 .section-head {
   display: flex;
@@ -584,6 +590,7 @@ body {
   background: var(--accent-soft);
   transform: translateY(-2px);
 }
+.gh-link:active { transform: translateY(1px); }
 
 /* 鼠标位置高光（JS 写入 --mx / --my） */
 .card::before {
@@ -709,7 +716,6 @@ body {
   .container { width: calc(100% - 40px); }
   .header-inner { padding-block: 12px; }
   .nav-list { gap: 18px; }
-  .hero { padding-block: 56px 56px; }
   .hero-sub { font-size: 16px; }
   .card-grid { grid-template-columns: 1fr; }
   .section-dark { padding-block: 56px; }
@@ -720,6 +726,21 @@ body {
   .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
   .mq-item { font-size: 17px; padding-inline: 16px; }
   .quote { max-width: none; }
+}
+
+/* ---- 窄屏（≤380px） ---- */
+@media (max-width: 380px) {
+  .container { width: calc(100% - 32px); }
+  .nav-list { gap: 12px; }
+  .brand { font-size: 16px; }
+  .stat { padding: 20px 16px; }
+}
+
+/* ---- 触屏：加大点击目标 ---- */
+@media (hover: none) {
+  .gh-link { padding: 9px 18px; }
+  .nav-link { padding-block: 8px; }
+  .tag-local { cursor: default; }
 }
 
 /* ---- 触屏 / 减弱动效降级 ---- */

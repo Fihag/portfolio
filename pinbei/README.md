@@ -7,7 +7,7 @@
 直接双击打开 `index.html` 即可(数据存于浏览器 localStorage);或启动本地服务器:
 
 ```powershell
-python -m http.server 8123 --directory 拼豆统计
+python -m http.server 8123
 # 浏览器打开 http://127.0.0.1:8123
 ```
 
@@ -24,7 +24,7 @@ python -m http.server 8123 --directory 拼豆统计
 ## 目录结构
 
 ```
-拼豆统计/
+pinbei/
 ├── index.html      页面骨架 + 手绘风样式
 ├── style.css       手绘主题(蜡笔/纸张/手写,风格参照 turtle-soup)
 ├── js/
