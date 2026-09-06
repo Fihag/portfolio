@@ -1,6 +1,9 @@
             function initGame() {
                 game.runId = (game.runId || 0) + 1;
                 const diff = DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal;
+                // 武器编队：入局时读取并校验，起始武器不在编队内则回落编队第一把
+                game.loadout = loadLoadout();
+                if (!game.loadout.includes(game.selectedWeapon)) game.selectedWeapon = game.loadout[0];
                 const wpnDef = START_WEAPON_DEFS[game.selectedWeapon] || START_WEAPON_DEFS.magic_missile;
                 game.player = new Player();
                 game.player.weapons = [wpnDef()];
@@ -36,7 +39,7 @@
                     game.player.soulShieldAmount = game.player.soulShieldMax;
                 }
                 game.soulShards = 0;
-                game.waveTimer = 100; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
+                game.waveTimer = WAVE_INTERVAL; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
                 game.chests = [];
                 game.lavaWarns = [];
                 // 定时炸弹：穿戴时首爆固定在开局 10 秒后（此前提前赋值被下方清零覆盖，导致开局瞬间即爆）
@@ -61,6 +64,7 @@
                 game.warningText = ''; game.warningTimer = 0;
                 game.fireZones = [];
                 game.burningZones = []; game.chainLightningVisuals = []; game.bossDropChoices = null; game.meteorVisuals = [];
+                game.beams = []; game.clouds = []; game.wells = [];
                 game.bossDropPending = false;
                 game.shadowZones = [];
                 game.shadowTrails = [];

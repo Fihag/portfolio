@@ -153,4 +153,46 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
     `);
     expect(R(`(loadMeta().shards || 0)`)).toBe(0);
   });
+
+  it("三新武器：光束贯穿 / 毒云诅咒与死亡爆发 / 黑洞吸附与到期爆炸", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing';`);
+    // 圣光棱镜：射线上的敌人被命中
+    R(`
+      const e1 = new Enemy(game.player.x + 60, game.player.y, 'zombie', 0);
+      game.enemies.push(e1);
+      game.beams.push({ x: game.player.x, y: game.player.y, angle: 0, width: 36, life: 0.35, maxLife: 0.35, dmg: 10, hit: new Set(), sweep: 0 });
+    `);
+    R(`update(1/60)`);
+    expect(R(`game.enemies.some(e => e.typeKey === 'zombie' && e.hp < e.maxHp)`)).toBe(true);
+    // 诅咒瘴气：毒云命中附带诅咒；burstChance=1 的诅咒目标死亡必爆发小毒云
+    R(`
+      const e2 = new Enemy(500, 500, 'zombie', 0);
+      game.enemies.push(e2);
+      game.clouds.push({ x: 500, y: 500, radius: 80, life: 4, maxLife: 4, tickRate: 0.5, tickTimer: 0, dmg: 12, burstChance: 1, burstDmg: 6, burstRadius: 45, homing: false, target: e2, spreadSlow: false });
+    `);
+    R(`update(1/60)`);
+    expect(R(`game.enemies.some(e => e.plagueCursed)`)).toBe(true);
+    const cloudsBefore = R(`game.clouds.length`);
+    R(`const cursed = game.enemies.find(e => e.plagueCursed); cursed.takeDamage(999999, 'plague');`);
+    expect(R(`game.clouds.length`) > cloudsBefore).toBe(true);
+    // 引力奇点：到期爆炸对范围内敌人造成伤害并生成贯穿冲击波
+    // brute 摆在毒云范围外（距爆心 110 > 云半径+体型）、爆炸半径内，确保只吃到爆炸伤害
+    R(`
+      const e3 = new Enemy(610, 500, 'brute', 0);
+      game.enemies.push(e3);
+      game.wells.push({ x: 500, y: 500, radius: 240, life: 0.01, maxLife: 3.5, tickRate: 0.5, tickTimer: 0, dmg: 8, explodeDmg: 60, explodeRadius: 130, shockwave: true, spin: 0 });
+    `);
+    const hpBeforeWell = R(`game.enemies.find(e => e.typeKey === 'brute').hp`);
+    R(`update(1/60)`);
+    const bruteAfter = R(`game.enemies.find(e => e.typeKey === 'brute')`);
+    expect(bruteAfter === null || bruteAfter === undefined ? 0 : bruteAfter.hp < hpBeforeWell).toBe(true);
+    expect(R(`game.projectiles.some(p => p.pierceAll)`)).toBe(true);
+    expect(R(`game.wells.length`)).toBe(0);
+    // 后续跑帧：清理与绘制不抛错
+    for (let i = 0; i < 60; i++) {
+      expect(() => R(`update(1/60)`)).not.toThrow();
+      expect(() => R(`draw(ctx)`)).not.toThrow();
+    }
+  });
 });

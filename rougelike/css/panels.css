@@ -180,6 +180,9 @@
         .menu-row button.active { background: var(--orange); border-color: var(--orange-deep); color: #fff; box-shadow: 0 3px 0 rgba(160,80,10,0.5); }
         .menu-row button .w-ico { display: block; font-size: 20px; line-height: 1; margin-bottom: 3px; }
         .menu-row button .w-ico svg { width: 22px; height: 22px; }
+        .menu-label-sub { font-weight: normal; color: var(--brown-soft); font-size: 11px; }
+        .menu-row button.dim { opacity: 0.38; }
+        .menu-row button.dim:hover { transform: none; border-color: var(--line); }
         .menu-best { color: var(--brown-soft); font-size: 13px; margin: 4px 0 12px; }
         .menu-start {
             display: block; width: 100%; padding: 14px 0; font-size: 20px; font-weight: bold;

@@ -178,6 +178,12 @@
                             for (const enemy of game.enemies) {
                                 if (!enemy.alive) continue;
                                 if (dist(proj, enemy) < proj.size + enemy.size) {
+                                    // 贯穿弹（坍缩宇宙冲击波）：对同一敌人只结算一次
+                                    if (proj.pierceAll) {
+                                        if (!proj.pierceHit) proj.pierceHit = new Set();
+                                        if (proj.pierceHit.has(enemy)) continue;
+                                        proj.pierceHit.add(enemy);
+                                    }
                                     enemy.takeDamage(proj.damage, 'projectile');
                                     sound.play('hit');
                                     if (proj.knockback) {
@@ -195,7 +201,7 @@
                                             if (dist(proj, other) < proj.splashRadius) other.takeDamage(splashDmg, 'projectile');
                                         }
                                     }
-                                    proj.alive = false;
+                                    if (!proj.pierceAll) proj.alive = false;
                                     spawnParticles(proj.x, proj.y, 4, proj.color, 50, 0.2, 2.5);
                                     spawnFx(proj.x, proj.y, 5, '#ffffff', { shape: 'star', glow: true, speed: 80, life: 0.2, size: 4 });
                                     break;

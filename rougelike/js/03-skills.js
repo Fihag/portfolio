@@ -7,7 +7,10 @@
                 frost_nova:      () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
                 lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCdTime: 0.25 }),
                 meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0, damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
-                shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
+                shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 }),
+                holy_beam:       () => ({ type: 'holy_beam', level: 1, cooldown: 0, cooldownTime: 3.0, damage: 40, damageMultiplier: 1, beamCount: 1, width: 36, duration: 0.35 }),
+                plague_cloud:    () => ({ type: 'plague_cloud', level: 1, cooldown: 0, cooldownTime: 4.5, damage: 12, damageMultiplier: 1, cloudCount: 1, radius: 80, duration: 4, tickRate: 0.5, burstChance: 0.30 }),
+                gravity_well:    () => ({ type: 'gravity_well', level: 1, cooldown: 0, cooldownTime: 9.0, damage: 8, damageMultiplier: 1, wellCount: 1, pullRadius: 240, duration: 3.5, tickRate: 0.5, explodeDamage: 60, explodeRadius: 130 })
             };
             const START_WEAPON_META = {
                 magic_missile:   { name: '魔法弹', icon: 'flame' },
@@ -15,7 +18,10 @@
                 frost_nova:      { name: '冰霜', icon: 'snowflake' },
                 lightning_chain: { name: '闪电', icon: 'zap' },
                 meteor:          { name: '陨石', icon: 'orbit' },
-                shadow_spirit:   { name: '精灵', icon: 'ghost' }
+                shadow_spirit:   { name: '精灵', icon: 'ghost' },
+                holy_beam:       { name: '圣光棱镜', icon: 'sparkles' },
+                plague_cloud:    { name: '诅咒瘴气', icon: 'waves' },
+                gravity_well:    { name: '引力奇点', icon: 'target' }
             };
             const SKILL_REGISTRY = [
                 {
@@ -36,23 +42,12 @@
                 {
                     id: 'unlock_magic', name: '魔法弹', icon: 'flame', desc: '获得魔法弹', maxLevel: 1, color: '#ffaa44',
                     applies: (p) => !p.weapons.some(w => w.type === 'magic_missile'),
-                    apply: (p) => {
-                        p.weapons.push({
-                            type: 'magic_missile', level: 1, cooldown: 0, cooldownTime: 0.85, cooldownMultiplier: 1,
-                            damage: 21, damageMultiplier: 1, projectileSpeed: 350, extraProjectiles: 0,
-                            splashRadius: 28, splashDamagePercent: 0.35
-                        });
-                    }
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.magic_missile()); }
                 },
                 {
                     id: 'unlock_orbit', name: '环绕飞刃', icon: 'swords', desc: '获得环绕飞刃', maxLevel: 1, color: '#aaddff',
                     applies: (p) => !p.weapons.some(w => w.type === 'orbit_blade'),
-                    apply: (p) => {
-                        p.weapons.push({
-                            type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0,
-                            damage: 26, damageMultiplier: 1, angle: 0, hitCdTime: 0.28
-                        });
-                    }
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.orbit_blade()); }
                 },
                 {
                     id: 'orbit_count', name: '飞刃增殖', icon: 'copy-plus', desc: '飞刃数量 +1', maxLevel: 4, color: '#88ccff',
@@ -72,12 +67,7 @@
                 {
                     id: 'unlock_frost', name: '冰霜新星', icon: 'snowflake', desc: '获得冰霜新星', maxLevel: 1, color: '#aaddff',
                     applies: (p) => !p.weapons.some(w => w.type === 'frost_nova'),
-                    apply: (p) => {
-                        p.weapons.push({
-                            type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130,
-                            damage: 32, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2
-                        });
-                    }
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.frost_nova()); }
                 },
                 {
                     id: 'frost_range', name: '寒潮扩散', icon: 'waves', desc: '范围 +15%', maxLevel: 4, color: '#aaccee',
@@ -123,13 +113,7 @@
                 {
                     id: 'unlock_chain', name: '闪电链', icon: 'zap', desc: '获得闪电链', maxLevel: 1, color: '#aaddff',
                     applies: (p) => !p.weapons.some(w => w.type === 'lightning_chain'),
-                    apply: (p) => {
-                        p.weapons.push({
-                            type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95,
-                            damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120,
-                            damageFalloff: 0.3, hitCdTime: 0.25
-                        });
-                    }
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.lightning_chain()); }
                 },
                 {
                     id: 'chain_bounce', name: '连锁弹跳', icon: 'link', desc: '弹跳 +1', maxLevel: 3, color: '#88ccff',
@@ -155,12 +139,7 @@
                 {
                     id: 'unlock_meteor', name: '陨石', icon: 'orbit', desc: '获得陨石', maxLevel: 1, color: '#aaddff',
                     applies: (p) => !p.weapons.some(w => w.type === 'meteor'),
-                    apply: (p) => {
-                        p.weapons.push({
-                            type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0,
-                            damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0
-                        });
-                    }
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.meteor()); }
                 },
                 {
                     id: 'meteor_cd', name: '天降横祸', icon: 'timer', desc: '冷却 -0.7秒', maxLevel: 3, color: '#ffaa44',
@@ -186,14 +165,7 @@
                 {
                     id: 'unlock_shadow', name: '暗影精灵', icon: 'ghost', desc: '获得暗影精灵', maxLevel: 1, color: '#aaddff',
                     applies: (p) => !p.weapons.some(w => w.type === 'shadow_spirit'),
-                    apply: (p) => {
-                        p.weapons.push({
-                            type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1,
-                            attackSpeed: 1.2625, attackSpeedMultiplier: 1,
-                            slowChance: 0, slowAmount: 0.3, slowDuration: 1.5,
-                            attackTimer: 0, lockReduction: 0
-                        });
-                    }
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.shadow_spirit()); }
                 },
                 {
                     id: 'shadow_count', name: '精灵增殖', icon: 'users', desc: '精灵数量 +1', maxLevel: 3, color: '#bb88ff',
@@ -211,7 +183,7 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.25; }
                 },
                 {
-                    id: 'shadow_slow', name: '暗影束缚', icon: 'network', desc: '概率减速 30%', maxLevel: 3, color: '#cc99ff',
+                    id: 'shadow_slow', name: '暗影束缚', icon: 'network', desc: '命中减速概率 +25%', maxLevel: 3, color: '#cc99ff',
                     applies: (p) => p.weapons.some(w => w.type === 'shadow_spirit'),
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) w.slowChance = (w.slowChance || 0) + 0.25; }
                 },
@@ -219,6 +191,79 @@
                     id: 'shadow_lock', name: '暗影锁定', icon: 'target', desc: '锁定时间 -0.4秒', maxLevel: 2, color: '#bb77ff',
                     applies: (p) => p.weapons.some(w => w.type === 'shadow_spirit'),
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) w.lockReduction = (w.lockReduction || 0) + 0.40; }
+                },
+                // ===== 新武器解锁：圣光棱镜 =====
+                {
+                    id: 'unlock_beam', name: '圣光棱镜', icon: 'sparkles', desc: '获得圣光棱镜', maxLevel: 1, color: '#ffee99',
+                    applies: (p) => !p.weapons.some(w => w.type === 'holy_beam'),
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.holy_beam()); }
+                },
+                {
+                    id: 'beam_count', name: '棱镜分裂', icon: 'copy', desc: '光束 +1', maxLevel: 3, color: '#ffe680',
+                    applies: (p) => p.weapons.some(w => w.type === 'holy_beam'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) w.beamCount += 1; }
+                },
+                {
+                    id: 'beam_width', name: '圣光扩束', icon: 'expand', desc: '光束宽度 +20%', maxLevel: 3, color: '#ffdd66',
+                    applies: (p) => p.weapons.some(w => w.type === 'holy_beam'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) w.width *= 1.2; }
+                },
+                {
+                    id: 'beam_damage', name: '净化之力', icon: 'flame', desc: '光束伤害 +30%', maxLevel: 3, color: '#ffcc44',
+                    applies: (p) => p.weapons.some(w => w.type === 'holy_beam'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                },
+                // ===== 新武器解锁：诅咒瘴气 =====
+                {
+                    id: 'unlock_plague', name: '诅咒瘴气', icon: 'waves', desc: '获得诅咒瘴气', maxLevel: 1, color: '#88dd66',
+                    applies: (p) => !p.weapons.some(w => w.type === 'plague_cloud'),
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.plague_cloud()); }
+                },
+                {
+                    id: 'plague_count', name: '瘴气增殖', icon: 'copy', desc: '毒云 +1', maxLevel: 2, color: '#77cc55',
+                    applies: (p) => p.weapons.some(w => w.type === 'plague_cloud'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.cloudCount += 1; }
+                },
+                {
+                    id: 'plague_range', name: '疫雾扩散', icon: 'expand', desc: '毒云范围 +15%', maxLevel: 3, color: '#66bb44',
+                    applies: (p) => p.weapons.some(w => w.type === 'plague_cloud'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.radius *= 1.15; }
+                },
+                {
+                    id: 'plague_damage', name: '瘟疫侵蚀', icon: 'skull', desc: '毒云伤害 +30%', maxLevel: 3, color: '#55aa33',
+                    applies: (p) => p.weapons.some(w => w.type === 'plague_cloud'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                },
+                {
+                    id: 'plague_spread', name: '传染强化', icon: 'link', desc: '死亡爆发概率 +15%', maxLevel: 2, color: '#88cc77',
+                    applies: (p) => p.weapons.some(w => w.type === 'plague_cloud'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.burstChance = Math.min(1, (w.burstChance || 0) + 0.15); }
+                },
+                // ===== 新武器解锁：引力奇点 =====
+                {
+                    id: 'unlock_well', name: '引力奇点', icon: 'target', desc: '获得引力奇点', maxLevel: 1, color: '#bb88ff',
+                    applies: (p) => !p.weapons.some(w => w.type === 'gravity_well'),
+                    apply: (p) => { p.weapons.push(START_WEAPON_DEFS.gravity_well()); }
+                },
+                {
+                    id: 'well_count', name: '奇点增殖', icon: 'copy', desc: '黑洞 +1', maxLevel: 2, color: '#aa77ee',
+                    applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.wellCount += 1; }
+                },
+                {
+                    id: 'well_gravity', name: '潮汐引力', icon: 'rotate-ccw', desc: '吸附半径 +20%', maxLevel: 3, color: '#9966dd',
+                    applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.pullRadius *= 1.2; }
+                },
+                {
+                    id: 'well_damage', name: '奇点能量', icon: 'trending-up', desc: '黑洞伤害 +30%', maxLevel: 3, color: '#8855cc',
+                    applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                },
+                {
+                    id: 'well_linger', name: '事件视界', icon: 'clock', desc: '存续时间 +0.8秒', maxLevel: 2, color: '#cc99ff',
+                    applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.duration += 0.8; }
                 },
                 // ===== 进化融合技能 =====
                 {
@@ -247,9 +292,24 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) { w.evolved = 'starfall'; w.cooldownTime = 2.5; w.damageMultiplier = (w.damageMultiplier || 1) + 0.40; w.leaveBurning = true; w.burningDuration = 2; w.burningTickRate = 0.4; w.burningDamagePercent = 0.30; } }
                 },
                 {
-                    id: 'evo_shadow', name: '暗影军团', icon: 'users', desc: '攻速+30%', maxLevel: 1, color: '#6600cc',
+                    id: 'evo_shadow', name: '暗影军团', icon: 'users', desc: '攻速+35%，10% 概率连击', maxLevel: 1, color: '#6600cc',
                     applies: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); return w && (p['_skill_shadow_count'] || 0) >= 3 && (p['_skill_shadow_speed'] || 0) >= 3 && (p['_skill_shadow_damage'] || 0) >= 3 && !p['_skill_evo_shadow']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) { w.evolved = 'shadow_legion'; w.attackSpeedMultiplier = (w.attackSpeedMultiplier || 1) * 1.3; } }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) { w.evolved = 'shadow_legion'; w.attackSpeedMultiplier = (w.attackSpeedMultiplier || 1) * 1.35; w.doubleStrike = 0.10; } }
+                },
+                {
+                    id: 'evo_beam', name: '棱镜圣裁', icon: 'sparkles', desc: '光束扇形扫射，伤害+30%', maxLevel: 1, color: '#ffcc00',
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); return w && (p['_skill_beam_count'] || 0) >= 3 && (p['_skill_beam_width'] || 0) >= 3 && (p['_skill_beam_damage'] || 0) >= 3 && !p['_skill_evo_beam']; },
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) { w.evolved = 'prism_verdict'; w.damageMultiplier = (w.damageMultiplier || 1) * 1.3; } }
+                },
+                {
+                    id: 'evo_plague', name: '大瘟疫', icon: 'skull', desc: '毒云跟随敌人，死亡爆发必发并减速', maxLevel: 1, color: '#44aa22',
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); return w && (p['_skill_plague_count'] || 0) >= 2 && (p['_skill_plague_range'] || 0) >= 3 && (p['_skill_plague_damage'] || 0) >= 3 && !p['_skill_evo_plague']; },
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) { w.evolved = 'pandemic'; w.burstChance = 1; } }
+                },
+                {
+                    id: 'evo_well', name: '坍缩宇宙', icon: 'network', desc: '爆炸伤害+40%，分裂 8 发冲击波', maxLevel: 1, color: '#8844cc',
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); return w && (p['_skill_well_count'] || 0) >= 2 && (p['_skill_well_gravity'] || 0) >= 3 && (p['_skill_well_damage'] || 0) >= 3 && !p['_skill_evo_well']; },
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) { w.evolved = 'singularity'; w.explodeDamage = (w.explodeDamage || 60) * 1.4; } }
                 },
                 // ===== 协同技能 =====
                 {
@@ -280,3 +340,20 @@
                     apply: (p) => { p.damageReduction = (p.damageReduction || 0) + 0.08; p.speedMultiplier = (p.speedMultiplier || 1) - 0.15; }
                 }
             ];
+
+            // ==================== 武器编队（战前选择最多 5 把入局；局内解锁卡只出编队内武器） ====================
+            const LOADOUT_SIZE = 5;
+            const DEFAULT_LOADOUT = ['magic_missile', 'orbit_blade', 'frost_nova', 'lightning_chain', 'meteor'];
+            function loadLoadout() {
+                try {
+                    const raw = JSON.parse(localStorage.getItem('rogue_loadout') || 'null');
+                    if (Array.isArray(raw)) {
+                        const valid = raw.filter(k => START_WEAPON_DEFS[k]);
+                        if (valid.length > 0) return valid;
+                    }
+                } catch (e) {}
+                return [...DEFAULT_LOADOUT];
+            }
+            function saveLoadout(list) {
+                try { localStorage.setItem('rogue_loadout', JSON.stringify(list)); } catch (e) {}
+            }

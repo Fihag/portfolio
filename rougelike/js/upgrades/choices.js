@@ -1,8 +1,14 @@
             // ==================== 升级逻辑 ====================
+            // 武器解锁技能 → 武器类型映射（编队卡池门控与前期保底共用）
+            const WEAPON_SKILL_MAP = { 'unlock_magic': 'magic_missile', 'unlock_orbit': 'orbit_blade', 'unlock_frost': 'frost_nova', 'unlock_chain': 'lightning_chain', 'unlock_meteor': 'meteor', 'unlock_shadow': 'shadow_spirit', 'unlock_beam': 'holy_beam', 'unlock_plague': 'plague_cloud', 'unlock_well': 'gravity_well' };
             function generateUpgradeChoices(player) {
                 const available = [];
+                const loadout = game.loadout || null;
                 for (const skill of SKILL_REGISTRY) {
                     if (!skill.applies(player)) continue;
+                    // 编队门控：未入编队的武器，其解锁卡不进入卡池
+                    const mappedType = WEAPON_SKILL_MAP[skill.id];
+                    if (mappedType && loadout && !loadout.includes(mappedType)) continue;
                     const currentLevel = getSkillCurrentLevel(player, skill);
                     if (currentLevel >= skill.maxLevel) continue;
                     if (skill.maxLevel === 1 && currentLevel >= 1) continue;
@@ -14,9 +20,9 @@
                 if (player.extraChoices) player.extraChoices = 0;
                 if (game.upgradeCount <= 2) {
                     const unlockedWeapons = player.weapons.map(w => w.type);
-                    const weaponSkillMap = { 'unlock_magic': 'magic_missile', 'unlock_orbit': 'orbit_blade', 'unlock_frost': 'frost_nova', 'unlock_chain': 'lightning_chain', 'unlock_meteor': 'meteor', 'unlock_shadow': 'shadow_spirit' };
-                    const weaponSkills = Object.keys(weaponSkillMap);
-                    const missingWeaponSkill = weaponSkills.find(sid => !unlockedWeapons.includes(weaponSkillMap[sid]));
+                    // 保底推新武器也只从编队内挑选
+                    const weaponSkills = Object.keys(WEAPON_SKILL_MAP).filter(sid => !loadout || loadout.includes(WEAPON_SKILL_MAP[sid]));
+                    const missingWeaponSkill = weaponSkills.find(sid => !unlockedWeapons.includes(WEAPON_SKILL_MAP[sid]));
                     if (missingWeaponSkill && !choices.some(s => s.id === missingWeaponSkill)) {
                         const skill = SKILL_REGISTRY.find(s => s.id === missingWeaponSkill);
                         if (skill && skill.applies(player) && getSkillCurrentLevel(player, skill) < skill.maxLevel) {
@@ -74,6 +80,8 @@
             function applyBossDrop(item) {
                 if (game.state !== 'bossdrop') return;
                 try { item.apply(game.player); } catch(e) { console.warn('Boss drop apply error:', e); }
+                // 登记本局已领取的唯一道具：后续 Boss 掉落池过滤该道具（去重）
+                if (game.player) { if (!game.player.takenDrops) game.player.takenDrops = {}; game.player.takenDrops[item.id] = true; }
                 bossdropPanel.style.display = 'none';
                 bossdropCards.innerHTML = '';
                 game.bossDropChoices = null;

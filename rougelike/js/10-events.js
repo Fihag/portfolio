@@ -180,7 +180,7 @@
                 if (t > 100 && Math.random() < 0.15) typeKey = 'brute';
                 const diffBonus = game.difficultyLevel - 1;
                 const ne = new Enemy(x, y, typeKey, diffBonus);
-                // ===== 词缀系统（默认仅不可能模式，普通小怪 25% 概率携带一条；debug 可覆盖概率/难度限制） =====
+                // ===== 词缀系统（默认仅不可能模式，普通小怪 50% 概率携带一条；debug 可覆盖概率/难度限制） =====
                 const affixAllowed = dbg.affixAnywhere ? true : game.selectedDifficulty === 'impossible';
                 const affixChance = (dbg.affixChance !== undefined && dbg.affixChance !== null) ? dbg.affixChance : 0.5;
                 if (affixAllowed && !ne.isBoss && Math.random() < affixChance) {

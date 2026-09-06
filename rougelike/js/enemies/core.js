@@ -28,7 +28,8 @@
                     }
                     this.maxHp = this.hp;
                     this.size = def.size; this.color = def.color;
-                    this.xpValue = Math.floor(def.xpValue * (1 + difficultyBonus * 0.15));
+                    // 经验值随难度增长（+15%/级），封顶 8 倍（对齐 HP 11× 封顶的思路，防止后期经验无限膨胀）
+                    this.xpValue = Math.min(Math.floor(def.xpValue * (1 + difficultyBonus * 0.15)), def.xpValue * 8);
                     this.shape = def.shape;
                     this.hp = Math.floor(this.hp * dbg.enemyHpMult);
                     this.maxHp = this.hp;
@@ -272,12 +273,13 @@
                             if (this.typeKey === 'broodmother') {
                                 for (const e of game.enemies) if (e.bossMinion === this) e.alive = false;
                             }
-                            // 触发Boss掉落（已拥有的唯一道具不再出现，延迟1.5秒让死亡特效完整展示；
+                            // 触发Boss掉落（本局已领取过的唯一道具从池中过滤，池空则不再掉落；延迟1.5秒让死亡特效完整展示；
                             // 若期间玩家升级，则等升级面板关闭后再弹出，避免被选项卡掉）
-                            if (!game.noBossDrop && !game.bossDropPending) {
+                            const takenDrops = (game.player && game.player.takenDrops) || {};
+                            const pool = BOSS_DROP_ITEMS.filter(it => !takenDrops[it.id]);
+                            if (!game.noBossDrop && !game.bossDropPending && pool.length > 0) {
                                 game.bossDropPending = true;
                                 const runId = game.runId;
-                                const pool = BOSS_DROP_ITEMS;
                                 const shuffled = [...pool].sort(() => Math.random() - 0.5);
                                 const choices = shuffled.slice(0, 3);
                                 const showDropWhenReady = () => {
@@ -299,6 +301,11 @@
                         // 炎术士死亡火焰区域
                         if (this.typeKey === 'pyromancer') {
                             game.fireZones.push({ x: this.x, y: this.y, radius: 55, damage: 4, remaining: 2, tickRate: 0.5, tickTimer: 0 });
+                        }
+                        // 诅咒瘴气：中毒目标死亡时按概率爆发小毒云（爆发云自身不再传染，避免无限连锁）
+                        if (this.plagueCursed && !this.isBoss && game.clouds && Math.random() < (this.plagueBurstChance || 0)) {
+                            game.clouds.push({ x: this.x, y: this.y, radius: this.plagueBurstRadius || 45, life: 1.5, maxLife: 1.5, tickRate: 0.5, tickTimer: 0, dmg: this.plagueBurstDmg || 5, burstChance: 0, burstDmg: 0, burstRadius: 45, homing: false, target: null, spreadSlow: this.plagueSpreadSlow || false });
+                            spawnParticles(this.x, this.y, 10, '#77dd55', 70, 0.4, 3);
                         }
                         spawnParticles(this.x, this.y, this.isBoss ? 35 : (this.typeKey === 'brute' ? 18 : 8), this.color, 100, 0.5, this.isBoss ? 7 : 4);
                         if (this.isBoss || this.typeKey === 'brute') triggerShake(5, 0.25);

@@ -146,6 +146,62 @@
                 }
                 if (game.player) game.player.draw(ctx);
                 if (game.player) drawWeaponsVisuals(game.player, ctx);
+                // 圣光棱镜：贯穿光束（金色辉光柱 + 白芯，随剩余寿命淡出）
+                if (game.beams && game.beams.length) {
+                    for (const b of game.beams) {
+                        const a = clamp(b.life / b.maxLife, 0, 1);
+                        ctx.save();
+                        ctx.translate(b.x, b.y);
+                        ctx.rotate(b.angle);
+                        ctx.globalAlpha = 0.14 + a * 0.26;
+                        ctx.fillStyle = '#fff3b0';
+                        ctx.fillRect(0, -b.width / 2, 1600, b.width);
+                        ctx.globalAlpha = 0.5 + a * 0.5;
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, -2.2, 1600, 4.4);
+                        ctx.restore();
+                        ctx.globalAlpha = 1;
+                    }
+                }
+                // 诅咒瘴气：翻涌毒雾团（三团径向渐变旋转 + 呼吸轮廓）
+                if (game.clouds && game.clouds.length) {
+                    for (const c of game.clouds) {
+                        const a = clamp(c.life / c.maxLife, 0, 1);
+                        for (let k = 0; k < 3; k++) {
+                            const ang = game.time * 2 + (Math.PI * 2 / 3) * k;
+                            const ox = Math.cos(ang) * c.radius * 0.25, oy = Math.sin(ang) * c.radius * 0.25;
+                            const g = ctx.createRadialGradient(c.x + ox, c.y + oy, 0, c.x + ox, c.y + oy, c.radius * 0.8);
+                            g.addColorStop(0, `rgba(90,200,60,${0.16 * a})`);
+                            g.addColorStop(1, 'rgba(90,200,60,0)');
+                            ctx.fillStyle = g;
+                            ctx.beginPath(); ctx.arc(c.x + ox, c.y + oy, c.radius * 0.8, 0, Math.PI * 2); ctx.fill();
+                        }
+                        ctx.strokeStyle = `rgba(120,220,80,${0.5 * a})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(c.x, c.y, c.radius * (0.9 + Math.sin(game.time * 4) * 0.04), 0, Math.PI * 2); ctx.stroke();
+                    }
+                }
+                // 引力奇点：吸附范围淡圈 + 双旋臂吸积环 + 黑核
+                if (game.wells && game.wells.length) {
+                    for (const wl of game.wells) {
+                        const a = clamp(wl.life / wl.maxLife, 0, 1);
+                        ctx.fillStyle = `rgba(140,80,220,${0.05 + 0.04 * a})`;
+                        ctx.beginPath(); ctx.arc(wl.x, wl.y, wl.radius, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = `rgba(190,120,255,${0.45 + 0.3 * a})`;
+                        ctx.lineWidth = 3;
+                        for (let k = 0; k < 2; k++) {
+                            ctx.beginPath();
+                            ctx.arc(wl.x, wl.y, wl.radius * (0.30 + 0.10 * k), wl.spin + Math.PI * k, wl.spin + Math.PI * k + Math.PI * 1.2);
+                            ctx.stroke();
+                        }
+                        const g = ctx.createRadialGradient(wl.x, wl.y, 0, wl.x, wl.y, 26);
+                        g.addColorStop(0, '#0a0410'); g.addColorStop(0.7, '#241038'); g.addColorStop(1, 'rgba(80,40,140,0)');
+                        ctx.fillStyle = g;
+                        ctx.beginPath(); ctx.arc(wl.x, wl.y, 26, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#e8d5ff';
+                        ctx.beginPath(); ctx.arc(wl.x, wl.y, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
                 for (const p of particles) p.draw(ctx);
                 for (const dn of damageNumbers) dn.draw(ctx);
                 for (const dt2 of deathTexts) dt2.draw(ctx);

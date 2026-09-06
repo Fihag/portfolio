@@ -23,6 +23,9 @@
                         else if (w.type === 'lightning_chain') weps += '<span class="chip">' + ICONS.zap + '闪电</span>';
                         else if (w.type === 'meteor') weps += '<span class="chip">' + ICONS.orbit + '陨石</span>';
                         else if (w.type === 'shadow_spirit') weps += '<span class="chip">' + ICONS.ghost + '精灵×' + w.spiritCount + '</span>';
+                        else if (w.type === 'holy_beam') weps += '<span class="chip">' + ICONS.sparkles + '棱镜×' + w.beamCount + '</span>';
+                        else if (w.type === 'plague_cloud') weps += '<span class="chip">' + ICONS.waves + '瘴气×' + w.cloudCount + '</span>';
+                        else if (w.type === 'gravity_well') weps += '<span class="chip">' + ICONS.target + '奇点×' + w.wellCount + '</span>';
                     }
                     hudWeps.innerHTML = weps ? '武器：' + weps : '';
                 }
@@ -99,12 +102,42 @@
                     b.addEventListener('click', () => { game.selectedDifficulty = key; renderMenu(); });
                     menuDiffs.appendChild(b);
                 }
-                menuWeapons.innerHTML = '';
+                // 武器编队：最多 LOADOUT_SIZE 把入局，点击切换；初始武器只能从编队内选
+                if (!game.loadout) game.loadout = loadLoadout();
+                const loadoutFull = game.loadout.length >= LOADOUT_SIZE;
+                menuLoadout.innerHTML = '';
                 for (const [key, m] of Object.entries(START_WEAPON_META)) {
+                    const on = game.loadout.includes(key);
+                    const b = document.createElement('button');
+                    b.innerHTML = `<span class="w-ico">${ICONS[m.icon] || ''}</span>${m.name}`;
+                    b.classList.toggle('active', on);
+                    if (!on && loadoutFull) b.classList.add('dim');
+                    b.addEventListener('click', () => {
+                        if (on) {
+                            if (game.loadout.length <= 1) return; // 至少保留一把
+                            game.loadout = game.loadout.filter(k => k !== key);
+                            if (game.selectedWeapon === key) game.selectedWeapon = game.loadout[0];
+                        } else {
+                            if (game.loadout.length >= LOADOUT_SIZE) return;
+                            game.loadout.push(key);
+                        }
+                        saveLoadout(game.loadout);
+                        renderMenu();
+                    });
+                    menuLoadout.appendChild(b);
+                }
+                menuWeapons.innerHTML = '';
+                for (const key of game.loadout) {
+                    const m = START_WEAPON_META[key];
+                    if (!m) continue;
                     const b = document.createElement('button');
                     b.innerHTML = `<span class="w-ico">${ICONS[m.icon] || ''}</span>${m.name}`;
                     b.classList.toggle('active', game.selectedWeapon === key);
-                    b.addEventListener('click', () => { game.selectedWeapon = key; renderMenu(); });
+                    b.addEventListener('click', () => {
+                        game.selectedWeapon = key;
+                        try { localStorage.setItem('rogue_weapon', key); } catch (e) {}
+                        renderMenu();
+                    });
                     menuWeapons.appendChild(b);
                 }
                 const dk = game.selectedDifficulty || 'normal';
@@ -234,6 +267,8 @@
                     localStorage.removeItem('rogue_meta');
                     localStorage.removeItem('rogue_meta_sig');
                     localStorage.removeItem('rogue_ach');
+                    localStorage.removeItem('rogue_loadout');
+                    game.loadout = null;
                     // 最佳记录按难度分档，遍历清除
                     for (const dk of Object.keys(DIFFICULTIES)) {
                         localStorage.removeItem('rogue_best_time_' + dk);

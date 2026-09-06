@@ -4,15 +4,9 @@
             const dbgNum = (id, def = 0) => { const v = parseFloat($inp(id).value); return isFinite(v) ? v : def; };
             const DBG_ENEMY_SPAWNABLE = ['zombie', 'runner', 'brute', 'wraith', 'pyromancer', 'hatchling', 'lavaling'];
             const DBG_BOSS_TYPES = ['boss', 'broodmother', 'assassin', 'lavabeast'];
-            const DBG_WEAPON_DEFS = {
-                magic_missile:  () => ({ type: 'magic_missile', level: 1, cooldown: 0, cooldownTime: 0.85, cooldownMultiplier: 1, damage: 21, damageMultiplier: 1, projectileSpeed: 350, extraProjectiles: 0, splashRadius: 28, splashDamagePercent: 0.35 }),
-                orbit_blade:    () => ({ type: 'orbit_blade', level: 1, bladeCount: 3, radius: 60, rotationSpeed: 3.0, damage: 26, damageMultiplier: 1, angle: 0, hitCdTime: 0.28 }),
-                frost_nova:     () => ({ type: 'frost_nova', level: 1, cooldown: 0, cooldownTime: 2.2, radius: 130, damage: 26, damageMultiplier: 1, slowAmount: 0.50, slowDuration: 2.2 }),
-                lightning_chain:() => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 1.0, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCdTime: 0.3 }),
-                meteor:         () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.5, damage: 100, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
-                shadow_spirit:  () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 15, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 })
-            };
-            const DBG_WEAPON_NAMES = { magic_missile: '魔法飞弹', orbit_blade: '环绕飞刃', frost_nova: '冰霜新星', lightning_chain: '闪电链', meteor: '陨石', shadow_spirit: '暗影精灵' };
+            // 复用正式武器定义（debug.js 在 03-skills 之后加载；此前自带副本曾与单源数值漂移）
+            const DBG_WEAPON_DEFS = START_WEAPON_DEFS;
+            const DBG_WEAPON_NAMES = { magic_missile: '魔法飞弹', orbit_blade: '环绕飞刃', frost_nova: '冰霜新星', lightning_chain: '闪电链', meteor: '陨石', shadow_spirit: '暗影精灵', holy_beam: '圣光棱镜', plague_cloud: '诅咒瘴气', gravity_well: '引力奇点' };
 
             function dbgSpawnEnemy(typeKey, count) {
                 if (!game.player) return;
@@ -109,15 +103,22 @@
                 frost_nova:      ['frost_range', 'frost_damage'],
                 lightning_chain: ['chain_bounce', 'chain_range', 'chain_falloff', 'chain_damage'],
                 meteor:          ['meteor_cd', 'meteor_range', 'meteor_damage', 'meteor_double'],
-                shadow_spirit:   ['shadow_count', 'shadow_speed', 'shadow_damage', 'shadow_slow', 'shadow_lock']
+                shadow_spirit:   ['shadow_count', 'shadow_speed', 'shadow_damage', 'shadow_slow', 'shadow_lock'],
+                holy_beam:       ['beam_count', 'beam_width', 'beam_damage'],
+                plague_cloud:    ['plague_count', 'plague_range', 'plague_damage', 'plague_spread'],
+                gravity_well:    ['well_count', 'well_gravity', 'well_damage', 'well_linger']
             };
             const DBG_WEAPON_EVO = {
                 magic_missile: 'evo_fireball', orbit_blade: 'evo_orbit', frost_nova: 'evo_frost',
-                lightning_chain: 'evo_chain', meteor: 'evo_meteor', shadow_spirit: 'evo_shadow'
+                lightning_chain: 'evo_chain', meteor: 'evo_meteor', shadow_spirit: 'evo_shadow',
+                holy_beam: 'evo_beam', plague_cloud: 'evo_plague', gravity_well: 'evo_well'
             };
             function dbgGiveBossDrop() {
                 if (!game.player) return;
-                                const pool = BOSS_DROP_ITEMS.filter(it => !(it.id === 'soul_shield' && (game.player.soulShieldLevel || 0) >= 2));
+                // 与正式掉落一致：本局已领取过的唯一道具不再出现
+                const takenDrops = game.player.takenDrops || {};
+                const pool = BOSS_DROP_ITEMS.filter(it => !takenDrops[it.id]);
+                if (!pool.length) return;
                 const shuffled = [...pool].sort(() => Math.random() - 0.5);
                 game.bossDropChoices = shuffled.slice(0, 3);
                 showBossDropPanel(game.bossDropChoices);

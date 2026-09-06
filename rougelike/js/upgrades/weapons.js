@@ -127,7 +127,9 @@
                                 const t = targets.reduce((a, b) => a.hp > b.hp ? a : b);
                                 dropMeteor(t.x, t.y);
                                 if (Math.random() < (w.doubleChance || 0)) {
-                                    const t2 = targets.reduce((a, b) => a.hp > b.hp ? a : b);
+                                    // 第二颗优先砸另一目标（排除主目标取最高 HP），仅剩一个敌人时才叠同一目标
+                                    const rest = targets.filter(e => e !== t);
+                                    const t2 = rest.length ? rest.reduce((a, b) => a.hp > b.hp ? a : b) : t;
                                     setTimeout(() => { if (game.state === 'playing' && game.player === player) dropMeteor(t2.x, t2.y); }, 200);
                                 }
                                 w.cooldown = cd;
@@ -205,6 +207,16 @@
                                         proj.slowAmount = w.slowAmount || 0.3;
                                         proj.slowDuration = w.slowDuration || 1.5;
                                         game.projectiles.push(proj);
+                                        // 暗影军团连击：概率追加一发带轻微角度偏移的影弹
+                                        if ((w.doubleStrike || 0) > 0 && Math.random() < w.doubleStrike) {
+                                            const ja = (Math.random() - 0.5) * 0.4, cos = Math.cos(ja), sin = Math.sin(ja);
+                                            const pj = new Projectile(st.x, st.y, (dx * cos - dy * sin) / dd * spd, (dx * sin + dy * cos) / dd * spd, dmg, 0, 0, '#b06aff', 5);
+                                            pj.shadowSlow = true;
+                                            pj.slowChance = w.slowChance || 0;
+                                            pj.slowAmount = w.slowAmount || 0.3;
+                                            pj.slowDuration = w.slowDuration || 1.5;
+                                            game.projectiles.push(pj);
+                                        }
                                         sound.play('spirit');
                                         spawnParticles(st.x, st.y, 8, '#b06aff', 70, 0.35, 3);
                                         spawnFx(st.x, st.y, 4, '#d8b0ff', { shape: 'star', glow: true, speed: 60, life: 0.3, size: 3 });
@@ -219,8 +231,170 @@
                                 st.attackTimer = 0;
                             }
                         }
+                    } else if (w.type === 'holy_beam') {
+                        const cd = w.cooldownTime * player.getEffectiveCooldownMult();
+                        if (w.cooldown <= 0) {
+                            const nearest = player.getNearestEnemy();
+                            if (nearest) {
+                                const baseAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+                                const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
+                                // 棱镜圣裁：扇形展开 + 存续期扫射；否则多束窄角并排
+                                const arc = w.evolved ? Math.PI / 3 : Math.PI / 24;
+                                for (let i = 0; i < w.beamCount; i++) {
+                                    const a = w.beamCount === 1 ? baseAngle : baseAngle - arc / 2 + (arc / (w.beamCount - 1)) * i;
+                                    game.beams.push({ x: player.x, y: player.y, angle: a, width: w.width, life: w.duration, maxLife: w.duration, dmg, hit: new Set(), sweep: w.evolved ? (i - (w.beamCount - 1) / 2) * 0.5 : 0 });
+                                }
+                                sound.play('summon');
+                                w.cooldown = cd;
+                            }
+                        }
+                    } else if (w.type === 'plague_cloud') {
+                        const cd = w.cooldownTime * player.getEffectiveCooldownMult();
+                        if (w.cooldown <= 0) {
+                            const alive = game.enemies.filter(e => e.alive && !e.dying);
+                            if (alive.length > 0) {
+                                const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
+                                // 优先落在敌群最密处；多朵云互相避开已落点
+                                const placed = [];
+                                for (let i = 0; i < w.cloudCount; i++) {
+                                    let best = null, bestCnt = -1;
+                                    for (const cand of alive) {
+                                        if (placed.some(p => Math.hypot(p.x - cand.x, p.y - cand.y) < 120)) continue;
+                                        let cnt = 0;
+                                        for (const e of alive) if (Math.hypot(e.x - cand.x, e.y - cand.y) < w.radius + 30) cnt++;
+                                        if (cnt > bestCnt) { bestCnt = cnt; best = cand; }
+                                    }
+                                    if (!best) best = alive[randInt(0, alive.length - 1)];
+                                    placed.push(best);
+                                    game.clouds.push({ x: best.x, y: best.y, radius: w.radius, life: w.duration, maxLife: w.duration, tickRate: w.tickRate, tickTimer: 0, dmg, burstChance: w.burstChance || 0, burstDmg: dmg * 0.6, burstRadius: 45, homing: !!w.evolved, target: best, spreadSlow: !!w.evolved });
+                                    spawnParticles(best.x, best.y, 12, '#77dd55', 70, 0.5, 4);
+                                }
+                                sound.play('spirit');
+                                w.cooldown = cd;
+                            }
+                        }
+                    } else if (w.type === 'gravity_well') {
+                        const cd = w.cooldownTime * player.getEffectiveCooldownMult();
+                        if (w.cooldown <= 0) {
+                            const alive = game.enemies.filter(e => e.alive && !e.dying);
+                            if (alive.length > 0) {
+                                const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
+                                const edmg = w.explodeDamage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
+                                for (let i = 0; i < w.wellCount; i++) {
+                                    const t = alive[randInt(0, alive.length - 1)];
+                                    game.wells.push({ x: t.x, y: t.y, radius: w.pullRadius, life: w.duration, maxLife: w.duration, tickRate: w.tickRate, tickTimer: 0, dmg, explodeDmg: edmg, explodeRadius: w.explodeRadius, shockwave: !!w.evolved, spin: 0 });
+                                }
+                                sound.play('summon');
+                                w.cooldown = cd;
+                            }
+                        }
                     }
                 }
+                // ===== 持续型武器效果（光束/毒云/黑洞）每帧结算 =====
+                updateWeaponZones(player, dt);
+            }
+
+            // ===== 持续型武器效果：光束/毒云/黑洞的每帧结算与生命周期 =====
+            function updateWeaponZones(player, dt) {
+                // 圣光棱镜：射线长 1600 的直线贯穿判定，每束对同一敌人只结算一次
+                for (const b of (game.beams || [])) {
+                    b.life -= dt;
+                    if (b.sweep) b.angle += b.sweep * dt;
+                    const dirX = Math.cos(b.angle), dirY = Math.sin(b.angle);
+                    const half = b.width / 2;
+                    for (const e of game.enemies) {
+                        if (!e.alive || e.dying || e.deathMarked || b.hit.has(e)) continue;
+                        const rx = e.x - b.x, ry = e.y - b.y;
+                        const along = rx * dirX + ry * dirY;
+                        if (along < 0 || along > 1600) continue;
+                        const px = rx - dirX * along, py = ry - dirY * along;
+                        if (px * px + py * py < (half + e.size) * (half + e.size)) {
+                            b.hit.add(e);
+                            e.takeDamage(b.dmg, 'holy_beam');
+                            spawnParticles(e.x, e.y, 4, '#ffe680', 60, 0.25, 3);
+                        }
+                    }
+                }
+                game.beams = (game.beams || []).filter(b => b.life > 0);
+                // 诅咒瘴气：毒云每 tick 一跳，毒到的敌人携带诅咒（死亡时按概率爆发小毒云）
+                for (const c of (game.clouds || [])) {
+                    c.life -= dt;
+                    if (c.homing) {
+                        if (!c.target || !c.target.alive || c.target.dying) {
+                            // 目标死亡：转附 300 内最近存活敌人，没有则原地停留
+                            let best = null, bestD = 300;
+                            for (const e of game.enemies) {
+                                if (!e.alive || e.dying) continue;
+                                const d = Math.hypot(e.x - c.x, e.y - c.y);
+                                if (d < bestD) { bestD = d; best = e; }
+                            }
+                            c.target = best;
+                        }
+                        if (c.target && c.target.alive) { c.x = c.target.x; c.y = c.target.y; }
+                    }
+                    c.tickTimer -= dt;
+                    if (c.tickTimer <= 0) {
+                        c.tickTimer = c.tickRate;
+                        for (const e of game.enemies) {
+                            if (!e.alive || e.dying) continue;
+                            if (Math.hypot(e.x - c.x, e.y - c.y) < c.radius + e.size) {
+                                e.takeDamage(c.dmg, 'plague');
+                                e.plagueCursed = true;
+                                e.plagueBurstChance = Math.max(e.plagueBurstChance || 0, c.burstChance);
+                                e.plagueBurstDmg = Math.max(e.plagueBurstDmg || 0, c.burstDmg);
+                                e.plagueBurstRadius = Math.max(e.plagueBurstRadius || 0, c.burstRadius);
+                                e.plagueSpreadSlow = c.spreadSlow;
+                                if (c.spreadSlow) e.applySlow(0.4, 1.5);
+                            }
+                        }
+                    }
+                }
+                game.clouds = (game.clouds || []).filter(c => c.life > 0);
+                // 引力奇点：吸附小怪（Boss 免疫/精英半速）+ 中心伤害 + 到期爆炸
+                for (const wl of (game.wells || [])) {
+                    wl.life -= dt; wl.spin += dt * 6;
+                    if (wl.life > 0) {
+                        for (const e of game.enemies) {
+                            if (!e.alive || e.dying || e.deathMarked) continue;
+                            const d = Math.hypot(e.x - wl.x, e.y - wl.y);
+                            if (d < 1 || d > wl.radius) continue;
+                            if (!e.isBoss) {
+                                const f = (e.isElite ? 0.5 : 1) * (1 - d / wl.radius) * 160 * dt;
+                                e.x = clamp(e.x - (e.x - wl.x) / d * f, e.size, WORLD_W - e.size);
+                                e.y = clamp(e.y - (e.y - wl.y) / d * f, e.size, WORLD_H - e.size);
+                            }
+                        }
+                        wl.tickTimer -= dt;
+                        if (wl.tickTimer <= 0) {
+                            wl.tickTimer = wl.tickRate;
+                            const coreR = wl.radius * 0.35;
+                            for (const e of game.enemies) {
+                                if (!e.alive || e.dying) continue;
+                                if (Math.hypot(e.x - wl.x, e.y - wl.y) < coreR + e.size) e.takeDamage(wl.dmg, 'gravity');
+                            }
+                        }
+                    } else {
+                        // 到期爆炸
+                        for (const e of game.enemies) {
+                            if (!e.alive || e.dying) continue;
+                            if (Math.hypot(e.x - wl.x, e.y - wl.y) < wl.explodeRadius + e.size) e.takeDamage(wl.explodeDmg, 'gravity');
+                        }
+                        game.rings.push({ x: wl.x, y: wl.y, r: 6, maxR: wl.explodeRadius, life: 0.4, maxLife: 0.4, color: '#c888ff', width: 5 });
+                        spawnParticles(wl.x, wl.y, 22, '#aa66ff', 140, 0.5, 5);
+                        triggerShake(4, 0.18);
+                        sound.play('explosion');
+                        if (wl.shockwave) {
+                            // 坍缩宇宙：爆炸分裂 8 发贯穿冲击波
+                            for (let i = 0; i < 8; i++) {
+                                const a = (Math.PI * 2 / 8) * i;
+                                const pj = new Projectile(wl.x, wl.y, Math.cos(a) * 260, Math.sin(a) * 260, wl.explodeDmg * 0.5, 0, 0, '#cc99ff', 7);
+                                pj.pierceAll = true; pj.maxLifetime = 0.9;
+                                game.projectiles.push(pj);
+                            }
+                        }
+                    }
+                }
+                game.wells = (game.wells || []).filter(wl => wl.life > 0);
             }
 
             function drawWeaponsVisuals(player, ctx) {

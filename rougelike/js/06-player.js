@@ -26,6 +26,7 @@
                     this.globalCooldownMultiplier = 1;
                     this.damageTakenMultiplier = 1; this.killExplode = false; this.killSpeed = false; this.killSpeedStacks = 0; this.killSpeedTimer = 0; this.synergyBladeSpeed = false;
                     this.extraChoices = 0; this.buffTimers = []; this.expMultiplier = 1;
+                    this.takenDrops = {};
                     this.pickupRange = 70; this.pickupRangeMultiplier = 1;
                     this.level = 1; this.xp = 0; this.xpToNext = 90;
                     this.invincibleTimer = 0; this.flashTimer = 0; this.shieldFlash = 0;

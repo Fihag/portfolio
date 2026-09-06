@@ -36,6 +36,45 @@ describe("魔法幸存者 · 基础数值回归", () => {
   });
 });
 
+describe("新武器与编队", () => {
+  it("三新武器定义与解锁/进化条目齐全", () => {
+    const { R } = loadGame();
+    expect(R(`['holy_beam','plague_cloud','gravity_well'].every(k => !!START_WEAPON_DEFS[k] && !!START_WEAPON_META[k])`)).toBe(true);
+    expect(R(`['unlock_beam','unlock_plague','unlock_well','evo_beam','evo_plague','evo_well'].every(id => !!SKILL_REGISTRY.find(s => s.id === id))`)).toBe(true);
+  });
+  it("暗影军团进化：35% 攻速 + 连击", () => {
+    const { R } = loadGame();
+    const desc = R(`SKILL_REGISTRY.find(s=>s.id==='evo_shadow').desc`);
+    expect(desc.includes("35%")).toBe(true);
+    expect(desc.includes("连击")).toBe(true);
+  });
+  it("编队存取：非法值回落", () => {
+    const { R } = loadGame();
+    expect(R(`saveLoadout(['holy_beam','gravity_well']), loadLoadout().join(',')`)).toBe("holy_beam,gravity_well");
+    expect(R(`localStorage.setItem('rogue_loadout', JSON.stringify(['bad_key','holy_beam'])), loadLoadout().join(',')`)).toBe("holy_beam");
+    expect(R(`localStorage.setItem('rogue_loadout', 'not json'), loadLoadout().length`)).toBe(5);
+  });
+  it("编队门控：编队外武器的解锁卡不出现", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.loadout = ['holy_beam','plague_cloud','gravity_well','orbit_blade','frost_nova']; game.upgradeCount = 99;`);
+    let leaked = 0;
+    for (let i = 0; i < 200; i++) {
+      const ids = R(`generateUpgradeChoices(game.player).map(s => s.id).join(',')`);
+      for (const banned of ["unlock_magic", "unlock_chain", "unlock_meteor", "unlock_shadow"]) {
+        if (ids.split(",").includes(banned)) leaked++;
+      }
+    }
+    expect(leaked).toBe(0);
+  });
+  it("Boss掉落去重：全部领取后不再掉落", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing';`);
+    R(`game.player.takenDrops = { rage_potion: true, life_spring: true, exp_crystal: true, attack_speed_orb: true };`);
+    R(`const b = new Enemy(400, 300, 'boss', 0); b.hp = 1; game.enemies.push(b); b.takeDamage(9999999, 'test');`);
+    expect(R(`game.bossDropPending`)).toBe(false);
+  });
+});
+
 describe("死神之指手动点击", () => {
   it("屏幕坐标+cam 命中世界坐标", () => {
     const { R } = loadGame();

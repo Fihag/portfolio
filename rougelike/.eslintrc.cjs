@@ -50,6 +50,7 @@ module.exports = {
     pauseOverlay: "readonly",
     menuOverlay: "readonly",
     menuDiffs: "readonly",
+    menuLoadout: "readonly",
     menuWeapons: "readonly",
     menuBest: "readonly",
     menuShards: "readonly",
@@ -104,6 +105,10 @@ module.exports = {
     START_WEAPON_DEFS: "readonly",
     START_WEAPON_META: "readonly",
     SKILL_REGISTRY: "readonly",
+    LOADOUT_SIZE: "readonly",
+    DEFAULT_LOADOUT: "readonly",
+    loadLoadout: "readonly",
+    saveLoadout: "readonly",
     // 04-meta
     META_UPGRADES: "readonly",
     META_RELICS: "readonly",

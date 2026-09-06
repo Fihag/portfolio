@@ -45,6 +45,7 @@
             const pauseOverlay = document.getElementById('pause-overlay');
             const menuOverlay = document.getElementById('menu-overlay');
             const menuDiffs = document.getElementById('menu-diffs');
+            const menuLoadout = document.getElementById('menu-loadout');
             const menuWeapons = document.getElementById('menu-weapons');
             const menuBest = document.getElementById('menu-best');
             const menuShards = document.getElementById('menu-shards');
@@ -150,7 +151,9 @@ const $inp = (id) => document.getElementById(id);
 // ==================== 游戏状态 ====================
             // ==================== 游戏状态 ====================
             const game = {
-                state: 'menu', selectedDifficulty: 'normal', selectedWeapon: 'magic_missile', diffMult: 1,
+                state: 'menu', selectedDifficulty: 'normal', diffMult: 1,
+                // 起始武器记忆上次选择；合法性（是否在编队内）由 initGame 校验回落
+                selectedWeapon: (function () { try { return localStorage.getItem('rogue_weapon') || 'magic_missile'; } catch (e) { return 'magic_missile'; } })(),
                 player: null, enemies: [], projectiles: [], experienceOrbs: [],
                 time: 0, score: 0, kills: 0, totalDamageDealt: 0, spawnTimer: 0, spawnInterval: 1.3,
                 difficultyLevel: 1, currentChoices: null, waveNoteShown: {}, upgradeCount: 0,
