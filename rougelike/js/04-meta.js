@@ -8,8 +8,8 @@
             ];
             // ===== 圣物商店（局外购买；带 maxLevel 的圣物可升级；可在面板自由穿戴/卸下） =====
             const META_RELICS = [
-                { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 10% 回复生命', icon: 'heart-pulse', cost: 320 },
-                { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 50% 给攻击者', icon: 'shield-half', cost: 320 },
+                { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 6% 回复生命', icon: 'heart-pulse', cost: 320 },
+                { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 35% 给攻击者', icon: 'shield-half', cost: 320 },
                 { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近）', icon: 'magnet', cost: 240 },
                 { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 360 },
                 { id: 'relic_shield_start', name: '开局护盾', icon: 'shield', cost: 300, maxLevel: 3, upgradeCost: 400,
@@ -17,10 +17,10 @@
                 { id: 'relic_shard_boost', name: '财富之心', desc: '每局结算的灵魂碎片 ×1.2', icon: 'coins', cost: 650 },
                 { id: 'relic_last_stand', name: '背水一战', icon: 'trending-up', cost: 300, maxLevel: 3, upgradeCost: 400, rate: [0.25, 0.35, 0.45],
                     desc: (lv) => '生命每损失 1%，伤害 +' + relicRate('relic_last_stand', lv) + '%（满血无加成，血量越低伤害越高；每级+0.10%）' },
-                { id: 'relic_phantom_step', name: '幻影步', icon: 'wind', cost: 360, maxLevel: 2, upgradeCost: 480, rate: [0.15, 0.25],
-                    desc: (lv) => '受到伤害时有 ' + Math.round(relicRate('relic_phantom_step', lv) * 100) + '% 概率完全闪避（持续伤害不可闪避；每级+10%）' },
+                { id: 'relic_phantom_step', name: '幻影步', icon: 'wind', cost: 360, maxLevel: 1, rate: [0.15],
+                    desc: (lv) => '受到伤害时有 ' + Math.round(relicRate('relic_phantom_step', lv) * 100) + '% 概率完全闪避（持续伤害不可闪避；不可升级）' },
                 { id: 'relic_shadow_clone', name: '影侍守卫', icon: 'shield-half', cost: 450,
-                    desc: '受击时60%概率使周围敌人眩晕0.8秒并减速40%（1.5秒）；每10秒向最近的2个敌人释放影袭，造成30+等级×2伤害' },
+                    desc: '受击时45%概率使周围敌人眩晕0.4秒并减速40%（1.5秒，眩晕对Boss无效）；每10秒向最近的2个敌人释放影袭，造成30+等级×2伤害' },
                 { id: 'relic_time_stop', name: '时停领域', icon: 'clock', cost: 520, maxLevel: 3, upgradeCost: 640, rate: [45, 35, 25],
                     desc: (lv) => '每隔 ' + relicRate('relic_time_stop', lv) + ' 秒冻结全场所有敌人 2 秒（含 Boss；升级缩短触发间隔）' },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }

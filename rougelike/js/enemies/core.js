@@ -191,9 +191,9 @@
                     this.hp -= amount;
                     this.flashTimer = 0.08;
                     game.totalDamageDealt += amount;
-                    // 吸血之爪：造成伤害的 10% 回复生命
+                    // 吸血之爪：造成伤害的 6% 回复生命
                     if (game.player && game.player.relicVamp && amount > 0 && this.alive) {
-                        const heal = Math.max(1, Math.floor(amount * 0.10));
+                        const heal = Math.max(1, Math.floor(amount * 0.06));
                         if (game.player.hp < game.player.maxHp) {
                             game.player.hp = Math.min(game.player.maxHp, game.player.hp + heal);
                             spawnParticles(game.player.x, game.player.y, 3, '#ff5577', 40, 0.3, 2);

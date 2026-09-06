@@ -92,14 +92,16 @@
                             return;
                         }
                     }
-                    // 影侍守卫：受击时60%概率使周围敌人眩晕0.8秒并减速40%（1.5秒）
-                    if ((this.relicGuard || this.relicClone) && !ignoreInvincible && Math.random() < 0.60) {
+                    // 影侍守卫：受击时45%概率使周围敌人眩晕0.4秒并减速40%（1.5秒）；眩晕对 Boss 无效（减速照常）
+                    if ((this.relicGuard || this.relicClone) && !ignoreInvincible && Math.random() < 0.45) {
                         let stunned = 0;
                         for (const e of game.enemies) {
                             if (!e.alive) continue;
                             if (Math.hypot(e.x - this.x, e.y - this.y) < 90 + e.size) {
-                                e.stunTimer = Math.max(e.stunTimer || 0, 0.8);
-                                e.freezeTimer = Math.max(e.freezeTimer || 0, 0.8);
+                                if (!e.isBoss) {
+                                    e.stunTimer = Math.max(e.stunTimer || 0, 0.4);
+                                    e.freezeTimer = Math.max(e.freezeTimer || 0, 0.4);
+                                }
                                 e.applySlow(0.40, 1.5);
                                 stunned++;
                             }

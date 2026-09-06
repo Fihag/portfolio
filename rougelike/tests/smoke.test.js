@@ -24,11 +24,24 @@ describe("魔法幸存者 · 基础数值回归", () => {
     R(`game.selectedDifficulty='impossible'; var z2=new Enemy(500,500,'zombie',0); z2.applySlow(0.5,2);`);
     expect(R(`Math.abs(z2.slowAmount-0.30)<0.0001`)).toBe(true);
   });
-  it("影侍守卫圣物不可升级且描述含60%", () => {
+  it("影侍守卫圣物不可升级且削弱数值正确", () => {
     const { R } = loadGame();
     expect(R(`META_RELICS.find(x=>x.id==='relic_shadow_clone').name`)).toBe("影侍守卫");
     expect(R(`!META_RELICS.find(x=>x.id==='relic_shadow_clone').maxLevel`)).toBe(true);
-    expect(R(`META_RELICS.find(x=>x.id==='relic_shadow_clone').desc.includes('60%')`)).toBe(true);
+    expect(R(`META_RELICS.find(x=>x.id==='relic_shadow_clone').desc.includes('45%')`)).toBe(true);
+    expect(R(`META_RELICS.find(x=>x.id==='relic_shadow_clone').desc.includes('0.4秒')`)).toBe(true);
+  });
+  it("防御圣物削弱：吸血 6% / 荆棘 35% / 幻影步单级", () => {
+    const { R } = loadGame();
+    expect(R(`META_RELICS.find(x=>x.id==='relic_vamp').desc.includes('6%')`)).toBe(true);
+    expect(R(`META_RELICS.find(x=>x.id==='relic_thorn').desc.includes('35%')`)).toBe(true);
+    expect(R(`META_RELICS.find(x=>x.id==='relic_phantom_step').maxLevel`)).toBe(1);
+    expect(R(`relicRate('relic_phantom_step', 2)`)).toBe(0.15); // 老 2 级存档回落 15%
+    // 三新武器基础 DPS 对齐（棱镜 55/2.6 ≈ 21.2、瘴气 22/秒、奇点 14+爆炸）
+    expect(R(`START_WEAPON_DEFS.holy_beam().damage`)).toBe(55);
+    expect(R(`START_WEAPON_DEFS.holy_beam().cooldownTime`)).toBe(2.6);
+    expect(R(`START_WEAPON_DEFS.plague_cloud().damage`)).toBe(11);
+    expect(R(`START_WEAPON_DEFS.gravity_well().damage`)).toBe(7);
   });
   it("剑刃风暴进化 +4", () => {
     const { R } = loadGame();

@@ -397,9 +397,9 @@
                             }
                         } else if (!this.isRanged) {
                             player.takeDamage(this.damage);
-                            // 荆棘光环：反弹 50% 近战伤害给攻击者
+                            // 荆棘光环：反弹 35% 近战伤害给攻击者
                             if (player.relicThorn && this.alive) {
-                                this.takeDamage(Math.max(1, Math.floor(this.damage * 0.5)), 'thorn');
+                                this.takeDamage(Math.max(1, Math.floor(this.damage * 0.35)), 'thorn');
                                 spawnParticles(this.x, this.y, 6, '#88dd55', 60, 0.3, 3);
                             }
                             // 词缀（不可能模式）：灼热=接触附加燃烧 / 嗜血=近战回吸自身
