@@ -73,6 +73,9 @@
                             this.damageReduction = 0.35;
                         } else if (this.typeKey === 'lavabeast') {
                             this.damageReduction = 0.40;
+                        } else if (this.typeKey === 'turret') {
+                            // 天罚炮台：原地不动输出窗口大，全 Boss 最高减伤弥补
+                            this.damageReduction = 0.65;
                         } else {
                             this.damageReduction = 0;
                         }
@@ -306,6 +309,18 @@
                         if (this.plagueCursed && !this.isBoss && game.clouds && Math.random() < (this.plagueBurstChance || 0)) {
                             game.clouds.push({ x: this.x, y: this.y, radius: this.plagueBurstRadius || 45, life: 1.5, maxLife: 1.5, tickRate: 0.5, tickTimer: 0, dmg: this.plagueBurstDmg || 5, burstChance: 0, burstDmg: 0, burstRadius: 45, homing: false, target: null, spreadSlow: this.plagueSpreadSlow || false });
                             spawnParticles(this.x, this.y, 10, '#77dd55', 70, 0.4, 3);
+                        }
+                        // 天罚炮台：核心过载——四向过载激光 + 中心大爆
+                        if (this.typeKey === 'turret') {
+                            game.turretDeathLasers = game.turretDeathLasers || [];
+                            for (let i = 0; i < 4; i++) {
+                                game.turretDeathLasers.push({ x: this.x, y: this.y, angle: (Math.PI / 2) * i, life: 0.4, maxLife: 0.4, hit: false });
+                            }
+                            if (game.player && dist(this, game.player) < 250 + game.player.size) game.player.takeDamage(60);
+                            game.rings.push({ x: this.x, y: this.y, r: 20, maxR: 250, life: 0.5, maxLife: 0.5, color: '#ffcc55', width: 8 });
+                            spawnParticles(this.x, this.y, 40, '#ffdd88', 160, 0.7, 6);
+                            triggerShake(8, 0.5);
+                            sound.play('explosion');
                         }
                         spawnParticles(this.x, this.y, this.isBoss ? 35 : (this.typeKey === 'brute' ? 18 : 8), this.color, 100, 0.5, this.isBoss ? 7 : 4);
                         if (this.isBoss || this.typeKey === 'brute') triggerShake(5, 0.25);

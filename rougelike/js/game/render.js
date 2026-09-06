@@ -78,6 +78,19 @@
                     ctx.fillStyle = `rgba(255,215,0,${alpha})`; ctx.beginPath(); ctx.arc(orb.x, orb.y + floatY, 5, 0, Math.PI * 2); ctx.fill();
                     ctx.fillStyle = `rgba(255,255,200,${alpha*0.8})`; ctx.beginPath(); ctx.arc(orb.x, orb.y + floatY, 2.5, 0, Math.PI * 2); ctx.fill();
                 }
+                // 天罚炮台死亡过载激光（四向射线渐隐）
+                if (game.turretDeathLasers && game.turretDeathLasers.length) {
+                    for (const dl of game.turretDeathLasers) {
+                        const fade = clamp(dl.life / dl.maxLife, 0, 1);
+                        ctx.save();
+                        ctx.translate(dl.x, dl.y); ctx.rotate(dl.angle);
+                        ctx.fillStyle = `rgba(255,90,60,${0.4 * fade})`;
+                        ctx.fillRect(0, -14, 500, 28);
+                        ctx.fillStyle = `rgba(255,230,200,${0.85 * fade})`;
+                        ctx.fillRect(0, -3, 500, 6);
+                        ctx.restore();
+                    }
+                }
                 // 宝箱绘制：金色宝箱 + 发光 + 脉动
                 for (const ch of game.chests) {
                     const by = ch.y + Math.sin(game.time * 3 + ch.bob) * 3;

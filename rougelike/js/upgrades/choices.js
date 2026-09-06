@@ -15,7 +15,7 @@
                     available.push(skill);
                 }
                 const shuffled = [...available].sort(() => Math.random() - 0.5);
-                const choiceCount = 5 + (player.extraChoices || 0);
+                const choiceCount = 5 + (player.extraChoices || 0) + (player.relicChoiceCrown ? 1 : 0);
                 let choices = shuffled.slice(0, choiceCount);
                 if (player.extraChoices) player.extraChoices = 0;
                 if (game.upgradeCount <= 2) {

@@ -325,6 +325,74 @@
                                 this.shurikenTimer = enraged === 2 ? this.shurikenInterval * 0.6 : this.shurikenInterval;
                                 this.fireShuriken(player);
                             }
+                        } else if (this.typeKey === 'turret') {
+                            // ===== 天罚炮台：原地要塞，精准打击 + 区域拒止 =====
+                            const aim = Math.atan2(player.y - this.y, player.x - this.x);
+                            this.turretAim = aim;
+                            // 扇形炮击：3s 一轮 5 发 ±25°（伤 20、弹速 300）
+                            this.turretVolleyTimer = (this.turretVolleyTimer === undefined ? 2.0 : this.turretVolleyTimer) - dt;
+                            if (this.turretVolleyTimer <= 0) {
+                                this.turretVolleyTimer = 3;
+                                for (let i = 0; i < 5; i++) {
+                                    const a = aim - Math.PI / 180 * 25 + Math.PI / 180 * 12.5 * i;
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 300, Math.sin(a) * 300, 20, 0, 0, '#ffcc55', 7, true));
+                                }
+                                sound.play('shoot');
+                                spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 6, '#ffdd88', 60, 0.3, 3);
+                            }
+                            // 扫射激光：锁定(0.7s 预警) → 发射(0.5s，120°/s 扫 60°，线上 35 伤，每束判定一次)，冷却 6s
+                            this.turretLaserTimer = (this.turretLaserTimer === undefined ? 5.0 : this.turretLaserTimer) - dt;
+                            if (!this.turretLaserState || this.turretLaserState === 'idle') {
+                                if (this.turretLaserTimer <= 0) {
+                                    this.turretLaserState = 'charging';
+                                    this.turretLaserT = 0.7;
+                                    this.turretLaserAngle = aim;
+                                }
+                            } else if (this.turretLaserState === 'charging') {
+                                this.turretLaserT -= dt;
+                                this.turretLaserAngle = aim; // 预警期间持续锁定
+                                if (this.turretLaserT <= 0) {
+                                    this.turretLaserState = 'firing';
+                                    this.turretLaserT = 0.5;
+                                    this.turretLaserHit = false;
+                                    sound.play('lightning');
+                                }
+                            } else if (this.turretLaserState === 'firing') {
+                                this.turretLaserT -= dt;
+                                this.turretLaserAngle += dt * Math.PI / 180 * 120;
+                                if (!this.turretLaserHit) {
+                                    const rx = player.x - this.x, ry = player.y - this.y;
+                                    const dirX = Math.cos(this.turretLaserAngle), dirY = Math.sin(this.turretLaserAngle);
+                                    const along = clamp(rx * dirX + ry * dirY, 0, 700);
+                                    const px = rx - dirX * along, py = ry - dirY * along;
+                                    if (px * px + py * py < (18 + player.size) * (18 + player.size)) {
+                                        player.takeDamage(35);
+                                        this.turretLaserHit = true;
+                                    }
+                                }
+                                if (this.turretLaserT <= 0) {
+                                    this.turretLaserState = 'idle';
+                                    this.turretLaserTimer = 6;
+                                }
+                            }
+                            // 投放精英自爆虫：10s 一批 3 只（属性 ×1.25），场上自爆虫上限 6
+                            this.turretDropTimer = (this.turretDropTimer === undefined ? 8.0 : this.turretDropTimer) - dt;
+                            if (this.turretDropTimer <= 0) {
+                                const bomberCount = game.enemies.filter(e => e.alive && e.typeKey === 'bomber').length;
+                                if (bomberCount <= 3) {
+                                    this.turretDropTimer = 10;
+                                    for (let i = 0; i < 3; i++) {
+                                        const b = new Enemy(this.x + rand(-40, 40), this.y + rand(-40, 40), 'bomber', game.difficultyLevel - 1);
+                                        b.hp = Math.floor(b.hp * 1.25); b.maxHp = b.hp;
+                                        b.speed *= 1.25;
+                                        b.eliteBomber = true; // 爆炸伤害 ×1.25 + 外观标识
+                                        game.enemies.push(b);
+                                    }
+                                    spawnParticles(this.x, this.y, 10, '#ff8844', 70, 0.4, 3);
+                                } else {
+                                    this.turretDropTimer = 2; // 场上已满，稍后再投
+                                }
+                            }
                         } else {
                             // ===== 死神骑士：剑气 + 冲击波 + 狂暴 =====
                             let slashCd = this.slashCooldown;
@@ -368,6 +436,45 @@
                             }
                         }
                     }
+                    // ===== 自爆虫：冲锋自爆 =====
+                    if (this.typeKey === 'bomber') {
+                        if (this.bomberFuse === undefined && dist(this, player) < 60 + player.size) {
+                            this.bomberFuse = 0.8; // 进入引爆范围：0.8s 倒计时（加速闪烁预警）
+                        }
+                        if (this.bomberFuse !== undefined) {
+                            this.bomberFuse -= dt;
+                            if (this.bomberFuse <= 0) {
+                                this.alive = false;
+                                // 自爆无经验奖励（击杀才有）；精英化炮台投放的个体伤害 ×1.25
+                                const boomDmg = Math.floor(14 * (this.eliteBomber ? 1.25 : 1));
+                                if (dist(this, player) < 70 + player.size) player.takeDamage(boomDmg);
+                                game.rings.push({ x: this.x, y: this.y, r: 8, maxR: 70, life: 0.35, maxLife: 0.35, color: '#ff5533', width: 5 });
+                                spawnParticles(this.x, this.y, 18, '#ff5533', 120, 0.5, 5);
+                                triggerShake(3, 0.15);
+                                sound.play('explosion');
+                                return;
+                            }
+                        }
+                    }
+                    // ===== 咒术师：治疗脉冲（辅助型，自身不攻击） =====
+                    if (this.typeKey === 'warlock') {
+                        this.warlockHealTimer = (this.warlockHealTimer === undefined ? 2.5 : this.warlockHealTimer) - dt;
+                        if (this.warlockHealTimer <= 0) {
+                            let healed = 0;
+                            for (const e of game.enemies) {
+                                if (e === this || !e.alive || e.isBoss) continue;
+                                if (e.hp < e.maxHp && dist(this, e) < 140 + e.size) {
+                                    e.hp = Math.min(e.maxHp, e.hp + 8);
+                                    healed++;
+                                }
+                            }
+                            if (healed > 0) {
+                                game.rings.push({ x: this.x, y: this.y, r: 12, maxR: 140, life: 0.4, maxLife: 0.4, color: '#66dd44', width: 3 });
+                                spawnParticles(this.x, this.y, 8, '#88ff66', 70, 0.4, 3);
+                            }
+                            this.warlockHealTimer = 2.5;
+                        }
+                    }
                     const dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx, dy) || 0.01;
                     const spd = this.getEffectiveSpeed();
                     let mx = 0, my = 0;
@@ -387,7 +494,10 @@
                         const od = dist(this, other), minDist = (this.size + other.size) * 0.9;
                         if (od < minDist && od > 0) { sepX += (this.x - other.x) / od * (minDist - od) * 0.5; sepY += (this.y - other.y) / od * (minDist - od) * 0.5; }
                     }
-                    this.x += mx * spd * dt + sepX * dt * 0.8; this.y += my * spd * dt + sepY * dt * 0.8;
+                    // 天罚炮台固定阵地：完全跳过位置更新（speed 0 + 免分离力）
+                    if (this.typeKey !== 'turret') {
+                        this.x += mx * spd * dt + sepX * dt * 0.8; this.y += my * spd * dt + sepY * dt * 0.8;
+                    }
                     this.x = clamp(this.x, this.size, WORLD_W - this.size); this.y = clamp(this.y, this.size, WORLD_H - this.size);
                     if (dist(this, player) < this.size + player.size) {
                         if (this.isGhost) {

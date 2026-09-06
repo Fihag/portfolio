@@ -38,6 +38,67 @@
                         ctx.strokeStyle = this.affixColor; ctx.lineWidth = 1.5;
                         ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2); ctx.stroke();
                     }
+                    // ===== 天罚炮台专属视觉 =====
+                    if (this.typeKey === 'turret') {
+                        const aim = this.turretAim || 0;
+                        // 石制基座铆钉
+                        ctx.strokeStyle = 'rgba(255,220,150,0.4)'; ctx.lineWidth = 1.5;
+                        for (let i = 0; i < 4; i++) {
+                            const ca = (Math.PI / 2) * i + Math.PI / 4;
+                            ctx.beginPath(); ctx.arc(this.x + Math.cos(ca) * this.size * 0.75, this.y + Math.sin(ca) * this.size * 0.75, 3, 0, Math.PI * 2); ctx.stroke();
+                        }
+                        // 炮管（指向玩家）
+                        ctx.save();
+                        ctx.translate(this.x, this.y); ctx.rotate(aim);
+                        ctx.fillStyle = '#3a3020'; ctx.strokeStyle = '#ccaa66'; ctx.lineWidth = 2;
+                        ctx.fillRect(this.size * 0.4, -6, this.size * 1.1, 12);
+                        ctx.strokeRect(this.size * 0.4, -6, this.size * 1.1, 12);
+                        ctx.restore();
+                        // 核心辉光：蓄力红色脉冲 / 发射炽红 / 平时金色
+                        const charging = this.turretLaserState === 'charging';
+                        const firing = this.turretLaserState === 'firing';
+                        const cp = charging ? 0.6 + Math.sin(game.time * 25) * 0.4 : 0.5 + Math.sin(game.time * 4) * 0.2;
+                        const coreG = ctx.createRadialGradient(this.x, this.y, 2, this.x, this.y, this.size * 0.75);
+                        coreG.addColorStop(0, firing ? 'rgba(255,80,60,0.85)' : charging ? `rgba(255,60,40,${cp})` : `rgba(255,215,120,${cp})`);
+                        coreG.addColorStop(1, 'rgba(120,90,30,0)');
+                        ctx.fillStyle = coreG; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.75, 0, Math.PI * 2); ctx.fill();
+                        // 扫射激光：预警虚线 / 发射光柱
+                        if (charging) {
+                            ctx.strokeStyle = `rgba(255,60,40,${0.35 + cp * 0.4})`; ctx.lineWidth = 2;
+                            ctx.setLineDash([8, 10]);
+                            ctx.beginPath(); ctx.moveTo(this.x, this.y);
+                            ctx.lineTo(this.x + Math.cos(this.turretLaserAngle) * 700, this.y + Math.sin(this.turretLaserAngle) * 700);
+                            ctx.stroke(); ctx.setLineDash([]);
+                        } else if (firing) {
+                            ctx.save();
+                            ctx.translate(this.x, this.y); ctx.rotate(this.turretLaserAngle);
+                            const fade = clamp(this.turretLaserT / 0.5, 0, 1);
+                            ctx.fillStyle = `rgba(255,90,60,${0.35 * fade})`;
+                            ctx.fillRect(0, -18, 700, 36);
+                            ctx.fillStyle = `rgba(255,220,200,${0.9 * fade})`;
+                            ctx.fillRect(0, -4, 700, 8);
+                            ctx.restore();
+                        }
+                    }
+                    // ===== 自爆虫：引爆倒计时高频闪烁 =====
+                    if (this.typeKey === 'bomber' && this.bomberFuse !== undefined) {
+                        const fp = Math.abs(Math.sin(game.time * 35));
+                        ctx.strokeStyle = `rgba(255,120,60,${fp + 0.2})`; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = `rgba(255,200,120,${fp})`;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.6, 0, Math.PI * 2); ctx.fill();
+                    }
+                    // ===== 精英自爆虫（炮台投放）：亮红光环 =====
+                    if (this.eliteBomber) {
+                        ctx.strokeStyle = 'rgba(255,60,40,0.8)'; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 3, 0, Math.PI * 2); ctx.stroke();
+                    }
+                    // ===== 咒术师：法力辉光 =====
+                    if (this.typeKey === 'warlock') {
+                        const wp = 0.5 + Math.sin(game.time * 3) * 0.3;
+                        ctx.strokeStyle = `rgba(140,80,220,${wp})`; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 6, 0, Math.PI * 2); ctx.stroke();
+                    }
                     // ===== 熔岩巨兽专属视觉 =====
                     if (this.typeKey === 'lavabeast') {
                         const lp = 0.5 + Math.sin(game.time * 5) * 0.3;

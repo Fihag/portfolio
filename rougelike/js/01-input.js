@@ -83,7 +83,7 @@
                 if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
                 const key = e.key;
                 if (game.state === 'levelup') {
-                    if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5') {
+                    if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5' || key === '6') {
                         const idx = parseInt(key) - 1;
                         if (game.currentChoices && game.currentChoices[idx] !== undefined) {
                             game.applyUpgrade(game.currentChoices[idx]);

@@ -22,7 +22,8 @@
                     desc: '受击时45%概率使周围敌人眩晕0.4秒并减速40%（1.5秒，眩晕对Boss无效）；每10秒向最近的2个敌人释放影袭，造成30+等级×2伤害' },
                 { id: 'relic_time_stop', name: '时停领域', icon: 'clock', cost: 520, maxLevel: 3, upgradeCost: 640, rate: [45, 35, 25],
                     desc: (lv) => '主动技能：按 T 键或点击 HUD 时停按钮，冻结全场所有敌人 2 秒（含 Boss）；冷却 ' + relicRate('relic_time_stop', lv) + ' 秒（升级缩短冷却）' },
-                { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
+                { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 },
+                { id: 'relic_choice_crown', name: '抉择之冠', desc: '升级选项恒为 6 个（与抉择之匣叠加可达 7 个）', icon: 'sparkles', cost: 520 }
             ];
             // ===== 成就系统（局外碎片奖励） =====
             const ACHIEVEMENTS = [

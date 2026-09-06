@@ -164,6 +164,43 @@ describe("新武器与编队", () => {
     expect(R(`SKILL_REGISTRY.some(s => s.id === 'pickup_range')`)).toBe(false);
     expect(R(`META_RELICS.find(x => x.id === 'relic_greed').cost`)).toBe(450);
   });
+  it("天罚炮台：原地、2500 血、65% 减伤，跑帧位置不变", () => {
+    const { R } = loadGame();
+    expect(R(`ENEMY_TYPES.turret.hp`)).toBe(2500);
+    expect(R(`ENEMY_TYPES.turret.speed`)).toBe(0);
+    expect(R(`ENEMY_TYPES.turret.damage`)).toBe(50);
+    R(`game.selectedDifficulty='normal'; var t = new Enemy(500, 500, 'turret', 0);`);
+    expect(R(`t.damageReduction`)).toBe(0.65);
+    R(`var sx = t.x, sy = t.y; for (var i = 0; i < 90; i++) t.update(1/60, game.player);`);
+    expect(R(`Math.abs(t.x - sx) < 0.01 && Math.abs(t.y - sy) < 0.01`)).toBe(true);
+  });
+  it("炮台死亡过载：生成四向激光", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing';`);
+    R(`var t = new Enemy(500, 500, 'turret', 0); t.hp = 1; game.enemies.push(t); t.takeDamage(9999999, 'test');`);
+    expect(R(`game.turretDeathLasers.length`)).toBe(4);
+  });
+  it("自爆虫 16 血 / 咒术师 34 血，自爆虫爆炸后无经验球", () => {
+    const { R } = loadGame();
+    expect(R(`ENEMY_TYPES.bomber.hp`)).toBe(16);
+    expect(R(`ENEMY_TYPES.warlock.hp`)).toBe(34);
+  });
+  it("抉择宝箱：第 5 种奖励累加 extraChoices；抉择之冠 520", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing';`);
+    R(`var _or = Math.random; Math.random = function () { return 0.999; }; openChest({}); openChest({}); Math.random = _or;`);
+    expect(R(`game.player.extraChoices`)).toBe(2);
+    expect(R(`META_RELICS.find(x => x.id === 'relic_choice_crown').cost`)).toBe(520);
+    R(`game.player.extraChoices = 0; game.player.relicChoiceCrown = true;`);
+    // 抉择之冠恒 +1：基础 5 张 → 6 张
+    expect(R(`generateUpgradeChoices(game.player).length`)).toBe(6);
+  });
+  it("刷怪批次：场上怪少时单次刷新多只", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length = 0; game.spawnTimer = 0;`);
+    R(`update(1/60)`);
+    expect(R(`game.enemies.filter(e => e.alive).length`)).toBe(3); // 空场首刷 3 只
+  });
 });
 
 describe("死神之指手动点击", () => {

@@ -2,8 +2,8 @@
             const dbgToggleBtn = document.getElementById('dbg-toggle');
             const debugPanel = document.getElementById('debug-panel');
             const dbgNum = (id, def = 0) => { const v = parseFloat($inp(id).value); return isFinite(v) ? v : def; };
-            const DBG_ENEMY_SPAWNABLE = ['zombie', 'runner', 'brute', 'wraith', 'pyromancer', 'hatchling', 'lavaling'];
-            const DBG_BOSS_TYPES = ['boss', 'broodmother', 'assassin', 'lavabeast'];
+            const DBG_ENEMY_SPAWNABLE = ['zombie', 'runner', 'brute', 'wraith', 'pyromancer', 'hatchling', 'lavaling', 'bomber', 'warlock'];
+            const DBG_BOSS_TYPES = ['boss', 'broodmother', 'assassin', 'lavabeast', 'turret'];
             // 复用正式武器定义（debug.js 在 03-skills 之后加载；此前自带副本曾与单源数值漂移）
             const DBG_WEAPON_DEFS = START_WEAPON_DEFS;
             const DBG_WEAPON_NAMES = { magic_missile: '魔法飞弹', orbit_blade: '环绕飞刃', frost_nova: '冰霜新星', lightning_chain: '闪电链', meteor: '陨石', shadow_spirit: '暗影精灵', holy_beam: '圣光棱镜', plague_cloud: '诅咒瘴气', gravity_well: '引力奇点' };

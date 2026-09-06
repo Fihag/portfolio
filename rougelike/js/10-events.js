@@ -81,7 +81,7 @@
 
             function openChest(chest) {
                 const p = game.player;
-                const roll = randInt(0, 3);
+                const roll = randInt(0, 4);
                 if (roll === 0) {
                     p.hp = p.maxHp;
                     p.maxHp += 20;
@@ -106,10 +106,15 @@
                     p.burstTimer = 8;
                     game.warningText = '宝箱：攻速/移速爆发（8秒）！';
                     spawnParticles(p.x, p.y, 25, '#ffaa00', 90, 0.6, 5);
-                } else {
+                } else if (roll === 3) {
                     p.addXp(p.xpToNext);
                     game.warningText = '宝箱：经验书！（+一管经验）';
                     spawnParticles(p.x, p.y, 25, '#ffd700', 90, 0.6, 5);
+                } else {
+                    // 抉择之匣：下次升级 6 选 1（choices.js 消费后归零；可与抉择之冠叠加至 7 卡）
+                    p.extraChoices = (p.extraChoices || 0) + 1;
+                    game.warningText = '宝箱：抉择之匣！下次升级 6 选 1';
+                    spawnParticles(p.x, p.y, 25, '#cc88ff', 90, 0.6, 5);
                 }
                 game.warningTimer = 1.8;
                 sound.play('bossDrop');
@@ -178,6 +183,8 @@
                 if (t > 45 && Math.random() < 0.20) typeKey = 'pyromancer';
                 if (t > 80 && Math.random() < 0.3) typeKey = 'runner';
                 if (t > 100 && Math.random() < 0.15) typeKey = 'brute';
+                if (t > 30 && Math.random() < 0.15) typeKey = 'bomber';
+                if (t > 60 && Math.random() < 0.12) typeKey = 'warlock';
                 const diffBonus = game.difficultyLevel - 1;
                 const ne = new Enemy(x, y, typeKey, diffBonus);
                 // ===== 词缀系统（默认仅不可能模式，普通小怪 50% 概率携带一条；debug 可覆盖概率/难度限制） =====
@@ -213,7 +220,7 @@
                 if ((selDiff === 'hell' || selDiff === 'impossible') && Math.random() < 0.4) {
                     bossType = 'lavabeast';
                 } else {
-                    const bossTypes = ['boss', 'broodmother', 'assassin'];
+                    const bossTypes = ['boss', 'broodmother', 'assassin', 'turret'];
                     bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
                 }
                 const boss = new Enemy(x, y, bossType, diffBonus);

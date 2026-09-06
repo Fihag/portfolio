@@ -20,12 +20,12 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
     const { R } = loadGame();
     R(`initGame(); game.selectedDifficulty='impossible';`);
     R(`
-      ['zombie','runner','brute','wraith','pyromancer','hatchling','lavaling'].forEach((tk,i)=>{
+      ['zombie','runner','brute','wraith','pyromancer','hatchling','lavaling','bomber','warlock'].forEach((tk,i)=>{
         const e = new Enemy(200+i*80, 300, tk, 7);
         e.affixName='迅捷'; e.affixColor='#55ddff';
         game.enemies.push(e);
       });
-      ['boss','broodmother','assassin','lavabeast'].forEach((tk,i)=>{
+      ['boss','broodmother','assassin','lavabeast','turret'].forEach((tk,i)=>{
         const e = new Enemy(300+i*120, 500, tk, 7);
         game.enemies.push(e);
       });

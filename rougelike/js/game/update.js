@@ -32,6 +32,23 @@
                             }
                         }
                     }
+                    // 天罚炮台死亡过载激光：四向射线 0.4s，对玩家各判定一次
+                    if (game.turretDeathLasers && game.turretDeathLasers.length) {
+                        for (const dl of game.turretDeathLasers) {
+                            dl.life -= cappedDt;
+                            if (!dl.hit) {
+                                const rx = player.x - dl.x, ry = player.y - dl.y;
+                                const dirX = Math.cos(dl.angle), dirY = Math.sin(dl.angle);
+                                const along = clamp(rx * dirX + ry * dirY, 0, 500);
+                                const px = rx - dirX * along, py = ry - dirY * along;
+                                if (px * px + py * py < (12 + player.size) * (12 + player.size)) {
+                                    player.takeDamage(30);
+                                    dl.hit = true;
+                                }
+                            }
+                        }
+                        game.turretDeathLasers = game.turretDeathLasers.filter(dl => dl.life > 0);
+                    }
                     // 更新星落燃烧区域
                     if (game.burningZones) {
                         for (let i = game.burningZones.length - 1; i >= 0; i--) {
@@ -256,7 +273,13 @@
                     }
                     // 普通刷怪：精英预警期间照常刷（精英落地时才清场普通小怪）
                     if (!dbg.pauseSpawn) {
-                        if (game.spawnTimer <= 0) { game.spawnTimer = game.spawnInterval; spawnEnemy(); }
+                        if (game.spawnTimer <= 0) {
+                            game.spawnTimer = game.spawnInterval;
+                            // 按场上存量反向调节批次：怪少多刷（≤3→3 连刷）、4~12→2、>12→1，保持场上始终有压力
+                            const aliveNow = game.enemies.filter(e => e.alive).length;
+                            const batch = aliveNow <= 3 ? 3 : (aliveNow <= 12 ? 2 : 1);
+                            for (let i = 0; i < batch; i++) spawnEnemy();
+                        }
                     }
                     // 宝箱更新：倒计时 + 拾取
                     for (let i = game.chests.length - 1; i >= 0; i--) {

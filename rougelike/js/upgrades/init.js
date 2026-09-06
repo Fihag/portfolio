@@ -28,6 +28,8 @@
                 game.player.relicGuard = isRelicActive('relic_shadow_clone');
                 game.player.relicClone = game.player.relicGuard; // 兼容旧名
                 game.player.relicTimeStop = isRelicActive('relic_time_stop');
+                // 抉择之冠：升级选项恒为 6 个（与宝箱抉择之匣的临时 +1 叠加）
+                game.player.relicChoiceCrown = isRelicActive('relic_choice_crown');
                 // 开局护盾圣物（可升级，仅穿戴生效）：采用灵魂护盾机制，护盾量/恢复时间随等级成长
                 const shieldLv = isRelicActive('relic_shield_start') ? relicLevel('relic_shield_start') : 0;
                 if (shieldLv > 0) {
@@ -61,7 +63,7 @@
                 game.warningText = ''; game.warningTimer = 0;
                 game.fireZones = [];
                 game.burningZones = []; game.chainLightningVisuals = []; game.bossDropChoices = null; game.meteorVisuals = [];
-                game.beams = []; game.clouds = []; game.wells = [];
+                game.beams = []; game.clouds = []; game.wells = []; game.turretDeathLasers = [];
                 game.bossDropPending = false;
                 game.shadowZones = [];
                 game.shadowTrails = [];
