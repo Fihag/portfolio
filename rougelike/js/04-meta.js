@@ -33,7 +33,7 @@
                 { id: 'collector',    name: '收集狂', desc: '一局内集齐 3 种进化武器', reward: 80 },
                 { id: 'slayer_500',   name: '千军斩', desc: '单局击杀 500 只怪物', reward: 60 },
                 { id: 'boss_hunter',  name: '屠戮者', desc: '单局击杀 3 个 Boss', reward: 80 },
-                { id: 'all_evolved',  name: '万法归宗', desc: '一局内 5 把武器全部进化', reward: 120 },
+                { id: 'all_evolved',  name: '万法归宗', desc: '一局内 6 把武器全部进化', reward: 120 },
                 { id: 'rich_shards',  name: '大富翁', desc: '累计获得 1000 灵魂碎片', reward: 100 }
             ];
             let achievementsDone = loadAchievements();
@@ -82,8 +82,8 @@
                 if (!achievementsDone.slayer_500 && game.kills >= 500) awardAchievement('slayer_500');
                 // 屠戮者：单局击杀 3 个 Boss
                 if (!achievementsDone.boss_hunter && game.bossKilledCount >= 3) awardAchievement('boss_hunter');
-                // 万法归宗：编队 5 把武器全部进化
-                if (!achievementsDone.all_evolved && game.player.weapons.filter(w => w.evolved).length >= 5) awardAchievement('all_evolved');
+                // 万法归宗：编队 6 把武器全部进化
+                if (!achievementsDone.all_evolved && game.player.weapons.filter(w => w.evolved).length >= 6) awardAchievement('all_evolved');
                 // 大富翁：累计获得 1000 碎片
                 if (!achievementsDone.rich_shards && (metaData.earned || 0) >= 1000) awardAchievement('rich_shards');
             }
