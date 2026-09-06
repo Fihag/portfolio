@@ -286,9 +286,11 @@
                     ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                     ctx.fillStyle = '#ddeeff'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.45, 0, Math.PI * 2); ctx.fill();
                     const pr = this.getEffectivePickupRange();
-                    // 拾取范围虚线圈常显（磁力天赋已删除，基础 70 半径需要可见指引）
-                    ctx.strokeStyle = 'rgba(255,215,100,0.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 8]);
-                    ctx.beginPath(); ctx.arc(this.x, this.y, pr, 0, Math.PI * 2); ctx.stroke();
+                    // 拾取范围虚线圈常显（磁力天赋已删除）；装备贪婪之石后全图吸取，不再显示
+                    if (!this.relicGreed) {
+                        ctx.strokeStyle = 'rgba(255,215,100,0.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 8]);
+                        ctx.beginPath(); ctx.arc(this.x, this.y, pr, 0, Math.PI * 2); ctx.stroke();
+                    }
                     ctx.setLineDash([]); ctx.lineWidth = 1;
                     if (this.soulShield) {
                         if (this.soulShieldAmount >= this.soulShieldMax - 0.01) {
