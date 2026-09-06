@@ -66,7 +66,7 @@
                         this.invincible = false;
                         // ===== Boss 百分比减伤（死神骑士成长型 / 母皇固定，出场3次后+5%） =====
                         if (this.typeKey === 'boss') {
-                            this.damageReduction = Math.min(0.50, 0.25 + 0.04 * (game.bossAppearedCount - 1));
+                            this.damageReduction = Math.min(0.50, 0.25 + 0.04 * (Math.max(1, game.bossAppearedCount) - 1));
                         } else if (this.typeKey === 'broodmother') {
                             this.damageReduction = game.bossAppearedCount >= 3 ? 0.20 : 0.15;
                         } else if (this.typeKey === 'assassin') {
@@ -78,6 +78,10 @@
                             this.damageReduction = 0.65;
                         } else {
                             this.damageReduction = 0;
+                        }
+                        // 不可能模式：所有 Boss 减伤额外 +10%（封顶 75%）
+                        if (this.isBoss && game.selectedDifficulty === 'impossible') {
+                            this.damageReduction = Math.min(0.75, this.damageReduction + 0.10);
                         }
                         this.auraColor = def.auraColor || 'rgba(80,0,80,0.6)';
                         // ===== 召唤技能（虫巢母皇，无数量上限） =====
@@ -194,9 +198,12 @@
                     this.hp -= amount;
                     this.flashTimer = 0.08;
                     game.totalDamageDealt += amount;
-                    // 吸血之爪：造成伤害的 6% 回复生命
-                    if (game.player && game.player.relicVamp && amount > 0 && this.alive) {
+                    // 吸血之爪：造成伤害的 6% 回复生命；内置冷却 1 秒 + 受击后 1.5 秒失效——
+                    // 高频低伤弹幕无法靠命中频率堆回血，价值锚定在单发高伤武器，且站撸循环被打破
+                    if (game.player && game.player.relicVamp && amount > 0 && this.alive
+                        && (game.player.vampIcd || 0) <= 0 && (game.player.vampHurtLock || 0) <= 0) {
                         const heal = Math.max(1, Math.floor(amount * 0.06));
+                        game.player.vampIcd = 1;
                         if (game.player.hp < game.player.maxHp) {
                             game.player.hp = Math.min(game.player.maxHp, game.player.hp + heal);
                             spawnParticles(game.player.x, game.player.y, 3, '#ff5577', 40, 0.3, 2);

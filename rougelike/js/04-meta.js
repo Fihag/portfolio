@@ -7,7 +7,7 @@
             ];
             // ===== 圣物商店（局外购买；带 maxLevel 的圣物可升级；可在面板自由穿戴/卸下） =====
             const META_RELICS = [
-                { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 6% 回复生命', icon: 'heart-pulse', cost: 320 },
+                { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 6% 回复生命（每 1 秒最多触发一次；受击后 1.5 秒内失效）', icon: 'heart-pulse', cost: 320 },
                 { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 35% 给攻击者', icon: 'shield-half', cost: 320 },
                 { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近；唯一拾取范围来源）', icon: 'magnet', cost: 450 },
                 { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 360 },

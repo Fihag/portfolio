@@ -116,6 +116,7 @@
                     dmg = Math.max(1, Math.round(dmg) - this.flatArmor);
                     this.hp -= dmg;
                     if (!ignoreInvincible) this.invincibleTimer = 0.4;
+                    this.vampHurtLock = 1.5; // 受击后吸血失效窗口（惩罚贴脸站撸循环）
                     this.flashTimer = 0.25;
                     this.revengeTimer = 0.5;
                     spawnDamageNumber(this.x, this.y - 15, dmg, '#ff4444');
@@ -245,6 +246,9 @@
                     if (this.revengeTimer > 0) this.revengeTimer -= dt;
                     if (this.burstTimer > 0) this.burstTimer -= dt;
                     if (this.shieldFlash > 0) this.shieldFlash -= dt;
+                    // 吸血之爪限制器：内置冷却与受击失效窗口
+                    if (this.vampIcd > 0) this.vampIcd -= dt;
+                    if (this.vampHurtLock > 0) this.vampHurtLock -= dt;
                     if (this.soulShield && this.soulShieldAmount < this.soulShieldMax) {
                         this.soulShieldAmount = Math.min(this.soulShieldMax, this.soulShieldAmount + (this.soulShieldMax / this.soulShieldRegenTime) * dt);
                     }

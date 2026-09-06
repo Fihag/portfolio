@@ -37,10 +37,10 @@ describe("魔法幸存者 · 基础数值回归", () => {
     expect(R(`META_RELICS.find(x=>x.id==='relic_thorn').desc.includes('35%')`)).toBe(true);
     expect(R(`META_RELICS.find(x=>x.id==='relic_phantom_step').maxLevel`)).toBe(1);
     expect(R(`relicRate('relic_phantom_step', 2)`)).toBe(0.15); // 老 2 级存档回落 15%
-    // 三新武器基础 DPS 对齐（棱镜 29/2.4 ≈ 12.1、瘴气 22/秒、奇点 14+爆炸）
+    // 三新武器基础 DPS 对齐（棱镜 29/2.4 ≈ 12.1、瘴气 20/秒、奇点 14+爆炸）
     expect(R(`START_WEAPON_DEFS.holy_beam().damage`)).toBe(29);
     expect(R(`START_WEAPON_DEFS.holy_beam().cooldownTime`)).toBe(2.4);
-    expect(R(`START_WEAPON_DEFS.plague_cloud().damage`)).toBe(11);
+    expect(R(`START_WEAPON_DEFS.plague_cloud().damage`)).toBe(10);
     expect(R(`START_WEAPON_DEFS.gravity_well().damage`)).toBe(7);
   });
   it("剑刃风暴进化 +4", () => {
@@ -119,13 +119,37 @@ describe("新武器与编队", () => {
     R(`const b = new Enemy(400, 300, 'boss', 0); b.hp = 1; game.enemies.push(b); b.takeDamage(9999999, 'test');`);
     expect(R(`game.bossDropPending`)).toBe(false);
   });
-  it("小怪基础血量 +2 与成长封顶 13 倍", () => {
+  it("小怪基础血量 +3（35/25/19/37）与成长封顶 13 倍", () => {
     const { R } = loadGame();
-    expect(R(`ENEMY_TYPES.zombie.hp`)).toBe(32);
-    expect(R(`ENEMY_TYPES.runner.hp`)).toBe(22);
-    expect(R(`ENEMY_TYPES.boss.hp`)).toBe(1750); // Boss 不受 +2 影响
-    // 难度级极高时血量封顶 13×（32 × 13 = 416）
-    expect(R(`new Enemy(0, 0, 'zombie', 100).hp`)).toBe(416);
+    expect(R(`ENEMY_TYPES.zombie.hp`)).toBe(35);
+    expect(R(`ENEMY_TYPES.runner.hp`)).toBe(25);
+    expect(R(`ENEMY_TYPES.bomber.hp`)).toBe(19);
+    expect(R(`ENEMY_TYPES.warlock.hp`)).toBe(37);
+    expect(R(`ENEMY_TYPES.boss.hp`)).toBe(1750); // Boss 不受 +3 影响
+    // 难度级极高时血量封顶 13×（35 × 13 = 455）
+    expect(R(`new Enemy(0, 0, 'zombie', 100).hp`)).toBe(455);
+  });
+  it("吸血之爪限制器：内置冷却 1s + 受击后 1.5s 失效", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.player.relicVamp = true;`);
+    R(`const z = new Enemy(500, 500, 'zombie', 0); z.hp = 1000; z.maxHp = 1000; game.enemies.push(z);`);
+    R(`var hpBefore = game.player.hp; game.player.hp = 50; z.takeDamage(100, 'test');`);
+    expect(R(`game.player.hp > 50`)).toBe(true); // 首次触发回血
+    expect(R(`game.player.vampIcd`)).toBe(1);
+    R(`z.takeDamage(100, 'test');`);
+    expect(R(`game.player.hp`)).toBe(R(`50 + Math.floor(100 * 0.06)`)); // 冷却中不回血
+    // 受击后失效：清冷却模拟时间流逝，再挨打，吸血不触发
+    R(`game.player.vampIcd = 0; game.player.takeDamage(5, 'default'); z.takeDamage(100, 'test');`);
+    expect(R(`game.player.hp`)).toBe(R(`50 + Math.floor(100 * 0.06) - 5`));
+  });
+  it("不可能模式：Boss 减伤额外 +10%（封顶 75%）", () => {
+    const { R } = loadGame();
+    R(`game.selectedDifficulty='normal'; var b = new Enemy(500, 500, 'boss', 0);`);
+    expect(R(`b.damageReduction`)).toBe(0.25);
+    R(`game.selectedDifficulty='impossible'; var b2 = new Enemy(500, 500, 'boss', 0);`);
+    expect(R(`b2.damageReduction`)).toBe(0.35);
+    R(`var t2 = new Enemy(500, 500, 'turret', 0);`);
+    expect(R(`t2.damageReduction`)).toBe(0.75); // 0.65 + 0.10 触顶
   });
   it("等级溢出：卡池选满后升级不弹面板，全属性 +5%", () => {
     const { R } = loadGame();
@@ -180,10 +204,10 @@ describe("新武器与编队", () => {
     R(`var t = new Enemy(500, 500, 'turret', 0); t.hp = 1; game.enemies.push(t); t.takeDamage(9999999, 'test');`);
     expect(R(`game.turretDeathLasers.length`)).toBe(4);
   });
-  it("自爆虫 16 血 / 咒术师 34 血，自爆虫爆炸后无经验球", () => {
+  it("自爆虫 19 血 / 咒术师 37 血（含小怪 +3），自爆虫爆炸后无经验球", () => {
     const { R } = loadGame();
-    expect(R(`ENEMY_TYPES.bomber.hp`)).toBe(16);
-    expect(R(`ENEMY_TYPES.warlock.hp`)).toBe(34);
+    expect(R(`ENEMY_TYPES.bomber.hp`)).toBe(19);
+    expect(R(`ENEMY_TYPES.warlock.hp`)).toBe(37);
   });
   it("抉择宝箱：第 5 种奖励累加 extraChoices；抉择之冠 520", () => {
     const { R } = loadGame();
