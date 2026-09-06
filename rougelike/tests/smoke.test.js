@@ -37,8 +37,8 @@ describe("魔法幸存者 · 基础数值回归", () => {
     expect(R(`META_RELICS.find(x=>x.id==='relic_thorn').desc.includes('35%')`)).toBe(true);
     expect(R(`META_RELICS.find(x=>x.id==='relic_phantom_step').maxLevel`)).toBe(1);
     expect(R(`relicRate('relic_phantom_step', 2)`)).toBe(0.15); // 老 2 级存档回落 15%
-    // 三新武器基础 DPS 对齐（棱镜 32/1.5 ≈ 21.3、瘴气 22/秒、奇点 14+爆炸）
-    expect(R(`START_WEAPON_DEFS.holy_beam().damage`)).toBe(32);
+    // 三新武器基础 DPS 对齐（棱镜 29/1.5 ≈ 19.3、瘴气 22/秒、奇点 14+爆炸）
+    expect(R(`START_WEAPON_DEFS.holy_beam().damage`)).toBe(29);
     expect(R(`START_WEAPON_DEFS.holy_beam().cooldownTime`)).toBe(1.5);
     expect(R(`START_WEAPON_DEFS.plague_cloud().damage`)).toBe(11);
     expect(R(`START_WEAPON_DEFS.gravity_well().damage`)).toBe(7);
