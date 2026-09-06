@@ -187,7 +187,9 @@
                         try {
                             game.currentChoices = generateUpgradeChoices(this);
                             if (!game.currentChoices.length) {
+                                // 卡池全部选满：等级溢出不弹选项，直接转化为全属性提升
                                 game.state = 'playing';
+                                this.applyOverflowBoost();
                             } else {
                                 sound.play('levelup');
                                 showLevelupPanel(game.currentChoices);
@@ -198,6 +200,17 @@
                         }
                         this.hp = Math.min(this.maxHp, this.hp + Math.floor(this.maxHp * 0.1));
                     }
+                }
+
+                // 等级溢出奖励：升级卡池全部选满后，每级伤害/生命/移速/拾取范围 +5%
+                applyOverflowBoost() {
+                    this.globalDamageMultiplier = (this.globalDamageMultiplier || 1) + 0.05;
+                    this.maxHp = Math.round(this.maxHp * 1.05);
+                    this.speedMultiplier = (this.speedMultiplier || 1) + 0.05;
+                    this.pickupRangeMultiplier = (this.pickupRangeMultiplier || 1) + 0.05;
+                    game.warningText = '升级选项已满！全属性 +5%';
+                    game.warningTimer = 2;
+                    spawnParticles(this.x, this.y, 18, '#ffd700', 90, 0.6, 5);
                 }
 
                 update(dt) {

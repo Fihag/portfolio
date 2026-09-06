@@ -19,7 +19,7 @@
                     } else {
                         const hpBonus = 1 + difficultyBonus * 0.15;
                         this.hp = Math.floor(def.hp * hpBonus);
-                        this.hp = Math.min(this.hp, Math.floor(def.hp * 11));
+                        this.hp = Math.min(this.hp, Math.floor(def.hp * 13));
                         let rawSpeed = def.speed * (1 + difficultyBonus * 0.15);
                         this.speed = Math.min(rawSpeed, def.speed * 1.8);
                         const dmgBonus = 1 + difficultyBonus * 0.10;

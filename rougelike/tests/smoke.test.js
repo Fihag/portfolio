@@ -106,6 +106,28 @@ describe("新武器与编队", () => {
     R(`const b = new Enemy(400, 300, 'boss', 0); b.hp = 1; game.enemies.push(b); b.takeDamage(9999999, 'test');`);
     expect(R(`game.bossDropPending`)).toBe(false);
   });
+  it("小怪基础血量 +2 与成长封顶 13 倍", () => {
+    const { R } = loadGame();
+    expect(R(`ENEMY_TYPES.zombie.hp`)).toBe(32);
+    expect(R(`ENEMY_TYPES.runner.hp`)).toBe(22);
+    expect(R(`ENEMY_TYPES.boss.hp`)).toBe(1750); // Boss 不受 +2 影响
+    // 难度级极高时血量封顶 13×（32 × 13 = 416）
+    expect(R(`new Enemy(0, 0, 'zombie', 100).hp`)).toBe(416);
+  });
+  it("等级溢出：卡池选满后升级不弹面板，全属性 +5%", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing';`);
+    R(`SKILL_REGISTRY.forEach(s => game.player['_skill_' + s.id] = s.maxLevel);`);
+    const dmgBefore = R(`game.player.globalDamageMultiplier`);
+    const hpBefore = R(`game.player.maxHp`);
+    const speedBefore = R(`game.player.speedMultiplier`);
+    R(`game.player.addXp(game.player.xpToNext)`);
+    expect(R(`game.state`)).toBe("playing"); // 不弹升级面板
+    expect(R(`game.player.globalDamageMultiplier - ${dmgBefore}`)).toBeCloseTo(0.05, 5);
+    expect(R(`game.player.maxHp`)).toBe(Math.round(hpBefore * 1.05));
+    expect(R(`game.player.speedMultiplier - ${speedBefore}`)).toBeCloseTo(0.05, 5);
+    expect(R(`game.warningText`).includes("全属性")).toBe(true);
+  });
 });
 
 describe("死神之指手动点击", () => {
