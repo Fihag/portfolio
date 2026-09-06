@@ -8,7 +8,7 @@
                 lightning_chain: () => ({ type: 'lightning_chain', level: 1, cooldown: 0, cooldownTime: 0.95, damage: 20, damageMultiplier: 1, bounceCount: 1, bounceRange: 120, damageFalloff: 0.3, hitCdTime: 0.25 }),
                 meteor:          () => ({ type: 'meteor', level: 1, cooldown: 0, cooldownTime: 5.0, damage: 110, damageMultiplier: 1, radius: 100, doubleChance: 0 }),
                 shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 }),
-                holy_beam:       () => ({ type: 'holy_beam', level: 1, cooldown: 0, cooldownTime: 1.5, damage: 29, damageMultiplier: 1, beamCount: 1, width: 36, duration: 0.35 }),
+                holy_beam:       () => ({ type: 'holy_beam', level: 1, cooldown: 0, cooldownTime: 1.9, damage: 29, damageMultiplier: 1, beamCount: 1, width: 36, duration: 0.35 }),
                 plague_cloud:    () => ({ type: 'plague_cloud', level: 1, cooldown: 0, cooldownTime: 4.5, damage: 11, damageMultiplier: 1, cloudCount: 1, radius: 80, duration: 4, tickRate: 0.5, burstChance: 0.30 }),
                 gravity_well:    () => ({ type: 'gravity_well', level: 1, cooldown: 0, cooldownTime: 9.0, damage: 7, damageMultiplier: 1, wellCount: 1, pullRadius: 240, duration: 3.5, tickRate: 0.5, explodeDamage: 60, explodeRadius: 130 })
             };
