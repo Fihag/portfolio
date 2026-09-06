@@ -2,7 +2,6 @@
             const META_UPGRADES = [
                 { id: 'hp',    name: '生命之种', desc: (l) => '初始生命 +' + (20 * l) + '（每级+20）', icon: 'heart-pulse', maxLevel: 3, costs: [120, 200, 320] },
                 { id: 'dmg',   name: '力量符文', desc: (l) => '初始伤害 +' + (10 * l) + '%（每级+10%）', icon: 'flame', maxLevel: 5, costs: [120, 200, 320, 480, 700] },
-                { id: 'pickup',name: '磁力石',   desc: (l) => '拾取范围 +' + (20 * l) + '%（每级+20%）', icon: 'magnet', maxLevel: 3, costs: [90, 150, 240] },
                 { id: 'xp',    name: '智慧书',   desc: (l) => '经验加成 +' + (15 * l) + '%（每级+15%）', icon: 'book-open', maxLevel: 3, costs: [90, 150, 240] },
                 { id: 'revive',name: '凤凰之羽', desc: (l) => '每局死亡时复活一次（50%血量）', icon: 'flame', maxLevel: 1, costs: [720] }
             ];
@@ -10,7 +9,7 @@
             const META_RELICS = [
                 { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 6% 回复生命', icon: 'heart-pulse', cost: 320 },
                 { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 35% 给攻击者', icon: 'shield-half', cost: 320 },
-                { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近）', icon: 'magnet', cost: 240 },
+                { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近；唯一拾取范围来源）', icon: 'magnet', cost: 450 },
                 { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 360 },
                 { id: 'relic_shield_start', name: '开局护盾', icon: 'shield', cost: 300, maxLevel: 3, upgradeCost: 400,
                     desc: (lv) => '开局获得灵魂护盾：护盾量 ' + (50 + 30 * (lv - 1)) + '，' + Math.max(4, 15 - 3 * (lv - 1)) + ' 秒自动恢复（每级：护盾量+30、恢复-3秒）' },

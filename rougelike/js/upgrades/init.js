@@ -13,7 +13,6 @@
                 // 不可能模式：玩家移速 -20
                 if (game.selectedDifficulty === 'impossible') game.player.speed -= 20;
                 game.player.globalDamageMultiplier = (game.player.globalDamageMultiplier || 1) + 0.10 * metaLevel('dmg');
-                game.player.pickupRangeMultiplier = (game.player.pickupRangeMultiplier || 1) + 0.20 * metaLevel('pickup');
                 game.player.expMultiplier = (game.player.expMultiplier || 1) + 0.15 * metaLevel('xp');
                 if (metaLevel('revive') > 0) { game.player.reviveLeft = 1; }
                 // 圣物（仅穿戴的生效）

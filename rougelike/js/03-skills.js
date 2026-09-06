@@ -100,11 +100,6 @@
                     apply: (p) => { p.speedMultiplier = (p.speedMultiplier || 1) + 0.16; }
                 },
                 {
-                    id: 'pickup_range', name: '磁力吸引', icon: 'magnet', desc: '拾取范围 +25%', maxLevel: 3, color: '#ffdd55',
-                    applies: () => true,
-                    apply: (p) => { p.pickupRangeMultiplier = (p.pickupRangeMultiplier || 1) + 0.25; }
-                },
-                {
                     id: 'hp_regen', name: '生命恢复', icon: 'heart-pulse', desc: '每秒回血 1.5%', maxLevel: 3, color: '#55ee88',
                     applies: () => true,
                     apply: (p) => { p.hpRegenPercent = (p.hpRegenPercent || 0) + 0.015; }

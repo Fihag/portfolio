@@ -158,6 +158,12 @@ describe("新武器与编队", () => {
     expect(R(`DIFFICULTIES.hell.mult`)).toBe(1.35);
     expect(R(`DIFFICULTIES.impossible.mult`)).toBe(1.9);
   });
+  it("磁力天赋移除：拾取价值归贪婪之石独占", () => {
+    const { R } = loadGame();
+    expect(R(`META_UPGRADES.some(u => u.id === 'pickup')`)).toBe(false);
+    expect(R(`SKILL_REGISTRY.some(s => s.id === 'pickup_range')`)).toBe(false);
+    expect(R(`META_RELICS.find(x => x.id === 'relic_greed').cost`)).toBe(450);
+  });
 });
 
 describe("死神之指手动点击", () => {
