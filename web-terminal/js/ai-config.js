@@ -12,10 +12,11 @@
   'use strict';
 
   const cfg = {
-    // OpenAI 兼容接口地址
-    base: 'http://26.245.218.217:1234',
-    // API Key
-    key: 'sk-lm-hfQ6CV0F:0WxXZ3MqWllvzTGww058',
+    // OpenAI 兼容接口地址(默认本地,不要把真实地址/key 提交到 git;
+    // 本地新建 js/ai-config.local.js 覆盖 window.AI_CONFIG 即可,见 README)
+    base: 'http://127.0.0.1:1234',
+    // API Key(留空,本地用 ai-config.local.js 或环境变量注入)
+    key: '',
     // 模型名
     model: 'ornith-1.0-9b',
     // 单次请求超时(毫秒)

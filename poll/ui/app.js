@@ -21,8 +21,8 @@ function showMain() { $('login-view').classList.add('hidden'); $('main-view').cl
 
 async function loadState() {
   state = await api('/state');
-  $('endpoint-hint').textContent = '下游入口: /v1/chat/completions · Bearer ' +
-    (state.config.downstreamKeys[0] ? state.config.downstreamKeys[0] : '(开放)');
+  $('endpoint-hint').textContent = '下游入口: /v1/chat/completions · ' +
+    (state.config.hasDownstreamKeys ? 'Bearer ●●●●(已配置)' : 'Bearer (开放模式,建议配置 key)');
   renderStats();
   renderAccounts();
   renderLogs();
@@ -248,9 +248,12 @@ $('acc-save').onclick = async () => {
 $('settings-btn').onclick = async () => {
   await loadState();
   const c = state.config;
-  $('s-keys').value = (c.downstreamKeys || []).join(', ');
+  // 下游 key 与管理密码不再回显明文:留空=保持不变,填写=覆盖
+  $('s-keys').value = '';
+  $('s-keys').placeholder = c.hasDownstreamKeys ? '已配置(留空保持不变,填写则覆盖)' : '空=开放模式(建议填写,多 key 用逗号分隔)';
   $('s-adminuser').value = c.adminUser || '';
-  $('s-adminpass').value = c.adminPass || '';
+  $('s-adminpass').value = '';
+  $('s-adminpass').placeholder = '留空保持不变';
   $('s-maxretries').value = c.maxRetries;
   $('s-cooldown').value = c.cooldownSeconds;
   $('s-cooldownmax').value = c.cooldownMaxSeconds;
@@ -261,16 +264,19 @@ $('settings-btn').onclick = async () => {
 };
 $('set-cancel').onclick = () => $('set-modal').classList.add('hidden');
 $('set-save').onclick = async () => {
+  // key/密码留空=保持不变,避免把空值覆盖掉已有配置
   const body = {
-    downstreamKeys: $('s-keys').value.split(/[,，\s]+/).filter(Boolean),
     adminUser: $('s-adminuser').value.trim(),
-    adminPass: $('s-adminpass').value.trim(),
     maxRetries: parseInt($('s-maxretries').value, 10) || 0,
     cooldownSeconds: parseInt($('s-cooldown').value, 10) || 30,
     cooldownMaxSeconds: parseInt($('s-cooldownmax').value, 10) || 300,
     balanceInterval: parseInt($('s-balinterval').value, 10) || 3600,
     testModel: testModelPicker.get()
   };
+  const keys = $('s-keys').value.split(/[,，\s]+/).filter(Boolean);
+  if (keys.length) body.downstreamKeys = keys;
+  const pass = $('s-adminpass').value.trim();
+  if (pass) body.adminPass = pass;
   try {
     await api('/settings', { method: 'PUT', body: JSON.stringify(body) });
     $('set-modal').classList.add('hidden');
@@ -279,7 +285,12 @@ $('set-save').onclick = async () => {
 };
 
 $('refresh-btn').onclick = () => loadState().catch(e => alert(e.message));
-$('logout-btn').onclick = () => { localStorage.removeItem('poll_token'); showLogin(); };
+$('logout-btn').onclick = async () => {
+  try { await api('/logout', { method: 'POST' }); } catch {}
+  token = '';
+  localStorage.removeItem('poll_token');
+  showLogin();
+};
 $('login-btn').onclick = async () => {
   try {
     const r = await fetch('/api/login', {

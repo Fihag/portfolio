@@ -6,5 +6,8 @@ config.json
 test/out.txt
 test/*.txt
 
+# 本地模型目录缓存(体积大、可重新生成,不进仓库;可用 POLL_MODEL_INDEX 环境变量指定路径)
+data/model-index.json
+
 # 依赖
 node_modules/

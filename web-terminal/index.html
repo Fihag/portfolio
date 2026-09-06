@@ -18,7 +18,9 @@
   <textarea id="hidden-input" class="hidden-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true"></textarea>
 
   <!-- 按依赖顺序加载(非 module,file:// 可直接打开) -->
+  <!-- ai-config.local.js 为本地覆盖(未跟踪):新建该文件并设置 window.AI_CONFIG 即可覆盖默认 -->
   <script src="js/ai-config.js"></script>
+  <script src="js/ai-config.local.js" onerror="void 0"></script>
   <script src="js/fs.js"></script>
   <script src="js/commands.js"></script>
   <script src="js/terminal.js"></script>

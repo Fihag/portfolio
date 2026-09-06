@@ -1,6 +1,11 @@
 // 验证:登录换 token 机制(密码只出现在登录请求,写操作凭 token)
+// 用法: ADMIN_PASSWORD=xxx [URL=http://127.0.0.1:3000] node scripts/verify-auth.mjs
 const base = process.env.URL || "http://127.0.0.1:3000";
-const PWD = "y1hURonWfC0nv_tg";
+const PWD = process.env.ADMIN_PASSWORD || "";
+if (!PWD) {
+  console.error("缺少 ADMIN_PASSWORD 环境变量,不发送请求。");
+  process.exit(1);
+}
 
 // 1. 随便输密码 → 401,进不去
 let r = await fetch(base + "/api/admin/login", {

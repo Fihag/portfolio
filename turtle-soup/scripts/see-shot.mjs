@@ -1,17 +1,27 @@
-// 用 mimo-v2.5 分析移动端截图,确认 UI 问题
+// 用视觉模型分析移动端截图,确认 UI 问题
+// key 从环境变量读取,不提交到 git:
+//   AI_KEY=sk-xxx [AI_MODEL=mimo-v2.5] node scripts/see-shot.mjs <截图路径>
 import { readFileSync } from "node:fs";
 
-const img = readFileSync("D:/Aphotos/屏幕截图/3b6505a96ccd4017ded82ea41c7270c2.jpg");
+const imgPath = process.argv[2] || "D:/Aphotos/屏幕截图/3b6505a96ccd4017ded82ea41c7270c2.jpg";
+const img = readFileSync(imgPath);
 const b64 = img.toString("base64");
+
+const KEY = process.env.AI_KEY || "";
+if (!KEY) {
+  console.error("缺少 AI_KEY 环境变量。示例: AI_KEY=sk-xxx node scripts/see-shot.mjs <截图路径>");
+  process.exit(1);
+}
+const MODEL = process.env.AI_MODEL || "mimo-v2.5";
 
 const res = await fetch("https://opencode.ai/zen/go/v1/chat/completions", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    Authorization: "Bearer sk-yFl7KEwyBHSB0sM3ESvPhMjn9VptihQ1Koo4jPpIt2BkCH3ltoHwRzjI8mLL5adL",
+    Authorization: "Bearer " + KEY,
   },
   body: JSON.stringify({
-    model: "mimo-v2.5",
+    model: MODEL,
     messages: [
       {
         role: "user",

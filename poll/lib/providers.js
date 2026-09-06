@@ -106,9 +106,7 @@ function buildUpstream(account, pathname, parsed, rawBody, downstreamType) {
     headers['Content-Type'] = 'application/json';
     transform = converted.stream ? conv.openaiSSEToAnthropic() : conv.openaiToAnthropicResp;
   } else {
-    const ct = rawBody && rawBody.length ? undefined : undefined;
-    if (rawBody && rawBody.length) headers['Content-Type'] = 'application/json';
-    if (!rawBody || !rawBody.length) headers['Content-Type'] = 'application/json';
+    headers['Content-Type'] = 'application/json';
   }
   return { url, method, headers, body, transform };
 }

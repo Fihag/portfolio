@@ -308,11 +308,11 @@ const API = "http://127.0.0.1:3000"; // 游戏后端本机地址(公网后端的
 const TOKEN_KEY = "local-review-admin-token";
 const AI_CFG_KEY = "local-review-ai-config";
 
-// 默认 AI 标记配置(可自由切换其他 OpenAI 兼容服务)
+// 默认 AI 标记配置(本地在页面里填写后存 localStorage,不提交到 git;此处不放真实 key)
 const DEFAULT_AI_CFG = {
-  baseUrl: "https://opencode.ai/zen/go",
-  apiKey: "sk-hDg0M7UVRdayT8tMcZOSy9ShX9i4jUdBxQjbi7QBObynUuyvIwcAOYn646qePiR3",
-  model: "deepseek-v4-flash",
+  baseUrl: "",
+  apiKey: "",
+  model: "",
 };
 let aiCfg = { ...DEFAULT_AI_CFG };
 try {

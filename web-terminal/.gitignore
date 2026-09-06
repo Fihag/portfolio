@@ -1,0 +1,6 @@
+# 本地 AI 配置覆盖(含真实地址/key,不进仓库;模板见 js/ai-config.local.example.js)
+js/ai-config.local.js
+
+node_modules/
+*.log
+.DS_Store

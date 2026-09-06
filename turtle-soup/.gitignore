@@ -2,5 +2,10 @@ node_modules/
 dist/
 *.log
 .env
+.env.*
 .DS_Store
 server/data/*.tmp
+# 本机脚本产物与本地覆盖(含真实地址/key,不进仓库)
+scripts/.ngrok-url
+scripts/*.local.mjs
+.env.local

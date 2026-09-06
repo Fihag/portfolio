@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const DEFAULTS = {
   port: 7891,
-  host: '0.0.0.0',
+  host: '127.0.0.1',
   downstreamKeys: [],
   adminUser: 'admin',
   adminPass: 'admin123',

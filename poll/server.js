@@ -26,6 +26,16 @@ function parseArgs() {
 const args = parseArgs();
 const state = createState(args.configFile);
 
+// ---------- 进程级错误兜底 ----------
+process.on('unhandledRejection', (reason) => {
+  log('未捕获的 Promise 拒绝: ' + (reason instanceof Error ? (reason.stack || reason.message) : reason));
+});
+process.on('uncaughtException', (err) => {
+  log('未捕获异常, 进程退出: ' + (err && err.stack ? err.stack : err));
+  try { state.save(); } catch {}
+  process.exit(1);
+});
+
 // ---- 简单内存日志 ----
 state.logs = [];
 function log(msg) {
@@ -81,7 +91,29 @@ function errJson(res, status, message) {
   json(res, status, { error: { message, type: 'poll_api_error' } });
 }
 
-function detectDownstreamType(pathname, headers) {
+// 恒定时间字符串比较(防计时侧信道,用于管理登录校验)
+function safeEqual(a, b) {
+  const sa = String(a === undefined || a === null ? '' : a);
+  const sb = String(b === undefined || b === null ? '' : b);
+  const ba = Buffer.from(sa);
+  const bb = Buffer.from(sb);
+  if (ba.length !== bb.length) return false;
+  return require('crypto').timingSafeEqual(ba, bb);
+}
+
+// 安全解析管理 API 的 JSON 请求体:非法 JSON 返回 400 而不是抛到外层 500
+function parseJsonBody(bodyBuf, res) {
+  const text = (bodyBuf || Buffer.alloc(0)).toString('utf8');
+  if (!text.trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    errJson(res, 400, '请求体不是合法 JSON');
+    return null;
+  }
+}
+
+function detectDownstreamType(pathname) {
   if (pathname === '/v1/messages' || pathname.startsWith('/v1/messages/')) return 'anthropic';
   return 'openai';
 }
@@ -232,7 +264,7 @@ async function handleDownstream(req, res, pathname) {
   if (ct.includes('application/json')) {
     try { parsed = JSON.parse(bodyBuf.toString('utf8')); } catch { return errJson(res, 400, '请求体不是合法 JSON'); }
   }
-  const dt = detectDownstreamType(pathname, req.headers);
+  const dt = detectDownstreamType(pathname);
   await routeWithRetry(res, pathname, bodyBuf, parsed, dt);
 }
 
@@ -246,6 +278,26 @@ function serveUI(req, res, pathname) {
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
 }
+
+// ---- 简单 IP 限流(防管理登录爆破):同一 IP 窗口内最多 max 次 ----
+const loginAttempts = new Map(); // ip -> 时间戳数组
+function loginRateLimited(ip) {
+  const now = Date.now();
+  const windowMs = 5 * 60 * 1000;
+  const stamps = (loginAttempts.get(ip) || []).filter(t => now - t < windowMs);
+  if (stamps.length >= 20) { loginAttempts.set(ip, stamps); return true; }
+  stamps.push(now);
+  loginAttempts.set(ip, stamps);
+  return false;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, stamps] of loginAttempts) {
+    const fresh = stamps.filter(t => now - t < 5 * 60 * 1000);
+    if (fresh.length) loginAttempts.set(ip, fresh);
+    else loginAttempts.delete(ip);
+  }
+}, 5 * 60 * 1000).unref?.();
 
 // ---- 管理 API ----
 function isAdmin(req) {
@@ -274,12 +326,22 @@ async function handleAdmin(req, res, pathname, bodyBuf) {
   const mOne = pathname.match(/^\/api\/accounts\/([^/]+)$/);
 
   if (pathname === '/api/login' && req.method === 'POST') {
-    const b = JSON.parse(bodyBuf.toString('utf8') || '{}');
-    if (b.username === state.config.adminUser && b.password === state.config.adminPass) {
+    const ip = req.socket && req.socket.remoteAddress || '?';
+    if (loginRateLimited(ip)) return errJson(res, 429, '登录尝试过于频繁,请稍后再试');
+    const b = parseJsonBody(bodyBuf, res);
+    if (b === null) return;
+    if (safeEqual(b.username, state.config.adminUser) && safeEqual(b.password, state.config.adminPass)) {
       const token = state.newAdminToken();
       return json(res, 200, { token });
     }
     return errJson(res, 401, '用户名或密码错误');
+  }
+
+  if (pathname === '/api/logout' && req.method === 'POST') {
+    const h = req.headers.authorization || '';
+    const token = h.startsWith('Bearer ') ? h.slice(7) : '';
+    state.revokeAdminToken(token);
+    return json(res, 200, { ok: true });
   }
 
   if (!isAdmin(req)) return errJson(res, 401, '未授权, 请先登录');
@@ -296,7 +358,7 @@ async function handleAdmin(req, res, pathname, bodyBuf) {
       config: {
         port: state.config.port,
         host: state.config.host,
-        downstreamKeys: state.config.downstreamKeys,
+        hasDownstreamKeys: (state.config.downstreamKeys || []).length > 0,
         adminUser: state.config.adminUser,
         strategy: state.config.strategy,
         retryOnFail: state.config.retryOnFail,
@@ -319,7 +381,8 @@ async function handleAdmin(req, res, pathname, bodyBuf) {
   }
 
   if (pathname === '/api/accounts' && req.method === 'POST') {
-    const b = JSON.parse(bodyBuf.toString('utf8') || '{}');
+    const b = parseJsonBody(bodyBuf, res);
+    if (b === null) return;
     if (!b.name || !b.baseURL || !b.apiKey) return errJson(res, 400, 'name/baseURL/apiKey 必填');
     const acc = require('./lib/config').normalizeAccount(Object.assign({ models: [] }, b), state.accounts.length);
     if (state.accounts.some(x => x.id === acc.id)) acc.id = acc.id + '-' + Date.now().toString().slice(-4);
@@ -332,7 +395,8 @@ async function handleAdmin(req, res, pathname, bodyBuf) {
   if (mOne && req.method === 'PUT') {
     const a = accountById(mOne[1]);
     if (!a) return errJson(res, 404, '账户不存在');
-    const b = JSON.parse(bodyBuf.toString('utf8') || '{}');
+    const b = parseJsonBody(bodyBuf, res);
+    if (b === null) return;
     const allowed = ['name', 'type', 'baseURL', 'apiKey', 'weight', 'models', 'enabled', 'note'];
     for (const k of allowed) if (b[k] !== undefined) a[k] = b[k];
     a.weight = Math.max(1, parseInt(a.weight, 10) || 1);
@@ -386,7 +450,8 @@ async function handleAdmin(req, res, pathname, bodyBuf) {
   }
 
   if (pathname === '/api/settings' && req.method === 'PUT') {
-    const b = JSON.parse(bodyBuf.toString('utf8') || '{}');
+    const b = parseJsonBody(bodyBuf, res);
+    if (b === null) return;
     const allowed = ['downstreamKeys', 'adminUser', 'adminPass', 'maxRetries', 'cooldownSeconds', 'cooldownMaxSeconds', 'balanceInterval', 'testModel'];
     for (const k of allowed) if (b[k] !== undefined) state.config[k] = b[k];
     state.save();
@@ -484,8 +549,8 @@ const server = http.createServer(async (req, res) => {
 const port = args.port || state.config.port;
 server.listen(port, state.config.host, () => {
   log(`轮询代理已启动: http://${state.config.host}:${port}`);
-  log(`下游 API 入口: http://127.0.0.1:${port}/v1/chat/completions (Bearer ${(state.config.downstreamKeys[0] || '无(开放)')})`);
-  log(`管理界面: http://127.0.0.1:${port}/admin  (${state.config.adminUser} / ${state.config.adminPass})`);
+  log(`下游 API 入口: http://127.0.0.1:${port}/v1/chat/completions (${(state.config.downstreamKeys || []).length ? '已配置 key' : '开放模式'})`);
+  log(`管理界面: http://127.0.0.1:${port}/admin`);
   log(`已加载 ${state.accounts.length} 个账户`);
   if (state.config.balanceInterval > 0) {
     setTimeout(() => balance.checkAllBalances(state).catch(() => {}), 3000);

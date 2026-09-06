@@ -1,5 +1,8 @@
 'use strict';
 
+// 注意: 本文件与另一网关的 lib/convert.js 保持完全一致(零依赖设计,故意复制而非共享包)。
+// 改了一边必须同步另一边: diff poll/lib/convert.js opencode-gw/lib/convert.js 应无输出(除本注释行)。
+
 const now = () => Math.floor(Date.now() / 1000);
 
 // ============================================================

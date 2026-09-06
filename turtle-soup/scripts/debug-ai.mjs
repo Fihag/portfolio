@@ -1,6 +1,13 @@
 // 实验4:文本格式 prompt vs JSON prompt(各 2 次)
-const BASE = "http://26.245.218.217:1234";
-const KEY = "sk-lm-hfQ6CV0F:0WxXZ3MqWllvzTGww058";
+// 地址/key 从环境变量读取,不提交到 git:
+//   AI_BASE=http://127.0.0.1:1234 AI_KEY=sk-xxx AI_MODEL=xxx node scripts/debug-ai.mjs
+const BASE = process.env.AI_BASE || "http://127.0.0.1:1234";
+const KEY = process.env.AI_KEY || "";
+const MODEL = process.env.AI_MODEL || "ornith-1.0-9b";
+if (!KEY) {
+  console.error("缺少 AI_KEY 环境变量,不发送请求。示例: AI_BASE=http://127.0.0.1:1234 AI_KEY=sk-xxx node scripts/debug-ai.mjs");
+  process.exit(1);
+}
 
 const P_JSON = `围绕主题「深夜」创作一道海龟汤,只输出JSON:{"title":"标题","surface":"汤面","truth":"汤底"}`;
 const P_TEXT = `围绕主题「深夜」创作一道海龟汤。请严格按以下三行输出,不要输出任何其他文字:
@@ -16,7 +23,7 @@ async function call(prompt) {
   const res = await fetch(BASE + "/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + KEY },
-    body: JSON.stringify({ model: "ornith-1.0-9b", messages, max_tokens: 1024, temperature: 0.9 }),
+    body: JSON.stringify({ model: MODEL, messages, max_tokens: 1024, temperature: 0.9 }),
     signal: AbortSignal.timeout(45_000),
   });
   const data = await res.json();
