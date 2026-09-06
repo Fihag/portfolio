@@ -30,9 +30,42 @@ describe("魔法幸存者 · 基础数值回归", () => {
     expect(R(`!META_RELICS.find(x=>x.id==='relic_shadow_clone').maxLevel`)).toBe(true);
     expect(R(`META_RELICS.find(x=>x.id==='relic_shadow_clone').desc.includes('60%')`)).toBe(true);
   });
-  it("剑刃风暴进化 +3", () => {
+  it("剑刃风暴进化 +4", () => {
     const { R } = loadGame();
-    expect(R(`SKILL_REGISTRY.find(s=>s.id==='evo_orbit').desc.includes('+3')`)).toBe(true);
+    expect(R(`SKILL_REGISTRY.find(s=>s.id==='evo_orbit').desc.includes('+4')`)).toBe(true);
+  });
+});
+
+describe("进化门槛统一（3 条线 3+3+4=10 张 + 进化）", () => {
+  it("每把武器门槛线 maxLevel 与 evo applies 门槛一致且总卡数为 10", () => {
+    const { R } = loadGame();
+    const GATES = {
+      magic_missile:  [["missile_damage", 4], ["missile_cooldown", 3], ["missile_count", 3]],
+      orbit_blade:    [["orbit_count", 3], ["orbit_damage", 4], ["orbit_speed", 3]],
+      frost_nova:     [["frost_range", 4], ["frost_damage", 3], ["frost_cd", 3]],
+      lightning_chain:[["chain_bounce", 3], ["chain_range", 3], ["chain_damage", 4]],
+      meteor:         [["meteor_cd", 3], ["meteor_range", 3], ["meteor_damage", 4]],
+      shadow_spirit:  [["shadow_count", 3], ["shadow_speed", 3], ["shadow_damage", 4]],
+      holy_beam:      [["beam_count", 3], ["beam_width", 3], ["beam_damage", 4]],
+      plague_cloud:   [["plague_count", 3], ["plague_range", 3], ["plague_damage", 4]],
+      gravity_well:   [["well_count", 3], ["well_gravity", 3], ["well_damage", 4]]
+    };
+    const EVOS = {
+      magic_missile: "evo_fireball", orbit_blade: "evo_orbit", frost_nova: "evo_frost",
+      lightning_chain: "evo_chain", meteor: "evo_meteor", shadow_spirit: "evo_shadow",
+      holy_beam: "evo_beam", plague_cloud: "evo_plague", gravity_well: "evo_well"
+    };
+    for (const [wtype, gates] of Object.entries(GATES)) {
+      for (const [sid, lv] of gates) {
+        expect(R(`SKILL_REGISTRY.find(s=>s.id==='${sid}') && SKILL_REGISTRY.find(s=>s.id==='${sid}').maxLevel`)).toBe(lv);
+      }
+      const src = R(`SKILL_REGISTRY.find(s=>s.id==='${EVOS[wtype]}').applies.toString()`);
+      for (const [sid, lv] of gates) {
+        expect(src).toContain("_skill_" + sid);
+        expect(src).toMatch(new RegExp("_skill_" + sid + "'\\] \\|\\| 0\\) >= " + lv));
+      }
+      expect(gates.reduce((a, [, lv]) => a + lv, 0)).toBe(10);
+    }
   });
 });
 

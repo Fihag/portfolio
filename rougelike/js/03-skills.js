@@ -35,7 +35,7 @@
                     apply: (p) => { p.globalCooldownMultiplier = (p.globalCooldownMultiplier || 1) * 0.92; }
                 },
                 {
-                    id: 'missile_count', name: '多重射击', icon: 'sparkles', desc: '魔法弹数量 +1', maxLevel: 2, color: '#ffaa33',
+                    id: 'missile_count', name: '多重射击', icon: 'sparkles', desc: '魔法弹数量 +1', maxLevel: 3, color: '#ffaa33',
                     applies: (p) => p.weapons.some(w => w.type === 'magic_missile'),
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'magic_missile'); if (w) w.extraProjectiles = (w.extraProjectiles || 0) + 1; }
                 },
@@ -50,7 +50,7 @@
                     apply: (p) => { p.weapons.push(START_WEAPON_DEFS.orbit_blade()); }
                 },
                 {
-                    id: 'orbit_count', name: '飞刃增殖', icon: 'copy-plus', desc: '飞刃数量 +1', maxLevel: 4, color: '#88ccff',
+                    id: 'orbit_count', name: '飞刃增殖', icon: 'copy-plus', desc: '飞刃数量 +1', maxLevel: 3, color: '#88ccff',
                     applies: (p) => p.weapons.some(w => w.type === 'orbit_blade'),
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) w.bladeCount += 1; }
                 },
@@ -68,6 +68,11 @@
                     id: 'unlock_frost', name: '冰霜新星', icon: 'snowflake', desc: '获得冰霜新星', maxLevel: 1, color: '#aaddff',
                     applies: (p) => !p.weapons.some(w => w.type === 'frost_nova'),
                     apply: (p) => { p.weapons.push(START_WEAPON_DEFS.frost_nova()); }
+                },
+                {
+                    id: 'frost_cd', name: '凛冬迫近', icon: 'timer', desc: '冷却 -0.35秒', maxLevel: 3, color: '#99ccee',
+                    applies: (p) => p.weapons.some(w => w.type === 'frost_nova'),
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); if (w) w.cooldownTime = Math.max(1.0, w.cooldownTime - 0.35); }
                 },
                 {
                     id: 'frost_range', name: '寒潮扩散', icon: 'waves', desc: '范围 +15%', maxLevel: 4, color: '#aaccee',
@@ -131,9 +136,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); if (w) w.damageFalloff = Math.max(0.05, w.damageFalloff - 0.1); }
                 },
                 {
-                    id: 'chain_damage', name: '雷电之力', icon: 'zap', desc: '伤害 +20%', maxLevel: 3, color: '#ffcc44',
+                    id: 'chain_damage', name: '雷电之力', icon: 'zap', desc: '伤害 +15%', maxLevel: 4, color: '#ffcc44',
                     applies: (p) => p.weapons.some(w => w.type === 'lightning_chain'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.20; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.15; }
                 },
                 // ===== 新武器解锁：陨石 =====
                 {
@@ -152,9 +157,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) w.radius *= 1.15; }
                 },
                 {
-                    id: 'meteor_damage', name: '陨石强化', icon: 'flame', desc: '伤害 +30%', maxLevel: 3, color: '#ff6622',
+                    id: 'meteor_damage', name: '陨石强化', icon: 'flame', desc: '伤害 +25%', maxLevel: 4, color: '#ff6622',
                     applies: (p) => p.weapons.some(w => w.type === 'meteor'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.25; }
                 },
                 {
                     id: 'meteor_double', name: '双重陨石', icon: 'copy', desc: '20%几率双陨石', maxLevel: 3, color: '#ffdd55',
@@ -178,9 +183,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) w.attackSpeedMultiplier = (w.attackSpeedMultiplier || 1) + 0.20; }
                 },
                 {
-                    id: 'shadow_damage', name: '暗影侵蚀', icon: 'skull', desc: '伤害 +25%', maxLevel: 3, color: '#9955dd',
+                    id: 'shadow_damage', name: '暗影侵蚀', icon: 'skull', desc: '伤害 +20%', maxLevel: 4, color: '#9955dd',
                     applies: (p) => p.weapons.some(w => w.type === 'shadow_spirit'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.25; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.20; }
                 },
                 {
                     id: 'shadow_slow', name: '暗影束缚', icon: 'network', desc: '命中减速概率 +25%', maxLevel: 3, color: '#cc99ff',
@@ -209,9 +214,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) w.width *= 1.2; }
                 },
                 {
-                    id: 'beam_damage', name: '净化之力', icon: 'flame', desc: '光束伤害 +30%', maxLevel: 3, color: '#ffcc44',
+                    id: 'beam_damage', name: '净化之力', icon: 'flame', desc: '光束伤害 +25%', maxLevel: 4, color: '#ffcc44',
                     applies: (p) => p.weapons.some(w => w.type === 'holy_beam'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.25; }
                 },
                 // ===== 新武器解锁：诅咒瘴气 =====
                 {
@@ -220,7 +225,7 @@
                     apply: (p) => { p.weapons.push(START_WEAPON_DEFS.plague_cloud()); }
                 },
                 {
-                    id: 'plague_count', name: '瘴气增殖', icon: 'copy', desc: '毒云 +1', maxLevel: 2, color: '#77cc55',
+                    id: 'plague_count', name: '瘴气增殖', icon: 'copy', desc: '毒云 +1', maxLevel: 3, color: '#77cc55',
                     applies: (p) => p.weapons.some(w => w.type === 'plague_cloud'),
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.cloudCount += 1; }
                 },
@@ -230,9 +235,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.radius *= 1.15; }
                 },
                 {
-                    id: 'plague_damage', name: '瘟疫侵蚀', icon: 'skull', desc: '毒云伤害 +30%', maxLevel: 3, color: '#55aa33',
+                    id: 'plague_damage', name: '瘟疫侵蚀', icon: 'skull', desc: '毒云伤害 +25%', maxLevel: 4, color: '#55aa33',
                     applies: (p) => p.weapons.some(w => w.type === 'plague_cloud'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.25; }
                 },
                 {
                     id: 'plague_spread', name: '传染强化', icon: 'link', desc: '死亡爆发概率 +15%', maxLevel: 2, color: '#88cc77',
@@ -246,7 +251,7 @@
                     apply: (p) => { p.weapons.push(START_WEAPON_DEFS.gravity_well()); }
                 },
                 {
-                    id: 'well_count', name: '奇点增殖', icon: 'copy', desc: '黑洞 +1', maxLevel: 2, color: '#aa77ee',
+                    id: 'well_count', name: '奇点增殖', icon: 'copy', desc: '黑洞 +1', maxLevel: 3, color: '#aa77ee',
                     applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.wellCount += 1; }
                 },
@@ -256,9 +261,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.pullRadius *= 1.2; }
                 },
                 {
-                    id: 'well_damage', name: '奇点能量', icon: 'trending-up', desc: '黑洞伤害 +30%', maxLevel: 3, color: '#8855cc',
+                    id: 'well_damage', name: '奇点能量', icon: 'trending-up', desc: '黑洞伤害 +25%', maxLevel: 4, color: '#8855cc',
                     applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.damageMultiplier = (w.damageMultiplier || 1) + 0.25; }
                 },
                 {
                     id: 'well_linger', name: '事件视界', icon: 'clock', desc: '存续时间 +0.8秒', maxLevel: 2, color: '#cc99ff',
@@ -268,47 +273,47 @@
                 // ===== 进化融合技能 =====
                 {
                     id: 'evo_fireball', name: '炎爆术', icon: 'flame', desc: '伤害+40%，弹速+30%，火球变大', maxLevel: 1, color: '#ff4400',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'magic_missile'); return w && (p['_skill_missile_damage'] || 0) >= 4 && (p['_skill_missile_cooldown'] || 0) >= 3 && (p['_skill_missile_count'] || 0) >= 2 && !p['_skill_evo_fireball']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'magic_missile'); return w && (p['_skill_missile_damage'] || 0) >= 4 && (p['_skill_missile_cooldown'] || 0) >= 3 && (p['_skill_missile_count'] || 0) >= 3 && !p['_skill_evo_fireball']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'magic_missile'); if (w) { w.evolved = 'fireball'; w.damageMultiplier = (w.damageMultiplier || 1) * 1.4; w.projectileSpeed *= 1.30; w.splashRadius = (w.splashRadius || 30) * 1.3; } }
                 },
                 {
-                    id: 'evo_orbit', name: '剑刃风暴', icon: 'swords', desc: '飞刃+3，转速+50%，命中间隔大幅缩短', maxLevel: 1, color: '#44aaff',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); return w && (p['_skill_orbit_count'] || 0) >= 4 && (p['_skill_orbit_damage'] || 0) >= 4 && (p['_skill_orbit_speed'] || 0) >= 3 && !p['_skill_evo_orbit']; },
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) { w.evolved = 'blade_storm'; w.bladeCount += 3; w.radius = 70; w.rotationSpeed *= 1.5; w.hitCdTime = Math.max(0.1, (w.hitCdTime || 0.28) - 0.18); } }
+                    id: 'evo_orbit', name: '剑刃风暴', icon: 'swords', desc: '飞刃+4，转速+50%，命中间隔大幅缩短', maxLevel: 1, color: '#44aaff',
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); return w && (p['_skill_orbit_count'] || 0) >= 3 && (p['_skill_orbit_damage'] || 0) >= 4 && (p['_skill_orbit_speed'] || 0) >= 3 && !p['_skill_evo_orbit']; },
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'orbit_blade'); if (w) { w.evolved = 'blade_storm'; w.bladeCount += 4; w.radius = 70; w.rotationSpeed *= 1.5; w.hitCdTime = Math.max(0.1, (w.hitCdTime || 0.28) - 0.18); } }
                 },
                 {
                     id: 'evo_frost', name: '极寒领域', icon: 'snowflake', desc: '范围+30%，减速70%，冻结0.8秒', maxLevel: 1, color: '#00ccff',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); return w && (p['_skill_frost_range'] || 0) >= 4 && (p['_skill_frost_damage'] || 0) >= 3 && !p['_skill_evo_frost']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); return w && (p['_skill_frost_range'] || 0) >= 4 && (p['_skill_frost_damage'] || 0) >= 3 && (p['_skill_frost_cd'] || 0) >= 3 && !p['_skill_evo_frost']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'frost_nova'); if (w) { w.evolved = 'frozen_domain'; w.radius *= 1.3; w.slowAmount = 0.7; w.freezeDuration = 0.8; } }
                 },
                 {
                     id: 'evo_chain', name: '雷暴', icon: 'cloud-lightning', desc: '弹跳+2，伤害+30%，冷却-30%，可重复命中', maxLevel: 1, color: '#ffff00',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); return w && (p['_skill_chain_bounce'] || 0) >= 3 && (p['_skill_chain_range'] || 0) >= 3 && (p['_skill_chain_damage'] || 0) >= 3 && !p['_skill_evo_chain']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); return w && (p['_skill_chain_bounce'] || 0) >= 3 && (p['_skill_chain_range'] || 0) >= 3 && (p['_skill_chain_damage'] || 0) >= 4 && !p['_skill_evo_chain']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'lightning_chain'); if (w) { w.evolved = 'thunderstorm'; w.bounceCount += 2; w.damageFalloff = 0; w.cooldownTime *= 0.7; w.damageMultiplier = (w.damageMultiplier || 1) + 0.30; w.allowRehit = true; } }
                 },
                 {
                     id: 'evo_meteor', name: '星落', icon: 'stars', desc: '冷却2.5秒，伤害+40%，留燃烧区', maxLevel: 1, color: '#ff6600',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); return w && (p['_skill_meteor_cd'] || 0) >= 2 && (p['_skill_meteor_range'] || 0) >= 3 && (p['_skill_meteor_damage'] || 0) >= 3 && !p['_skill_evo_meteor']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); return w && (p['_skill_meteor_cd'] || 0) >= 3 && (p['_skill_meteor_range'] || 0) >= 3 && (p['_skill_meteor_damage'] || 0) >= 4 && !p['_skill_evo_meteor']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'meteor'); if (w) { w.evolved = 'starfall'; w.cooldownTime = 2.5; w.damageMultiplier = (w.damageMultiplier || 1) + 0.40; w.leaveBurning = true; w.burningDuration = 2; w.burningTickRate = 0.4; w.burningDamagePercent = 0.30; } }
                 },
                 {
                     id: 'evo_shadow', name: '暗影军团', icon: 'users', desc: '攻速+35%，10% 概率连击', maxLevel: 1, color: '#6600cc',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); return w && (p['_skill_shadow_count'] || 0) >= 3 && (p['_skill_shadow_speed'] || 0) >= 3 && (p['_skill_shadow_damage'] || 0) >= 3 && !p['_skill_evo_shadow']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); return w && (p['_skill_shadow_count'] || 0) >= 3 && (p['_skill_shadow_speed'] || 0) >= 3 && (p['_skill_shadow_damage'] || 0) >= 4 && !p['_skill_evo_shadow']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'shadow_spirit'); if (w) { w.evolved = 'shadow_legion'; w.attackSpeedMultiplier = (w.attackSpeedMultiplier || 1) * 1.35; w.doubleStrike = 0.10; } }
                 },
                 {
                     id: 'evo_beam', name: '棱镜圣裁', icon: 'sparkles', desc: '光束扇形扫射，伤害+30%', maxLevel: 1, color: '#ffcc00',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); return w && (p['_skill_beam_count'] || 0) >= 3 && (p['_skill_beam_width'] || 0) >= 3 && (p['_skill_beam_damage'] || 0) >= 3 && !p['_skill_evo_beam']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); return w && (p['_skill_beam_count'] || 0) >= 3 && (p['_skill_beam_width'] || 0) >= 3 && (p['_skill_beam_damage'] || 0) >= 4 && !p['_skill_evo_beam']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'holy_beam'); if (w) { w.evolved = 'prism_verdict'; w.damageMultiplier = (w.damageMultiplier || 1) * 1.3; } }
                 },
                 {
                     id: 'evo_plague', name: '大瘟疫', icon: 'skull', desc: '毒云跟随敌人，死亡爆发必发并减速', maxLevel: 1, color: '#44aa22',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); return w && (p['_skill_plague_count'] || 0) >= 2 && (p['_skill_plague_range'] || 0) >= 3 && (p['_skill_plague_damage'] || 0) >= 3 && !p['_skill_evo_plague']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); return w && (p['_skill_plague_count'] || 0) >= 3 && (p['_skill_plague_range'] || 0) >= 3 && (p['_skill_plague_damage'] || 0) >= 4 && !p['_skill_evo_plague']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'plague_cloud'); if (w) { w.evolved = 'pandemic'; w.burstChance = 1; } }
                 },
                 {
                     id: 'evo_well', name: '坍缩宇宙', icon: 'network', desc: '爆炸伤害+40%，分裂 8 发冲击波', maxLevel: 1, color: '#8844cc',
-                    applies: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); return w && (p['_skill_well_count'] || 0) >= 2 && (p['_skill_well_gravity'] || 0) >= 3 && (p['_skill_well_damage'] || 0) >= 3 && !p['_skill_evo_well']; },
+                    applies: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); return w && (p['_skill_well_count'] || 0) >= 3 && (p['_skill_well_gravity'] || 0) >= 3 && (p['_skill_well_damage'] || 0) >= 4 && !p['_skill_evo_well']; },
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) { w.evolved = 'singularity'; w.explodeDamage = (w.explodeDamage || 60) * 1.4; } }
                 },
                 // ===== 协同技能 =====

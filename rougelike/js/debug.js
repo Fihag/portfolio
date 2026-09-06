@@ -100,7 +100,7 @@
             const DBG_WEAPON_SKILLS = {
                 magic_missile:   ['missile_damage', 'missile_cooldown', 'missile_count'],
                 orbit_blade:     ['orbit_count', 'orbit_damage', 'orbit_speed'],
-                frost_nova:      ['frost_range', 'frost_damage'],
+                frost_nova:      ['frost_range', 'frost_damage', 'frost_cd'],
                 lightning_chain: ['chain_bounce', 'chain_range', 'chain_falloff', 'chain_damage'],
                 meteor:          ['meteor_cd', 'meteor_range', 'meteor_damage', 'meteor_double'],
                 shadow_spirit:   ['shadow_count', 'shadow_speed', 'shadow_damage', 'shadow_slow', 'shadow_lock'],
