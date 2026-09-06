@@ -45,11 +45,9 @@
                 // 定时炸弹：穿戴时首爆固定在开局 10 秒后（此前提前赋值被下方清零覆盖，导致开局瞬间即爆）
                 game.bombTimer = game.player.relicBomb ? 10 : 0;
                 game.altars = []; game.altarTimer = 45;
-                // 影侍守卫/时停领域计时器复位
+                // 影侍守卫/时停领域计时器复位；时停为主动技能，开局即可使用
                 game.cloneTimer = 10; game.cloneAngle = 0; game.cloneX = undefined; game.cloneY = undefined;
-                if (game.player.relicTimeStop) {
-                    game.timeStopTimer = relicRate('relic_time_stop') || 45;
-                } else { game.timeStopTimer = 0; }
+                game.timeStopTimer = 0;
                 game.superBossSpawned = false; game.bossKilledCount = 0;
                 game.lastBossKillTime = undefined;
                 game.achievements = {};

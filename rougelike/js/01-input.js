@@ -96,6 +96,9 @@
                             applyBossDrop(game.bossDropChoices[idx]);
                         }
                     }
+                } else if (game.state === 'playing') {
+                    // 时停领域主动触发（需穿戴圣物且冷却就绪）
+                    if (key === 't' || key === 'T') triggerTimeStop();
                 }
             });
 

@@ -2,6 +2,7 @@
                 const inGame = game.state !== 'menu';
                 hudTop.style.display = inGame ? 'flex' : 'none';
                 hudWeps.style.display = inGame ? 'flex' : 'none';
+                btnTimeStop.style.display = (inGame && game.player && game.player.relicTimeStop) ? '' : 'none';
                 hudWarning.style.display = 'none';
                 hudHint.style.display = 'none';
                 pauseOverlay.style.display = 'none';
@@ -31,6 +32,10 @@
                 }
                 hudTime.textContent = Math.floor(game.time) + 's';
                 hudKills.textContent = game.kills;
+                // 时停按钮冷却态：冷却中半透明 + title 显示剩余秒数
+                const tsCd = game.timeStopTimer || 0;
+                btnTimeStop.style.opacity = tsCd > 0 ? '0.4' : '1';
+                btnTimeStop.title = tsCd > 0 ? '时停领域 (T)：冷却 ' + Math.ceil(tsCd) + ' 秒' : '时停领域 (T)：就绪';
                 const boss = game.enemies.find(e => e.isBoss && e.alive);
                 if (boss) {
                     hudBoss.style.display = 'flex';
@@ -315,6 +320,7 @@
                 btnPause.innerHTML = dbg.pauseGame ? ICONS.play : ICONS.pause;
                 const dbgPauseEl = $inp('dbg-pause'); if (dbgPauseEl) dbgPauseEl.checked = dbg.pauseGame;
             });
+            btnTimeStop.addEventListener('click', () => { triggerTimeStop(); });
             btnMute.addEventListener('click', () => { btnMute.innerHTML = sound.toggleMute() ? ICONS['volume-x'] : ICONS['volume-2']; });
             // ===== 全屏切换（移动端/桌面通用） =====
             let fsToastTimer = null;

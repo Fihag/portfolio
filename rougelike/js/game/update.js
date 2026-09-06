@@ -313,26 +313,10 @@
                             }
                         }
                     }
-                    // 时停领域：周期冻结全场敌人（含 Boss）2 秒
+                    // 时停领域：主动技能（T 键 / HUD 按钮触发），此处仅结算冷却
                     if (player.relicTimeStop) {
                         game.timeStopTimer -= cappedDt;
-                        if (game.timeStopTimer <= 0) {
-                            game.timeStopTimer = relicRate('relic_time_stop') || 45;
-                            let frozen = 0;
-                            for (const e of game.enemies) {
-                                if (!e.alive || e.deathMarked) continue;
-                                e.freezeTimer = Math.max(e.freezeTimer || 0, 2);
-                                e.flashTimer = Math.max(e.flashTimer || 0, 0.25); // 冻结瞬间闪白，强化时停反馈
-                                frozen++;
-                            }
-                            if (frozen > 0) {
-                                game.warningText = '时停领域！全场敌人冻结 2 秒';
-                                game.warningTimer = 1.5;
-                                triggerShake(3, 0.25);
-                                sound.play('shield');
-                                game.rings.push({ x: player.x, y: player.y, r: 20, maxR: Math.max(WORLD_W, WORLD_H), life: 0.6, maxLife: 0.6, color: '#88ddff', width: 6 });
-                            }
-                        }
+                        if (game.timeStopTimer < 0) game.timeStopTimer = 0;
                     }
                     // 祭坛/传送门：45 秒刷新一次，触碰触发
                     game.altarTimer -= cappedDt;

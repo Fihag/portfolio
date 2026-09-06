@@ -7,9 +7,9 @@ describe("魔法幸存者 · 基础数值回归", () => {
     expect(R(`ENEMY_TYPES.lavabeast.hp`)).toBe(3200);
     expect(R(`ENEMY_TYPES.lavabeast.speed`)).toBe(145);
   });
-  it("不可能倍率 1.8 / 刺客弹速 320/300", () => {
+  it("不可能倍率 1.9 / 刺客弹速 320/300", () => {
     const { R } = loadGame();
-    expect(R(`DIFFICULTIES.impossible.mult`)).toBe(1.8);
+    expect(R(`DIFFICULTIES.impossible.mult`)).toBe(1.9);
     expect(R(`ENEMY_TYPES.assassin.slashSpeed`)).toBe(320);
     expect(R(`ENEMY_TYPES.assassin.shurikenSpeed`)).toBe(300);
   });
@@ -140,6 +140,23 @@ describe("新武器与编队", () => {
     expect(R(`game.player.maxHp`)).toBe(Math.round(hpBefore * 1.05));
     expect(R(`game.player.speedMultiplier - ${speedBefore}`)).toBeCloseTo(0.05, 5);
     expect(R(`game.warningText`).includes("全属性")).toBe(true);
+  });
+  it("时停领域：主动技能触发、冻结与冷却", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing';`);
+    expect(R(`triggerTimeStop()`)).toBe(false); // 未穿戴圣物
+    R(`game.player.relicTimeStop = true; game.timeStopTimer = 0;`);
+    R(`const z = new Enemy(500, 500, 'zombie', 0); game.enemies.push(z);`);
+    expect(R(`triggerTimeStop()`)).toBe(true);
+    expect(R(`game.enemies[0].freezeTimer >= 2`)).toBe(true);
+    expect(R(`game.timeStopTimer`)).toBe(45);
+    expect(R(`triggerTimeStop()`)).toBe(false); // 冷却中不可再次触发
+  });
+  it("难度系数：困难 1.20 / 地狱 1.35 / 不可能 1.9", () => {
+    const { R } = loadGame();
+    expect(R(`DIFFICULTIES.hard.mult`)).toBe(1.20);
+    expect(R(`DIFFICULTIES.hell.mult`)).toBe(1.35);
+    expect(R(`DIFFICULTIES.impossible.mult`)).toBe(1.9);
   });
 });
 

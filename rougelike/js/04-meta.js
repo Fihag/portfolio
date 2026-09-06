@@ -22,7 +22,7 @@
                 { id: 'relic_shadow_clone', name: '影侍守卫', icon: 'shield-half', cost: 450,
                     desc: '受击时45%概率使周围敌人眩晕0.4秒并减速40%（1.5秒，眩晕对Boss无效）；每10秒向最近的2个敌人释放影袭，造成30+等级×2伤害' },
                 { id: 'relic_time_stop', name: '时停领域', icon: 'clock', cost: 520, maxLevel: 3, upgradeCost: 640, rate: [45, 35, 25],
-                    desc: (lv) => '每隔 ' + relicRate('relic_time_stop', lv) + ' 秒冻结全场所有敌人 2 秒（含 Boss；升级缩短触发间隔）' },
+                    desc: (lv) => '主动技能：按 T 键或点击 HUD 时停按钮，冻结全场所有敌人 2 秒（含 Boss）；冷却 ' + relicRate('relic_time_stop', lv) + ' 秒（升级缩短冷却）' },
                 { id: 'relic_deathmark', name: '死神之指', desc: '解锁死神之指：标记目标并抹杀（手动可标记 Boss）', icon: 'skull', cost: 5999 }
             ];
             // ===== 成就系统（局外碎片奖励） =====
@@ -197,5 +197,25 @@
                 metaData.shards -= cost;
                 metaData.upgrades[id] = metaLevel(id) + 1;
                 saveMeta();
+                return true;
+            }
+
+            // ==================== 时停领域（主动技能） ====================
+            // 穿戴时停圣物后主动触发：冻结全场敌人（含 Boss）2 秒，冷却随圣物等级缩短
+            function triggerTimeStop() {
+                if (!game.player || game.state !== 'playing') return false;
+                if (!game.player.relicTimeStop) return false;
+                if ((game.timeStopTimer || 0) > 0) return false;
+                game.timeStopTimer = relicRate('relic_time_stop') || 45;
+                for (const e of game.enemies) {
+                    if (!e.alive || e.deathMarked) continue;
+                    e.freezeTimer = Math.max(e.freezeTimer || 0, 2);
+                    e.flashTimer = Math.max(e.flashTimer || 0, 0.25); // 冻结瞬间闪白，强化时停反馈
+                }
+                triggerShake(3, 0.25);
+                sound.play('shield');
+                game.warningText = '时停领域！全场敌人冻结 2 秒';
+                game.warningTimer = 1.5;
+                game.rings.push({ x: game.player.x, y: game.player.y, r: 20, maxR: Math.max(WORLD_W, WORLD_H), life: 0.6, maxLife: 0.6, color: '#88ddff', width: 6 });
                 return true;
             }

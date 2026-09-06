@@ -20,6 +20,7 @@
             const goNewRecord = document.getElementById('go-newrecord');
             const btnPause = document.getElementById('btn-pause');
             const btnMute = document.getElementById('btn-mute');
+            const btnTimeStop = document.getElementById('btn-timestop');
             const btnFs = document.getElementById('btn-fs');
             const fsToast = document.getElementById('fs-toast');
             const btnDeathMark = document.getElementById('btn-death-mark');
