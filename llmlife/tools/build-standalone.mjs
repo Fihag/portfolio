@@ -68,12 +68,15 @@ function walk(relFile) {
 }
 walk("js/main.js");
 
-/* ---------- 重名检测 ---------- */
+/* ---------- 重名检测 ----------
+   必须在剥掉 export 前缀后的代码上检测：`export const pick` 不剥前缀时
+   匹配不到顶层声明，会和另一模块的局部 `const pick` 在拼接后重名，
+   整个 bundle 直接 SyntaxError 白屏（ESM 分模块作用域时不会暴露）。 */
 const owner = new Map();
 for (const { file, src } of order) {
-  for (const name of topLevelNames(src)) {
+  for (const name of topLevelNames(toClassic(src))) {
     if (owner.has(name)) {
-      console.error(`✗ 顶层声明重名: ${name} 同时在 ${owner.get(name)} 与 ${file}`);
+      console.error(`✗ 顶层声明重名: ${name} 同时在 ${owner.get(name)} 与 ${file}（拼接后将 SyntaxError）`);
       process.exit(1);
     }
     owner.set(name, file);

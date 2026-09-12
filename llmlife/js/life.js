@@ -4,14 +4,13 @@
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
 import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT } from "./config.js";
-import { S, save, addLedger, fmt, setState, defaultState, logToday } from "./state.js";
+import { S, save, addLedger, fmt, setState, defaultState, logToday, pick } from "./state.js";
 import { slotBoosts, favorAll } from "./partners.js";
 import { sampleWorkPay } from "./economy.js";
 import { addAttrs } from "./items.js";
 
 const ACTION_MAP = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
 const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 export const actionOf = id => ACTION_MAP[id];
 

@@ -2,7 +2,7 @@
    LLMLife · 抽卡演出 (ui/gacha.js)
    支付守卫 → pulls.js 出货 → 翻牌演出（跳过/自动）→ 幻觉揭晓
    ================================================================ */
-import { POOLS, RARITY, RORDER, MMAP, PROBS, ITEMS } from "../config.js";
+import { POOLS, RARITY, RORDER, MMAP, ITEMS } from "../config.js";
 import { S, $, save, fmt, addLedger } from "../state.js";
 import { SFX, burst, shake, iconImg, toast } from "../fx.js";
 import { doPulls } from "../pulls.js";

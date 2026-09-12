@@ -95,7 +95,7 @@ export const RARITY = {
   R:  {name:'R',  label:'普通', hex:'#3b82f6', min:31,  max:35},
   SR: {name:'SR', label:'精锐', hex:'#9333ea', min:35,  max:39},
   SSR:{name:'SSR',label:'史诗', hex:'#f59e0b', min:39,  max:41.8},
-  UR: {name:'UR', label:'传说', hex:'#ec4899', min:41.8,max:55},
+  UR: {name:'UR', label:'传说', hex:'#ec4899', min:41.8,max:47},
   UTR:{name:'UTR',label:'神话', hex:'#ff2d55', min:47,  max:55},
   NB: {name:'NB', label:'神迹', hex:'#ff6ec7', min:64,  max:100},
 };
