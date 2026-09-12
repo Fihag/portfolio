@@ -1,0 +1,135 @@
+/* ================================================================
+   LLMLife · 特效层 (fx.js)
+   图标 CDN / 音效 / 粒子 / 飘字
+   粒子画布惰性获取：无 #fx 元素（如测试环境）时静默降级
+   ================================================================ */
+import { $, fmt, pick } from "./state.js";
+
+/* ---------- 图标 CDN ---------- */
+const CDN1 = 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/';
+const CDN2 = 'https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons/';
+export function iconImg(slug, cls=''){
+  const img = document.createElement('img');
+  img.className = cls; img.alt = slug || '?'; img.loading = 'lazy';
+  if(!slug){ // 无图标: 首字母方块兜底
+    const d = document.createElement('div');
+    d.className = cls;
+    d.style.cssText = 'display:flex;align-items:center;justify-content:center;border-radius:8px;background:#e8ecf8;font-weight:900;color:#67719a;font-size:15px';
+    d.style.width = '36px'; d.style.height = '36px';
+    d.textContent = '?';
+    return d;
+  }
+  img.src = CDN1 + slug + '.svg';
+  img.onerror = ()=>{ img.onerror = ()=>{
+    const d = document.createElement('div');
+    const s = img.width || 36;
+    d.style.cssText = `width:${s}px;height:${s}px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#e8ecf8;font-weight:900;color:#67719a;font-size:${Math.round(s*.45)}px`;
+    d.textContent = slug[0].toUpperCase();
+    img.replaceWith(d);
+  }; img.src = CDN2 + slug + '.svg'; };
+  return img;
+}
+
+/* ---------- 音效 ---------- */
+let AC = null, muted = false;
+export function setMuted(v){ muted = !!v; }
+export function isMuted(){ return muted; }
+export function toggleMute(){ muted = !muted; return muted; }
+function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function beep(freq, dur=.12, type='sine', vol=.15, delay=0){
+  if(muted || document.hidden) return;
+  try{
+    const c=ac(), o=c.createOscillator(), g=c.createGain();
+    o.type=type; o.frequency.value=freq;
+    const t=c.currentTime+delay;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.05);
+  }catch(e){}
+}
+function sweep(f0, f1, dur=.5, type='sawtooth', vol=.09, delay=0){
+  if(muted) return;
+  try{
+    const c=ac(), o=c.createOscillator(), g=c.createGain();
+    o.type=type;
+    const t=c.currentTime+delay;
+    o.frequency.setValueAtTime(f0,t);
+    o.frequency.linearRampToValueAtTime(f1,t+dur);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.05);
+  }catch(e){}
+}
+export const SFX = {
+  click:()=>beep(600,.06,'square',.06),
+  pull:()=>{beep(300,.2,'sawtooth',.08);beep(450,.25,'sawtooth',.06,.08);},
+  flip:(i)=>beep(500+i*40,.07,'triangle',.09),
+  rarity:(r)=>{ if(r==='UTR'){[523,659,784,1047,1319,1568].forEach((f,i)=>beep(f,.28,'sine',.15,i*.08));}
+    else if(r==='UR'){[523,659,784,1047,1319].forEach((f,i)=>beep(f,.25,'sine',.14,i*.09));}
+    else if(r==='SSR'){[523,659,784,1047].forEach((f,i)=>beep(f,.2,'sine',.12,i*.08));}
+    else if(r==='SR'){[440,554,659].forEach((f,i)=>beep(f,.15,'sine',.1,i*.07));} },
+  coin:()=>{beep(988,.08,'square',.08);beep(1319,.15,'square',.08,.07);},
+  bad:()=>{beep(200,.3,'sawtooth',.1);beep(150,.4,'sawtooth',.1,.1);},
+  win:()=>{[523,659,784,1047,784,1047,1319].forEach((f,i)=>beep(f,.3,'sine',.13,i*.11));},
+  nb:()=>{ // Fihag V1 专属音效: 彩虹八音盒上滑 + 铃音
+    [523,659,784,1047,1319,1568,2093,2637].forEach((f,i)=>beep(f,.22,'sine',.12,i*.07));
+    [2093,2637,3136,4186].forEach((f,i)=>beep(f,.3,'triangle',.09,.62+i*.09));
+    sweep(880,3200,.9,'sine',.06,.1);
+  },
+};
+
+/* ---------- 粒子 & 飘字 ---------- */
+let fxEl = null, fctx = null, fxReady = false;
+function fxResize(){ if(fxEl){ fxEl.width=innerWidth; fxEl.height=innerHeight; } }
+function ensureFx(){
+  if(fxReady) return !!fctx;
+  fxReady = true;
+  fxEl = document.getElementById('fx');
+  if(!fxEl) return false;
+  fctx = fxEl.getContext('2d');
+  if(!fctx) return false;
+  addEventListener('resize', fxResize); fxResize();
+  requestAnimationFrame(fxLoop);
+  return true;
+}
+let parts = [];
+export function burst(x, y, colors, n=60, power=7){
+  if(!ensureFx()) return;
+  if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, v=(Math.random()*.7+.3)*power;
+    parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,g:.15,life:1,decay:.008+Math.random()*.012,
+      c:colors[Math.floor(Math.random()*colors.length)],s:2+Math.random()*4});
+  }
+}
+function fxLoop(){
+  fctx.clearRect(0,0,fxEl.width,fxEl.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.decay;
+    fctx.globalAlpha=Math.max(0,p.life); fctx.fillStyle=p.c;
+    fctx.fillRect(p.x,p.y,p.s,p.s);
+  }
+  fctx.globalAlpha=1;
+  requestAnimationFrame(fxLoop);
+}
+export function shake(){ if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return; document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); }
+export function floater(text, x, y, color){
+  const d=document.createElement('div'); d.className='floater'; d.textContent=text;
+  d.style.left=x+'px'; d.style.top=y+'px'; d.style.color=color;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1350);
+}
+export function bigMoneyPop(amt){
+  const d=document.createElement('div');
+  d.className='big-money'+(amt<0?' neg':'');
+  d.textContent=(amt>=0?'+':'')+fmt(amt);
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1650);
+}
+let toastTimer=null;
+export function toast(msg, ms=2200){
+  clearTimeout(toastTimer);
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.setAttribute('aria-live','polite'); d.innerHTML=msg;
+  document.body.appendChild(d);
+  toastTimer=setTimeout(()=>d.remove(), ms);
+}

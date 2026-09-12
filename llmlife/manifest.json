@@ -1,0 +1,19 @@
+{
+  "name": "LLMLife · LLM 人生模拟器",
+  "short_name": "LLMLife",
+  "description": "22 岁入行，60 岁结算：行动点日程制人生 + AI 伙伴抽卡。稀有度按 Artificial Analysis v4.3 智能指数标定。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f4fa",
+  "theme_color": "#2f6bff",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

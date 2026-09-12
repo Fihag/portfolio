@@ -1,0 +1,7 @@
+css/style.css
+js/
+sw.js
+package-lock.json
+standalone.html
+node_modules/
+coverage/

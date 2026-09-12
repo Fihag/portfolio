@@ -1,6 +1,6 @@
 # Fihag · 作品集 monorepo
 
-Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站 + 全部 8 个项目源码，一个仓库 = 一个站点，纯 HTML/CSS/JS 为主，零构建。
+Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站 + 全部 9 个项目源码，一个仓库 = 一个站点，纯 HTML/CSS/JS 为主，零构建。
 
 **线上**：https://fihag-portfolio.pages.dev
 
@@ -10,9 +10,10 @@ Claude/Anthropic 官网风格（暖纸感编辑风）的作品集导航站 + 全
 
 | 路径 | 项目 | 访问方式 |
 |---|---|---|
-| `/` | 作品集首页（导航 + 8 张卡片） | 直接访问 |
+| `/` | 作品集首页（导航 + 9 张卡片） | 直接访问 |
 | `/rougelike/` | 魔法幸存者（Canvas 肉鸽生存） | 站内直接玩 |
 | `/tokengacha/` | TokenGacha（LLM API 盲盒经营，PWA） | 站内直接玩 |
+| `/llmlife/` | LLMLife（LLM 人生模拟器：日程制人生 + 伙伴抽卡，PWA，TokenGacha 精神续作） | 站内直接玩 |
 | `/hanghai/` | 数字航海（玻璃拟态猜数冒险） | 站内直接玩 |
 | `/pigeon/debug.html` | 魔法幸存者·Debug（F1 调试面板） | 站内直接玩 |
 | `/pinbei/` | 拼豆库存统计（手绘风管理工具） | 站内直接用 |

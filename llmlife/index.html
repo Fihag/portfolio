@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLMLife · LLM 人生模拟器 — 22 岁入行，60 岁结算</title>
+    <meta
+      name="description"
+      content="LLMLife 是一款 LLM 人生模拟器：接单打工、学习充电、健身社交，把日子过成行动点日程；偶尔抽抽卡，让 AI 伙伴陪你打工。稀有度按 Artificial Analysis v4.3 智能指数标定。"
+    />
+    <meta name="keywords" content="LLMLife, LLM, 人生模拟, 属性养成, 抽卡, gacha, AI模型" />
+    <meta name="author" content="Fihag" />
+    <meta name="theme-color" content="#2f6bff" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧑‍💻</text></svg>"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="LLMLife · LLM 人生模拟器" />
+    <meta
+      property="og:description"
+      content="22 岁毕业入行，60 岁结算人生：打工赚钱、学习涨技术、抽 AI 伙伴随行加成。人生是主线，抽卡是调剂。"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/style.css?v=1" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">跳到主要内容</a>
+    <canvas id="fx" aria-hidden="true"></canvas>
+
+    <header role="banner">
+      <div class="logo" aria-label="LLMLife 人生模拟器">
+        <span class="mark" aria-hidden="true">🧑‍💻</span>LLMLife<small>LLM 人生模拟器</small>
+      </div>
+      <nav class="top-nav" aria-label="主导航" role="navigation">
+        <button data-page="life" aria-label="生活" aria-current="page">生活</button>
+        <button data-page="partners" aria-label="伙伴">伙伴</button>
+        <button data-page="gacha" aria-label="卡池">卡池</button>
+        <button data-page="bag" aria-label="背包">背包</button>
+        <button data-page="data" aria-label="数据">数据</button>
+      </nav>
+      <div class="stat-chips" aria-live="polite" aria-atomic="true">
+        <div class="chip money" aria-label="余额">余额 <b id="h-money">¥0</b></div>
+        <div class="chip" aria-label="行动点">⚡ <b id="h-ap">3/3</b></div>
+        <div class="chip hide-m" aria-label="人生进度">第 <b id="h-day">1</b> 天 · <b id="h-age">22</b> 岁</div>
+      </div>
+      <button class="hbtn" id="btn-skin" aria-label="皮肤中心">🎨<span class="lbl"> 皮肤</span></button>
+      <button class="hbtn" id="btn-mute" aria-label="切换音效">🔊<span class="lbl"> 音效</span></button>
+      <button class="hbtn" id="btn-rates" aria-label="概率公示">📊<span class="lbl"> 概率</span></button>
+      <button class="hbtn" id="btn-dex" aria-label="模型图鉴">📖<span class="lbl"> 图鉴</span></button>
+      <button class="hbtn" id="btn-help" aria-label="玩法说明">❓<span class="lbl"> 玩法</span></button>
+    </header>
+
+    <main id="main">
+      <!-- ============ 页面1: 生活（主循环） ============ -->
+      <div class="page" id="page-life" role="tabpanel" aria-label="生活">
+        <div class="page-head">
+          <h2>生活</h2>
+          <p>每天 <b id="life-ap-total">3</b> 点行动力 · 把日子过成日程 · 心情太低打工容易翻车</p>
+        </div>
+        <div class="notice">
+          <span class="dot"></span><span id="notice-text">📢 公告加载中…</span>
+        </div>
+
+        <div class="attr-grid" id="attr-grid">
+          <div class="attr-card" id="attr-stamina-card">
+            <div class="lb"><span class="ic">🔋</span><span>体力</span></div>
+            <div class="vl"><span id="a-stamina">100</span><small> / <span id="a-staminamax">100</span></small></div>
+            <div class="attr-bar attr-stamina"><i id="bar-stamina" style="width:100%"></i></div>
+          </div>
+          <div class="attr-card" id="attr-mood-card">
+            <div class="lb"><span class="ic">🌤️</span><span>心情</span></div>
+            <div class="vl" id="a-mood">70</div>
+            <div class="attr-bar attr-mood"><i id="bar-mood" style="width:70%"></i></div>
+          </div>
+          <div class="attr-card">
+            <div class="lb"><span class="ic">🧠</span><span>技术</span></div>
+            <div class="vl" id="a-skill">5</div>
+            <div class="attr-bar attr-skill"><i id="bar-skill" style="width:5%"></i></div>
+          </div>
+          <div class="attr-card">
+            <div class="lb"><span class="ic">✨</span><span>魅力</span></div>
+            <div class="vl" id="a-charm">10</div>
+            <div class="attr-bar attr-charm"><i id="bar-charm" style="width:10%"></i></div>
+          </div>
+        </div>
+
+        <div class="panel panel-pad" style="margin-top:14px">
+          <div class="panel-title">🎯 今日行动<span class="right" id="ap-hint">行动点 3/3</span></div>
+          <div class="act-bar" id="act-bar"></div>
+        </div>
+
+        <div class="two-col" style="margin-top:14px">
+          <div class="panel panel-pad">
+            <div class="panel-title">🤝 随行伙伴<span class="right" id="slot-hint">最多 3 位</span></div>
+            <div class="slot-row" id="slot-row"></div>
+            <div class="boost-chips" id="boost-chips" style="margin-top:10px"></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="panel-title">📅 人生进度<span class="right" id="life-progress-txt"></span></div>
+            <div class="free-progress">
+              <div class="lb"><span>距 60 岁结算</span><span id="life-age-txt"></span></div>
+              <div class="bar"><i id="life-progress-bar" style="width:0%"></i></div>
+            </div>
+            <div class="qtip" style="margin-top:10px;margin-bottom:0">
+              💡 周结算：房租 + 伙食 <b id="week-cost"></b>，余额不足会欠租，连续欠租 <b id="grace-weeks"></b> 周破产。
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-pad" style="margin-top:14px">
+          <div class="panel-title">🗒️ 今日日志<span class="right">每天 0 点重置</span></div>
+          <div class="day-log" id="day-log"><div class="day-log-empty">新的一天，选个行动开始吧。</div></div>
+        </div>
+      </div>
+
+      <!-- ============ 页面2: 伙伴 ============ -->
+      <div class="page" id="page-partners">
+        <div class="page-head">
+          <h2>伙伴</h2>
+          <p>AI 伙伴随行加成 · 效果看厂商 · 强度看稀有度与好感 · 重复卡自动折算好感</p>
+        </div>
+        <div class="panel panel-pad" style="margin-bottom:14px">
+          <div class="panel-title">🪁 随行编队<span class="right" id="slot2-hint">0/3</span></div>
+          <div class="slot-row" id="slot-row-2"></div>
+        </div>
+        <div class="panel panel-pad">
+          <div class="panel-title">👥 我的伙伴<span class="right" id="partner-total"></span></div>
+          <div class="partner-grid" id="partner-grid"></div>
+          <div class="item-empty" id="partner-empty" hidden>
+            还没有伙伴。抽卡是次要玩法，但谁不喜欢搭子呢 → 去「卡池」逛逛
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 页面3: 卡池 ============ -->
+      <div class="page" id="page-gacha">
+        <div class="page-head">
+          <h2>卡池</h2>
+          <p>伙伴池 · 限定池赛季轮换 · 道具福袋 · 抽卡是次要玩法（大概）</p>
+        </div>
+        <div class="notice">
+          <span class="dot"></span><span id="notice-text2">📢 公告加载中…</span>
+        </div>
+        <div class="pool-cards" id="pool-cards"></div>
+        <div class="pool-scroll-hint">← 左右滑动查看更多卡池 →</div>
+      </div>
+
+      <!-- ============ 页面4: 背包 ============ -->
+      <div class="page" id="page-bag">
+        <div class="page-head">
+          <h2>背包</h2>
+          <p>道具即买即用 · 咖啡续命 · 手办涨好感 · 刮刮乐看命</p>
+        </div>
+        <div class="panel panel-pad">
+          <div class="panel-title">🎒 道具<span class="right" id="bag-total"></span></div>
+          <div class="item-grid" id="item-grid"></div>
+          <div class="item-empty" id="item-empty" hidden>
+            背包空空。道具在「卡池」的杂物福袋里，偶尔抽两次，生活更有滋味。
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 页面5: 数据 ============ -->
+      <div class="page" id="page-data">
+        <div class="page-head">
+          <h2>数据</h2>
+          <p>成就墙 · 人生统计 · 图鉴 · 全部本地存档</p>
+        </div>
+        <div class="panel panel-pad" id="achieve-panel" style="margin-bottom:14px">
+          <div class="panel-title">🏅 成就墙<span class="right" id="achieve-progress"></span></div>
+          <div class="achieve-grid" id="achieve-grid"></div>
+        </div>
+        <div class="two-col">
+          <div class="panel panel-pad">
+            <div class="panel-title">🧾 收支明细<span class="right">最近 80 条</span></div>
+            <div class="ledger-list" id="ledger-list"></div>
+          </div>
+          <div class="panel panel-pad">
+            <div class="panel-title">📈 人生统计</div>
+            <div class="stat-grid" id="stat-grid"></div>
+          </div>
+        </div>
+        <div
+          id="validate-status"
+          style="font-size:10.5px;color:var(--faint);text-align:right;padding:6px 4px 0"
+        ></div>
+      </div>
+    </main>
+
+    <footer>
+      LLMLife · 人生模拟器，与任何真实人生无关<br />模型与智能指数参考
+      <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis v4.3</a> ·
+      图标来自 <a href="https://lobehub.com/icons" target="_blank">@lobehub/icons</a> ·
+      前作 <a href="https://github.com/Fihag/TokenGacha-Enhanced" target="_blank">TokenGacha</a>
+    </footer>
+
+    <!-- 抽卡动画层 -->
+    <div id="overlay" role="dialog" aria-modal="true" aria-label="抽卡结果">
+      <button id="skip-btn" aria-label="跳过动画">跳过 ▶▶</button>
+      <h2 id="overlay-title">✨ 抽卡结果 ✨</h2>
+      <div class="gacha-row" id="gacha-row"></div>
+      <div class="gacha-summary" id="gacha-summary"></div>
+      <button id="close-overlay">确定</button>
+    </div>
+
+    <!-- 彩蛋特效 -->
+    <div id="goldflash"></div>
+
+    <!-- 弹窗 -->
+    <div class="modal-mask" id="modal-mask" role="dialog" aria-modal="true" aria-label="弹窗">
+      <div class="modal" id="modal-box" role="document"></div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+    <script>
+      // file:// 直开时 ES Module 受 CORS 限制无法运行, 引导到单文件离线版
+      if (location.protocol === "file:") {
+        document.addEventListener("DOMContentLoaded", () => {
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            '<div style="position:fixed;inset:0;z-index:999;background:var(--bg,#0d1121);color:var(--txt,#e8ecff);display:flex;align-items:center;justify-content:center;padding:24px"><div style="max-width:420px;background:var(--panel,#171c33);border:1px solid var(--line,#2a3158);border-radius:16px;padding:22px;line-height:1.7"><h3 style="margin:0 0 8px">🚫 这里打不开 ES Module 版</h3><p style="font-size:13px;color:var(--dim,#9aa3cf);margin:0 0 14px">浏览器禁止 file:// 页面加载 ES Module。两个办法：</p><p style="font-size:13px;margin:0 0 6px">1️⃣ 双击同目录的 <b>standalone.html</b>（单文件离线版，直接能玩）</p><p style="font-size:13px;margin:0">2️⃣ 或在项目目录运行 <code>npx serve .</code> 后访问 localhost</p></div></div>'
+          );
+        });
+      }
+    </script>
+    <script>
+      // PWA
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+      }
+    </script>
+  </body>
+</html>
