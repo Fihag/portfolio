@@ -36,9 +36,9 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect($("page-life").getAttribute("aria-hidden")).toBe("false");
   });
 
-  it("头部芯片渲染余额/行动点/天数", () => {
+  it("头部芯片渲染余额/体力/天数", () => {
     expect($("h-money").textContent).toContain("800");
-    expect($("h-ap").textContent).toBe("3/3");
+    expect($("h-stamina").textContent).toBe("100/100");
     expect($("h-day").textContent).toBe("1");
     expect($("h-age").textContent).toBe("22");
   });
@@ -54,12 +54,12 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect(rest.disabled).toBe(false);
   });
 
-  it("点击打工后余额/日志/行动点联动刷新", async () => {
-    const before = S.money;
+  it("点击打工后余额/体力/日志联动刷新", async () => {
+    const before = NS.S.money;
     const btn = document.querySelector('[data-actbtn="work"]');
     btn.click();
-    expect(S.money).not.toBe(before);
-    expect($("h-ap").textContent.startsWith("2/")).toBe(true);
+    expect(NS.S.money).not.toBe(before);
+    expect($("h-stamina").textContent).toBe("62/100");
     expect($("day-log").textContent.length).toBeGreaterThan(5);
   });
 
@@ -91,6 +91,40 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect(NS.S.stats.pulls).toBe(1);
     document.getElementById("close-overlay").click();
     expect(document.getElementById("overlay").classList.contains("show")).toBe(false);
+  });
+
+  it("抽杂物福袋后确定按钮可见可点（卡死回归）", () => {
+    NS.S.flags.autoSkip = true;
+    NS.S.money = 10000;
+    document.querySelector('[data-page="gacha"]').click();
+    document.querySelector('[data-pull="item"][data-n="1"]').click();
+    const close = document.getElementById("close-overlay");
+    expect(close.classList.contains("show")).toBe(true);
+    close.click();
+    expect(document.getElementById("overlay").classList.contains("show")).toBe(false);
+  });
+
+  it("结束今天 → 新的一天弹窗 → 日期推进", () => {
+    PROBS.EVENT = 0;
+    const day = NS.S.life.day;
+    document.getElementById("btn-end-day").click();
+    expect($("modal-mask").classList.contains("show")).toBe(true);
+    document.querySelector('[data-act="confirm-end-day"]').click();
+    expect(NS.S.life.day).toBe(day + 1);
+    expect($("modal-mask").classList.contains("show")).toBe(true); // 新的一天弹窗
+    document.querySelector("#modal-box .big-btn").click();
+    expect($("modal-mask").classList.contains("show")).toBe(false);
+  });
+
+  it("header 重开按钮 → 确认 → 进度清空", () => {
+    NS.S.money = 5000;
+    NS.S.life.day = 40;
+    document.getElementById("btn-restart").click();
+    expect($("modal-mask").classList.contains("show")).toBe(true);
+    document.querySelector('[data-act="confirm-reset"]').click();
+    expect(NS.S.money).toBe(800);
+    expect(NS.S.life.day).toBe(1);
+    expect(NS.S.ending).toBeNull();
   });
 
   it("欢迎弹窗 → 开始按钮闭环", async () => {

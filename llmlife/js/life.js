@@ -19,15 +19,21 @@ export function canDo(actionId){
   if(S.ending) return {ok:false, reason:'本局已结束，开个新周目再战'};
   const a = ACTION_MAP[actionId];
   if(!a) return {ok:false, reason:'未知行动'};
-  if(S.life.ap <= 0) return {ok:false, reason:'今天行动点已用完，早点休息'};
+  if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
+    return {ok:false, reason:'今天已经躺平过了，再用道具回体力或结束今天'};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
   if(a.money > S.money) return {ok:false, reason:'钱包不够了，先去打工'};
   return {ok:true};
 }
 
+/** 还有没有任何可执行的行动（供"体力见底"提示与禁用态汇总） */
+export function anyActionAvailable(){
+  return ACTIONS.some(a => canDo(a.id).ok);
+}
+
 /**
- * 执行一次行动；行动点耗尽时自动日切
- * @returns {{ok:boolean, line?:string, lines?:string[], dayEnded?:boolean}}
+ * 执行一次行动（无行动点上限，只受体力/钱包/限次约束；日切由「结束今天」显式触发）
+ * @returns {{ok:boolean, line?:string, lines?:string[]}}
  */
 export function doAction(actionId){
   const guard = canDo(actionId);
@@ -37,9 +43,9 @@ export function doAction(actionId){
   const attr = S.life.attrs;
   const applied = [];
 
-  S.life.ap--;
   if(a.stamina) attr.stamina -= a.stamina;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
+  if(actionId === 'rest') S.life.restUsed++;
 
   let line;
   if(actionId === 'work'){
@@ -82,10 +88,9 @@ export function doAction(actionId){
   logToday(line);
   const msNew = checkMilestones();
   for(const m of msNew) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
-  let dayEnded = false;
-  if(S.life.ap <= 0){ dayEnded = true; lines.push(...endDay()); }
+  if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或结束今天');
   save();
-  return {ok:true, line, lines, dayEnded};
+  return {ok:true, line, lines};
 }
 
 /* ---------- 加权抽取事件 ---------- */
@@ -97,27 +102,36 @@ function weightedPick(pool){
   return null;
 }
 
-/* ---------- 日切：事件 → 睡眠 → 周结算 → 年龄 → 结局 ---------- */
+/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 年龄 → 结局 ---------- */
+function fireEvent(){
+  const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
+  if(!ev) return null;
+  const delta = {mood:ev.mood||0, stamina:ev.stamina||0, skill:ev.skill||0, charm:ev.charm||0};
+  addAttrs(delta);
+  if(ev.money){ S.money += ev.money; addLedger(`事件·${ev.name}`, ev.money); }
+  const nums = [
+    ev.money ? `¥${ev.money > 0 ? '+' : ''}${ev.money}` : '',
+    delta.mood ? `心情${delta.mood > 0 ? '+' : ''}${delta.mood}` : '',
+    delta.stamina ? `体力${delta.stamina}` : '',
+    delta.skill ? `技术+${delta.skill}` : '',
+    delta.charm ? `魅力+${delta.charm}` : '',
+  ].filter(Boolean).join('，');
+  return `🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`;
+}
+
 export function endDay(){
   const lines = [];
-  if(!S.ending && Math.random() < PROBS.EVENT){
-    const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
-    if(ev){
-      const delta = {mood:ev.mood||0, stamina:ev.stamina||0, skill:ev.skill||0, charm:ev.charm||0};
-      addAttrs(delta);
-      if(ev.money){ S.money += ev.money; addLedger(`事件·${ev.name}`, ev.money); }
-      const nums = [
-        ev.money ? `¥${ev.money > 0 ? '+' : ''}${ev.money}` : '',
-        delta.mood ? `心情${delta.mood > 0 ? '+' : ''}${delta.mood}` : '',
-        delta.stamina ? `体力${delta.stamina}` : '',
-        delta.skill ? `技术+${delta.skill}` : '',
-        delta.charm ? `魅力+${delta.charm}` : '',
-      ].filter(Boolean).join('，');
-      lines.push(`🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`);
+  // 每天必发 1 个事件（PROBS.EVENT=1），概率追加第 2 个
+  if(Math.random() < PROBS.EVENT){
+    const first = fireEvent();
+    if(first) lines.push(first);
+    if(Math.random() < PROBS.EVENT_EXTRA){
+      const second = fireEvent();
+      if(second && second !== first) lines.push(second);
     }
   }
   S.life.day++;
-  S.life.ap = LIFE.AP_PER_DAY;
+  S.life.restUsed = 0;
   const attr = S.life.attrs;
   attr.stamina = Math.min(S.life.staminaMax, attr.stamina + LIFE.SLEEP_RECOVER);
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
@@ -129,6 +143,7 @@ export function endDay(){
   }
   const end = checkEnd();
   if(end) lines.push(`🏁 人生结算：${end.title}`);
+  S._today = []; // 今日日志跨天重置
   save();
   return lines;
 }

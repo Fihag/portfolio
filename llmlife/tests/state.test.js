@@ -12,7 +12,7 @@ describe("state 存档 v1", () => {
     const s = defaultState();
     expect(s.money).toBe(START_MONEY);
     expect(s.life.day).toBe(1);
-    expect(s.life.ap).toBe(3);
+    expect(s.life.restUsed).toBe(0);
     expect(s.life.attrs.stamina).toBe(100);
     expect(s.slots).toHaveLength(SLOT_COUNT);
     expect(s.partners).toEqual([]);

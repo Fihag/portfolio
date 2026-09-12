@@ -94,33 +94,38 @@ function showGacha(results, pool){
   }
 
   function flipOne(i){
-    const el = els[i];
-    if(el.classList.contains('flipped')) return;
-    el.classList.add('flipped','pop');
-    flippedCount++;
-    const res = results[i];
-    const rr = res.kind === 'item' ? res.rarity : dispOf(res).r; // 演出按伪装档位走
-    SFX.flip(i);
-    if(rr==='NB'){
-      setTimeout(()=>{
-        goldFlash();
-        const rect = el.getBoundingClientRect();
-        burst(rect.left+rect.width/2, rect.top+rect.height/2, ['#ff2d55','#ffd700','#41d9ff','#7c3aed','#22c55e','#ff6ec7','#fff'], 220, 13);
-        shake();
-      }, 250);
-    }else if(rr==='SSR'||rr==='UR'||rr==='UTR'){
-      setTimeout(()=>{
-        if(results[i]._halluc) goldFlash();
-        const rect = el.getBoundingClientRect();
-        burst(rect.left+rect.width/2, rect.top+rect.height/2,
-          rr==='UTR' ? ['#ff2d55','#f59e0b','#2f6bff','#fff'] : (rr==='UR' ? ['#ff5f6d','#f59e0b','#2f6bff','#fff'] : ['#f59e0b','#fde68a','#fff']),
-          rr==='UTR' ? 160 : (rr==='UR' ? 120 : 70), rr==='UTR' ? 11 : (rr==='UR' ? 9 : 7));
-        if(rr==='UR'||rr==='UTR') shake();
-      }, 250);
-    }
-    if(flippedCount >= results.length){
-      setTimeout(playBestSfx, 260);
-      finish();
+    try{
+      const el = els[i];
+      if(el.classList.contains('flipped')) return;
+      el.classList.add('flipped','pop');
+      flippedCount++;
+      const res = results[i];
+      const rr = res.kind === 'item' ? res.rarity : dispOf(res).r; // 演出按伪装档位走
+      SFX.flip(i);
+      if(rr==='NB'){
+        setTimeout(()=>{
+          goldFlash();
+          const rect = el.getBoundingClientRect();
+          burst(rect.left+rect.width/2, rect.top+rect.height/2, ['#ff2d55','#ffd700','#41d9ff','#7c3aed','#22c55e','#ff6ec7','#fff'], 220, 13);
+          shake();
+        }, 250);
+      }else if(rr==='SSR'||rr==='UR'||rr==='UTR'){
+        setTimeout(()=>{
+          if(results[i]._halluc) goldFlash();
+          const rect = el.getBoundingClientRect();
+          burst(rect.left+rect.width/2, rect.top+rect.height/2,
+            rr==='UTR' ? ['#ff2d55','#f59e0b','#2f6bff','#fff'] : (rr==='UR' ? ['#ff5f6d','#f59e0b','#2f6bff','#fff'] : ['#f59e0b','#fde68a','#fff']),
+            rr==='UTR' ? 160 : (rr==='UR' ? 120 : 70), rr==='UTR' ? 11 : (rr==='UR' ? 9 : 7));
+          if(rr==='UR'||rr==='UTR') shake();
+        }, 250);
+      }
+      if(flippedCount >= results.length){
+        setTimeout(playBestSfx, 260);
+        finish();
+      }
+    }catch(err){
+      console.error('[gacha] flip error', err);
+      finish(); // 单卡演出异常也不能困住玩家
     }
   }
 
@@ -133,7 +138,12 @@ function showGacha(results, pool){
   $('skip-btn').onclick = ()=>{ skipped = true; els.forEach((e, i)=>{ if(!e.classList.contains('flipped')) setTimeout(()=>flipOne(i), i*40); }); };
 
   function finish(){
-    $('gacha-summary').innerHTML = summaryHTML(results);
+    try{
+      $('gacha-summary').innerHTML = summaryHTML(results);
+    }catch(err){
+      console.error('[gacha] summary error', err);
+      $('gacha-summary').innerHTML = `共获得 <b>${results.length}</b> 个结果`;
+    }
     $('gacha-summary').classList.add('show');
     $('close-overlay').classList.add('show');
     setTimeout(showHalluc, skipped ? 2400 : 650);
@@ -142,12 +152,17 @@ function showGacha(results, pool){
 }
 
 function summaryHTML(results){
-  const items = results.filter(r=>r.kind==='item').length;
-  const best = results.reduce((a,r)=> RORDER.indexOf(dispOf(r).r) > RORDER.indexOf(dispOf(a).r) ? r : a, results[0]);
-  const m = dispOf(best);
-  const hex = RARITY[m.r].hex;
-  const dupeNote = results.filter(r=>r.kind==='partner').length ? ' · 重复伙伴自动折算好感' : '';
-  return `共获得 <b>${results.length}</b> 个结果${items ? `（含道具 ×${items}）` : ''} · 最佳: <b style="color:${hex}">${m.name}</b>（${m.r}）${dupeNote}`;
+  const partners = results.filter(r=>r.kind==='partner');
+  const items = results.filter(r=>r.kind==='item');
+  const parts = [`共获得 <b>${results.length}</b> 个结果`];
+  if(items.length) parts.push(`道具 ×${items.length}`);
+  if(partners.length){
+    const best = partners.reduce((a,r)=> RORDER.indexOf(dispOf(r).r) > RORDER.indexOf(dispOf(a).r) ? r : a, partners[0]);
+    const m = dispOf(best);
+    parts.push(`最佳伙伴: <b style="color:${RARITY[m.r].hex}">${m.name}</b>（${m.r}）`);
+    parts.push('重复伙伴自动折算好感');
+  }
+  return parts.join(' · ');
 }
 
 /* ---------- 道具卡面辅助（道具不走 MMAP） ---------- */

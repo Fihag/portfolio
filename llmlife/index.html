@@ -41,9 +41,10 @@
       </nav>
       <div class="stat-chips" aria-live="polite" aria-atomic="true">
         <div class="chip money" aria-label="余额">余额 <b id="h-money">¥0</b></div>
-        <div class="chip" aria-label="行动点">⚡ <b id="h-ap">3/3</b></div>
+        <div class="chip" aria-label="体力">🔋 <b id="h-stamina">100</b></div>
         <div class="chip hide-m" aria-label="人生进度">第 <b id="h-day">1</b> 天 · <b id="h-age">22</b> 岁</div>
       </div>
+      <button class="hbtn" id="btn-restart" aria-label="重开新周目">🔄<span class="lbl"> 重开</span></button>
       <button class="hbtn" id="btn-skin" aria-label="皮肤中心">🎨<span class="lbl"> 皮肤</span></button>
       <button class="hbtn" id="btn-mute" aria-label="切换音效">🔊<span class="lbl"> 音效</span></button>
       <button class="hbtn" id="btn-rates" aria-label="概率公示">📊<span class="lbl"> 概率</span></button>
@@ -56,7 +57,7 @@
       <div class="page" id="page-life" role="tabpanel" aria-label="生活">
         <div class="page-head">
           <h2>生活</h2>
-          <p>每天 <b id="life-ap-total">3</b> 点行动力 · 把日子过成日程 · 心情太低打工容易翻车</p>
+          <p>行动不设上限 · 体力说话 · 心情太低打工容易翻车</p>
         </div>
         <div class="notice">
           <span class="dot"></span><span id="notice-text">📢 公告加载中…</span>
@@ -86,7 +87,7 @@
         </div>
 
         <div class="panel panel-pad" style="margin-top:14px">
-          <div class="panel-title">🎯 今日行动<span class="right" id="ap-hint">行动点 3/3</span></div>
+          <div class="panel-title">🎯 今日行动<span class="right" style="display:flex;gap:8px;align-items:center"><span id="rest-hint" style="letter-spacing:0"></span><button class="mini-btn" id="btn-end-day">🛏 结束今天</button></span></div>
           <div class="act-bar" id="act-bar"></div>
         </div>
 

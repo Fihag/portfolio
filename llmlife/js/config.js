@@ -108,7 +108,8 @@ export const PROBS = {
   FIHAG: 0.0001,     // Fihag V1 全池隐藏
   HALLUC: 0.002,     // 幻觉假 UR 彩蛋
   SKIN_DROP: 0.015,  // 皮肤掉落
-  EVENT: 0.62,       // 日切随机事件触发概率
+  EVENT: 1,          // 日切必发 1 个随机事件
+  EVENT_EXTRA: 0.3,  // 30% 概率追加第 2 个
 };
 export const PITY_MAX = 60;        // 伙伴池保底
 export const ITEM_PITY_MAX = 30;   // 道具池保底
@@ -137,8 +138,8 @@ export const VENDOR_NAMES = {
   Kimi:'月之暗面', Xiaomi:'小米', 'Motif Technologies':'Motif',
   'MBZUAI Institute of Foundation Models':'MBZUAI', 'Sapiens AI':'Sapiens AI',
 };
-/* 稀有度 → 效果强度（dual 按六折折算进两项） */
-export const RBOOST = {N:.02, R:.05, SR:.10, SSR:.18, UR:.30, UTR:.45, NB:.60};
+/* 稀有度 → 效果强度（dual 按六折折算进两项；温和加强档） */
+export const RBOOST = {N:.04, R:.08, SR:.18, SSR:.30, UR:.50, UTR:.75, NB:1.00};
 /* 好感等级: 阈值数组 + 效果系数（随行行动每次 +2~4 好感, 重复卡 +10） */
 export const FAVOR_LEVELS = [0, 30, 90];
 export const FAVOR_MULT = [1, 1.15, 1.3];
@@ -148,7 +149,7 @@ export const SLOT_COUNT = 3; // 随行槽
 /* ---------- 人生常量 ---------- */
 export const LIFE = {
   START_AGE: 22, RETIRE_AGE: 60,
-  AP_PER_DAY: 3,
+  REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
   SLEEP_RECOVER: 55,       // 日切自然恢复
   MOOD_DECAY: 8,           // 日切心情自然衰减
@@ -170,7 +171,7 @@ export const ACTIONS = [
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
   {id:'gym',    name:'健身撸铁', icon:'🏋️', stamina:26, money:40, staminaMax:1, charm:2, desc:'提高体力上限，顺便涨点魅力'},
   {id:'social', name:'社交聚会', icon:'🍻', stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:30, mood:5, desc:'不花钱，原地回血'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
 ];
 
 /* ---------- 日切随机事件表（weight 加权抽取; effect 为固定数值增减） ---------- */

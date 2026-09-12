@@ -9,7 +9,7 @@ import { START_MONEY, LIFE, SLOT_COUNT } from "./config.js";
 export let S = null;
 export function defaultState(){
   return { ver:1, money:START_MONEY, uid:1,
-    life:{ day:1, ap:LIFE.AP_PER_DAY, age:LIFE.START_AGE,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
       staminaMax:LIFE.STAMINA_MAX },
     partners:[], items:[], slots:new Array(SLOT_COUNT).fill(null),
@@ -34,7 +34,9 @@ export function load(){
     // 字段级兜底（v1 起步；未来 ver 升级在此追加迁移段）
     if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
     if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
-    for(const k of ['day','ap','age','staminaMax']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+    for(const k of ['day','age','staminaMax']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+    if(s.life.restUsed==null) s.life.restUsed = 0;
+    if(s.life.ap != null) delete s.life.ap; // 旧版行动点字段废弃
     if(!Array.isArray(s.partners)) s.partners=[];
     for(const p of s.partners){ if(p.favor==null) p.favor=0; if(p.stars==null) p.stars=0; }
     if(!Array.isArray(s.items)) s.items=[];

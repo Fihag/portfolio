@@ -7,8 +7,8 @@ import { S, $, save, pick } from "../state.js";
 import { SFX, toast, setMuted, toggleMute } from "../fx.js";
 import { applySkin } from "../skins.js";
 import { go } from "./router.js";
-import { initLiving, handleUseItem, handleSlotAction } from "./living.js";
-import { showModal, welcomeHTML, helpHTML, ratesHTML, dexHTML, skinPickerHTML, handleModalAction, showEnding } from "./modals.js";
+import { initLiving, handleUseItem, handleSlotAction, handleEndDay, handleConfirmEndDay, handleRestartAsk, handleConfirmReset } from "./living.js";
+import { showModal, closeModal, welcomeHTML, helpHTML, ratesHTML, dexHTML, skinPickerHTML, handleModalAction, showEnding } from "./modals.js";
 import { tryPull, acceptHalluc } from "./gacha.js";
 
 /* ---------- 事件绑定 ---------- */
@@ -18,6 +18,8 @@ export function bindUI(){
   $('btn-help').onclick = ()=>{ SFX.click(); showModal(helpHTML()); };
   $('btn-skin').onclick = ()=>{ SFX.click(); skinPickerHTML(); };
   $('btn-mute').onclick = ()=>{ toggleMuteUI(); };
+  $('btn-restart').onclick = ()=>{ SFX.click(); handleRestartAsk(); };
+  $('btn-end-day').onclick = ()=>{ SFX.click(); handleEndDay(); };
 
   // 弹窗/卡片内按钮委托: 成就分享、随行编排、道具使用、重开、皮肤
   document.addEventListener('click', e=>{
@@ -26,6 +28,9 @@ export function bindUI(){
     const el = e.target.closest ? e.target.closest('[data-act]') : null;
     if(el){
       if(el.dataset.act === 'accept-halluc'){ acceptHalluc(); return; }
+      if(el.dataset.act === 'close-modal'){ SFX.click(); closeModal(); return; }
+      if(el.dataset.act === 'confirm-end-day'){ handleConfirmEndDay(); return; }
+      if(el.dataset.act === 'confirm-reset'){ handleConfirmReset(); return; }
       if(el.dataset.act === 'slot'){ handleSlotAction(el.dataset.slot, el.dataset.uid); return; }
       if(el.dataset.act === 'use-item'){ SFX.click(); handleUseItem(el.dataset.item); return; }
       if(handleModalAction(el)) return;

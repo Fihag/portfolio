@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { defaultState, setState, S } from "../js/state.js";
-import { LIFE, ENDINGS, MMAP, PROBS } from "../js/config.js";
-import { payoutParams, expectedWorkPay } from "../js/economy.js";
+import { LIFE, ENDINGS, MMAP, PROBS } from "../js/config.js";import { payoutParams, expectedWorkPay } from "../js/economy.js";
 import { recruit, setSlot, slotBoosts, favorLevel, boostOf, effectOf } from "../js/partners.js";
 import { addItem, useItem, itemCount, rollLottery } from "../js/items.js";
-import { doAction, endDay, weekSettle, checkEnd, checkMilestones, canDo, restart } from "../js/life.js";
+import { doAction, endDay, weekSettle, checkEnd, checkMilestones, canDo, anyActionAvailable, restart } from "../js/life.js";
 
 function fresh(){ setState(defaultState()); return S; }
 
@@ -23,25 +22,25 @@ describe("伙伴系统", () => {
 
   it("厂商决定效果类型，稀有度决定强度", () => {
     expect(effectOf(MMAP["claude-fable-5-1"])).toBe("work");
-    expect(boostOf({m:"glm-5-3", favor:0})).toBeCloseTo(0.30, 6);   // UR 基础
-    expect(boostOf({m:"glm-5-3", favor:30})).toBeCloseTo(0.345, 6); // 好感 Lv1 ×1.15
-    expect(boostOf({m:"glm-5-3", favor:90})).toBeCloseTo(0.39, 6);  // 好感 Lv2 ×1.3
+    expect(boostOf({m:"glm-5-3", favor:0})).toBeCloseTo(0.50, 6);   // UR 基础（温和加强档）
+    expect(boostOf({m:"glm-5-3", favor:30})).toBeCloseTo(0.575, 6); // 好感 Lv1 ×1.15
+    expect(boostOf({m:"glm-5-3", favor:90})).toBeCloseTo(0.65, 6);  // 好感 Lv2 ×1.3
     expect(favorLevel({m:"glm-5-3", favor:29})).toBe(0);
     expect(favorLevel({m:"glm-5-3", favor:30})).toBe(1);
   });
 
   it("随行槽加成汇总与槽位抢占", () => {
-    const p1 = recruit("claude-fable-5-1").partner; // UTR work .45
-    const p2 = recruit("glm-5-3").partner;          // UR dual .30
+    const p1 = recruit("claude-fable-5-1").partner; // UTR work .75
+    const p2 = recruit("glm-5-3").partner;          // UR dual .50
     expect(setSlot(0, p1.uid)).toBe(true);
     expect(setSlot(0, p2.uid)).toBe(true); // 槽位 0 被抢占
     expect(S.slots[0]).toBe(p2.uid);
     const b = slotBoosts();
-    expect(b.work).toBeCloseTo(0.18, 6);  // dual 六折
-    expect(b.learn).toBeCloseTo(0.18, 6);
+    expect(b.work).toBeCloseTo(0.30, 6);  // dual 六折
+    expect(b.learn).toBeCloseTo(0.30, 6);
     expect(b.staminaMax).toBe(0);
     setSlot(1, p1.uid);
-    expect(slotBoosts().work).toBeCloseTo(0.18 + 0.45, 6);
+    expect(slotBoosts().work).toBeCloseTo(0.30 + 0.75, 6);
   });
 
   it("空槽随行无加成", () => {
@@ -104,28 +103,64 @@ describe("回合引擎", () => {
   });
   afterAll(() => { PROBS.EVENT = 0.62; });
 
-  it("行动守卫：行动点/体力/钱包", () => {
+  it("行动守卫：体力/钱包/躺平限次", () => {
     expect(canDo("work").ok).toBe(true);
     S.life.attrs.stamina = 10;
     expect(canDo("work").ok).toBe(false);
     S.life.attrs.stamina = 100;
     S.money = 0;
     expect(canDo("play").ok).toBe(false);
-    S.life.ap = 0;
-    expect(canDo("rest").ok).toBe(false);
+    S.money = 1000;
+    expect(canDo("rest").ok).toBe(true);
+    doAction("rest");
+    expect(canDo("rest").ok).toBe(false); // 每天限 1 次
+    expect(canDo("work").ok).toBe(true);  // 其他行动不受躺平限制
   });
 
-  it("行动点耗尽后自动日切（体力只够打两份工）", () => {
+  it("无行动点上限：体力足够时可连续行动，日切只由结束今天触发", () => {
     PROBS.EVENT = 0;
+    S.life.attrs.stamina = 100;
+    S.money = 1000;
     const day = S.life.day;
-    let r;
-    for (let i = 0; i < 2; i++) r = doAction("work");
-    expect(S.stats.workDays).toBe(2); // 38×2 ≤ 100 < 38×3，一天天然最多两份工
-    r = doAction("rest");
-    expect(r.ok).toBe(true);
-    expect(S.life.day).toBe(day + 1);
-    expect(r.dayEnded).toBe(true);
-    expect(S.life.ap).toBe(3);
+    doAction("work"); // 100 → 62
+    doAction("work"); // 62 → 24
+    expect(S.stats.workDays).toBe(2);
+    expect(S.life.day).toBe(day); // 不再自动日切
+    doAction("rest"); // 24 → 64（每天 1 次）
+    doAction("work"); // 64 → 26，一天第三份工
+    expect(S.stats.workDays).toBe(3);
+    expect(S.life.day).toBe(day);
+    expect(S.life.restUsed).toBe(1);
+  });
+
+  it("结束今天：日切推进、躺平次数重置", () => {
+    PROBS.EVENT = 0;
+    doAction("rest");
+    const lines = endDay();
+    expect(S.life.day).toBe(2);
+    expect(S.life.restUsed).toBe(0);
+    expect(lines.join("\n")).not.toContain("🎲");
+  });
+
+  it("每天必发 1 个事件，概率追加第 2 个", () => {
+    PROBS.EVENT = 1; PROBS.EVENT_EXTRA = 0;
+    let lines = endDay();
+    expect(lines.filter(l=>l.startsWith("🎲")).length).toBe(1);
+    S.life.day = 1; // 回退再测追加
+    PROBS.EVENT_EXTRA = 1;
+    lines = endDay();
+    expect(lines.filter(l=>l.startsWith("🎲")).length).toBe(2);
+  });
+
+  it("体力见底且钱包空时 anyActionAvailable 为 false", () => {
+    PROBS.EVENT = 0;
+    S.money = 0;
+    S.life.attrs.stamina = 10;
+    doAction("rest"); // 10 → 50，用掉当天唯一一次躺平
+    S.life.attrs.stamina = 10; // 强制见底
+    expect(anyActionAvailable()).toBe(false);
+    const r = doAction("learn");
+    expect(r.ok).toBe(false);
   });
 
   it("第 7 天结束触发周结算", () => {
@@ -147,7 +182,7 @@ describe("回合引擎", () => {
     expect(g2).toBeGreaterThanOrEqual(2);
   });
 
-  it("健身提升体力上限与魅力，休息回体力", () => {
+  it("健身提升体力上限与魅力，休息回 40 体力", () => {
     S.life.attrs.stamina = 100;
     S.money = 1000;
     doAction("gym");
@@ -155,7 +190,7 @@ describe("回合引擎", () => {
     expect(S.life.attrs.charm).toBe(12);
     S.life.attrs.stamina = 20;
     doAction("rest");
-    expect(S.life.attrs.stamina).toBe(50);
+    expect(S.life.attrs.stamina).toBe(60);
   });
 
   it("周结算扣房租，付不起计欠租，两周破产结局", () => {

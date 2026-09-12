@@ -26,8 +26,8 @@ function renderHeader(){
     }
   }
   lastMoney = m;
-  const apEl = $('h-ap');
-  if(apEl) apEl.textContent = `${S.life.ap}/${LIFE.AP_PER_DAY}`;
+  const stEl = $('h-stamina');
+  if(stEl) stEl.textContent = `${Math.round(S.life.attrs.stamina)}/${S.life.staminaMax}`;
   const dEl = $('h-day'); if(dEl) dEl.textContent = S.life.day;
   const aEl = $('h-age'); if(aEl) aEl.textContent = S.life.age;
 }
@@ -52,7 +52,6 @@ function renderLife(){
     barEl.dataset.built = '1';
     barEl.innerHTML = ACTIONS.map(x => `
       <button class="act-btn" data-actbtn="${x.id}" title="${x.desc}">
-        <span class="ap-dot">1⚡</span>
         <div class="ic">${x.icon}</div>
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
@@ -63,8 +62,10 @@ function renderLife(){
   barEl && barEl.querySelectorAll('[data-actbtn]').forEach(b => {
     b.disabled = !canDo(b.dataset.actbtn).ok;
   });
-  const apHint = $('ap-hint');
-  if(apHint) apHint.textContent = S.ending ? '本局已结束' : `行动点 ${S.life.ap}/${LIFE.AP_PER_DAY}`;
+  const restHint = $('rest-hint');
+  if(restHint) restHint.textContent = S.ending ? '本局已结束'
+    : S.life.restUsed >= LIFE.REST_PER_DAY ? '今日已躺平'
+    : `已躺平 ${S.life.restUsed}/${LIFE.REST_PER_DAY} 次`;
 
   renderSlotRow($('slot-row'), true);
   const chips = $('boost-chips');

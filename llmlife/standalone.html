@@ -590,9 +590,10 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       </nav>
       <div class="stat-chips" aria-live="polite" aria-atomic="true">
         <div class="chip money" aria-label="余额">余额 <b id="h-money">¥0</b></div>
-        <div class="chip" aria-label="行动点">⚡ <b id="h-ap">3/3</b></div>
+        <div class="chip" aria-label="体力">🔋 <b id="h-stamina">100</b></div>
         <div class="chip hide-m" aria-label="人生进度">第 <b id="h-day">1</b> 天 · <b id="h-age">22</b> 岁</div>
       </div>
+      <button class="hbtn" id="btn-restart" aria-label="重开新周目">🔄<span class="lbl"> 重开</span></button>
       <button class="hbtn" id="btn-skin" aria-label="皮肤中心">🎨<span class="lbl"> 皮肤</span></button>
       <button class="hbtn" id="btn-mute" aria-label="切换音效">🔊<span class="lbl"> 音效</span></button>
       <button class="hbtn" id="btn-rates" aria-label="概率公示">📊<span class="lbl"> 概率</span></button>
@@ -605,7 +606,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       <div class="page" id="page-life" role="tabpanel" aria-label="生活">
         <div class="page-head">
           <h2>生活</h2>
-          <p>每天 <b id="life-ap-total">3</b> 点行动力 · 把日子过成日程 · 心情太低打工容易翻车</p>
+          <p>行动不设上限 · 体力说话 · 心情太低打工容易翻车</p>
         </div>
         <div class="notice">
           <span class="dot"></span><span id="notice-text">📢 公告加载中…</span>
@@ -635,7 +636,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
         </div>
 
         <div class="panel panel-pad" style="margin-top:14px">
-          <div class="panel-title">🎯 今日行动<span class="right" id="ap-hint">行动点 3/3</span></div>
+          <div class="panel-title">🎯 今日行动<span class="right" style="display:flex;gap:8px;align-items:center"><span id="rest-hint" style="letter-spacing:0"></span><button class="mini-btn" id="btn-end-day">🛏 结束今天</button></span></div>
           <div class="act-bar" id="act-bar"></div>
         </div>
 
@@ -874,7 +875,8 @@ const PROBS = {
   FIHAG: 0.0001,     // Fihag V1 全池隐藏
   HALLUC: 0.002,     // 幻觉假 UR 彩蛋
   SKIN_DROP: 0.015,  // 皮肤掉落
-  EVENT: 0.62,       // 日切随机事件触发概率
+  EVENT: 1,          // 日切必发 1 个随机事件
+  EVENT_EXTRA: 0.3,  // 30% 概率追加第 2 个
 };
 const PITY_MAX = 60;        // 伙伴池保底
 const ITEM_PITY_MAX = 30;   // 道具池保底
@@ -903,8 +905,8 @@ const VENDOR_NAMES = {
   Kimi:'月之暗面', Xiaomi:'小米', 'Motif Technologies':'Motif',
   'MBZUAI Institute of Foundation Models':'MBZUAI', 'Sapiens AI':'Sapiens AI',
 };
-/* 稀有度 → 效果强度（dual 按六折折算进两项） */
-const RBOOST = {N:.02, R:.05, SR:.10, SSR:.18, UR:.30, UTR:.45, NB:.60};
+/* 稀有度 → 效果强度（dual 按六折折算进两项；温和加强档） */
+const RBOOST = {N:.04, R:.08, SR:.18, SSR:.30, UR:.50, UTR:.75, NB:1.00};
 /* 好感等级: 阈值数组 + 效果系数（随行行动每次 +2~4 好感, 重复卡 +10） */
 const FAVOR_LEVELS = [0, 30, 90];
 const FAVOR_MULT = [1, 1.15, 1.3];
@@ -914,7 +916,7 @@ const SLOT_COUNT = 3; // 随行槽
 /* ---------- 人生常量 ---------- */
 const LIFE = {
   START_AGE: 22, RETIRE_AGE: 60,
-  AP_PER_DAY: 3,
+  REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
   SLEEP_RECOVER: 55,       // 日切自然恢复
   MOOD_DECAY: 8,           // 日切心情自然衰减
@@ -936,7 +938,7 @@ const ACTIONS = [
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
   {id:'gym',    name:'健身撸铁', icon:'🏋️', stamina:26, money:40, staminaMax:1, charm:2, desc:'提高体力上限，顺便涨点魅力'},
   {id:'social', name:'社交聚会', icon:'🍻', stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:30, mood:5, desc:'不花钱，原地回血'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
 ];
 
 /* ---------- 日切随机事件表（weight 加权抽取; effect 为固定数值增减） ---------- */
@@ -1252,7 +1254,7 @@ const validateResult = (() => {
 let S = null;
 function defaultState(){
   return { ver:1, money:START_MONEY, uid:1,
-    life:{ day:1, ap:LIFE.AP_PER_DAY, age:LIFE.START_AGE,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
       staminaMax:LIFE.STAMINA_MAX },
     partners:[], items:[], slots:new Array(SLOT_COUNT).fill(null),
@@ -1277,7 +1279,9 @@ function load(){
     // 字段级兜底（v1 起步；未来 ver 升级在此追加迁移段）
     if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
     if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
-    for(const k of ['day','ap','age','staminaMax']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+    for(const k of ['day','age','staminaMax']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+    if(s.life.restUsed==null) s.life.restUsed = 0;
+    if(s.life.ap != null) delete s.life.ap; // 旧版行动点字段废弃
     if(!Array.isArray(s.partners)) s.partners=[];
     for(const p of s.partners){ if(p.favor==null) p.favor=0; if(p.stars==null) p.stars=0; }
     if(!Array.isArray(s.items)) s.items=[];
@@ -1743,15 +1747,21 @@ function canDo(actionId){
   if(S.ending) return {ok:false, reason:'本局已结束，开个新周目再战'};
   const a = ACTION_MAP[actionId];
   if(!a) return {ok:false, reason:'未知行动'};
-  if(S.life.ap <= 0) return {ok:false, reason:'今天行动点已用完，早点休息'};
+  if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
+    return {ok:false, reason:'今天已经躺平过了，再用道具回体力或结束今天'};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
   if(a.money > S.money) return {ok:false, reason:'钱包不够了，先去打工'};
   return {ok:true};
 }
 
+/** 还有没有任何可执行的行动（供"体力见底"提示与禁用态汇总） */
+function anyActionAvailable(){
+  return ACTIONS.some(a => canDo(a.id).ok);
+}
+
 /**
- * 执行一次行动；行动点耗尽时自动日切
- * @returns {{ok:boolean, line?:string, lines?:string[], dayEnded?:boolean}}
+ * 执行一次行动（无行动点上限，只受体力/钱包/限次约束；日切由「结束今天」显式触发）
+ * @returns {{ok:boolean, line?:string, lines?:string[]}}
  */
 function doAction(actionId){
   const guard = canDo(actionId);
@@ -1761,9 +1771,9 @@ function doAction(actionId){
   const attr = S.life.attrs;
   const applied = [];
 
-  S.life.ap--;
   if(a.stamina) attr.stamina -= a.stamina;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
+  if(actionId === 'rest') S.life.restUsed++;
 
   let line;
   if(actionId === 'work'){
@@ -1806,10 +1816,9 @@ function doAction(actionId){
   logToday(line);
   const msNew = checkMilestones();
   for(const m of msNew) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
-  let dayEnded = false;
-  if(S.life.ap <= 0){ dayEnded = true; lines.push(...endDay()); }
+  if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或结束今天');
   save();
-  return {ok:true, line, lines, dayEnded};
+  return {ok:true, line, lines};
 }
 
 /* ---------- 加权抽取事件 ---------- */
@@ -1821,27 +1830,36 @@ function weightedPick(pool){
   return null;
 }
 
-/* ---------- 日切：事件 → 睡眠 → 周结算 → 年龄 → 结局 ---------- */
+/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 年龄 → 结局 ---------- */
+function fireEvent(){
+  const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
+  if(!ev) return null;
+  const delta = {mood:ev.mood||0, stamina:ev.stamina||0, skill:ev.skill||0, charm:ev.charm||0};
+  addAttrs(delta);
+  if(ev.money){ S.money += ev.money; addLedger(`事件·${ev.name}`, ev.money); }
+  const nums = [
+    ev.money ? `¥${ev.money > 0 ? '+' : ''}${ev.money}` : '',
+    delta.mood ? `心情${delta.mood > 0 ? '+' : ''}${delta.mood}` : '',
+    delta.stamina ? `体力${delta.stamina}` : '',
+    delta.skill ? `技术+${delta.skill}` : '',
+    delta.charm ? `魅力+${delta.charm}` : '',
+  ].filter(Boolean).join('，');
+  return `🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`;
+}
+
 function endDay(){
   const lines = [];
-  if(!S.ending && Math.random() < PROBS.EVENT){
-    const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
-    if(ev){
-      const delta = {mood:ev.mood||0, stamina:ev.stamina||0, skill:ev.skill||0, charm:ev.charm||0};
-      addAttrs(delta);
-      if(ev.money){ S.money += ev.money; addLedger(`事件·${ev.name}`, ev.money); }
-      const nums = [
-        ev.money ? `¥${ev.money > 0 ? '+' : ''}${ev.money}` : '',
-        delta.mood ? `心情${delta.mood > 0 ? '+' : ''}${delta.mood}` : '',
-        delta.stamina ? `体力${delta.stamina}` : '',
-        delta.skill ? `技术+${delta.skill}` : '',
-        delta.charm ? `魅力+${delta.charm}` : '',
-      ].filter(Boolean).join('，');
-      lines.push(`🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`);
+  // 每天必发 1 个事件（PROBS.EVENT=1），概率追加第 2 个
+  if(Math.random() < PROBS.EVENT){
+    const first = fireEvent();
+    if(first) lines.push(first);
+    if(Math.random() < PROBS.EVENT_EXTRA){
+      const second = fireEvent();
+      if(second && second !== first) lines.push(second);
     }
   }
   S.life.day++;
-  S.life.ap = LIFE.AP_PER_DAY;
+  S.life.restUsed = 0;
   const attr = S.life.attrs;
   attr.stamina = Math.min(S.life.staminaMax, attr.stamina + LIFE.SLEEP_RECOVER);
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
@@ -1853,6 +1871,7 @@ function endDay(){
   }
   const end = checkEnd();
   if(end) lines.push(`🏁 人生结算：${end.title}`);
+  S._today = []; // 今日日志跨天重置
   save();
   return lines;
 }
@@ -1975,8 +1994,8 @@ function renderHeader(){
     }
   }
   lastMoney = m;
-  const apEl = $('h-ap');
-  if(apEl) apEl.textContent = `${S.life.ap}/${LIFE.AP_PER_DAY}`;
+  const stEl = $('h-stamina');
+  if(stEl) stEl.textContent = `${Math.round(S.life.attrs.stamina)}/${S.life.staminaMax}`;
   const dEl = $('h-day'); if(dEl) dEl.textContent = S.life.day;
   const aEl = $('h-age'); if(aEl) aEl.textContent = S.life.age;
 }
@@ -2001,7 +2020,6 @@ function renderLife(){
     barEl.dataset.built = '1';
     barEl.innerHTML = ACTIONS.map(x => `
       <button class="act-btn" data-actbtn="${x.id}" title="${x.desc}">
-        <span class="ap-dot">1⚡</span>
         <div class="ic">${x.icon}</div>
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
@@ -2012,8 +2030,10 @@ function renderLife(){
   barEl && barEl.querySelectorAll('[data-actbtn]').forEach(b => {
     b.disabled = !canDo(b.dataset.actbtn).ok;
   });
-  const apHint = $('ap-hint');
-  if(apHint) apHint.textContent = S.ending ? '本局已结束' : `行动点 ${S.life.ap}/${LIFE.AP_PER_DAY}`;
+  const restHint = $('rest-hint');
+  if(restHint) restHint.textContent = S.ending ? '本局已结束'
+    : S.life.restUsed >= LIFE.REST_PER_DAY ? '今日已躺平'
+    : `已躺平 ${S.life.restUsed}/${LIFE.REST_PER_DAY} 次`;
 
   renderSlotRow($('slot-row'), true);
   const chips = $('boost-chips');
@@ -2377,7 +2397,7 @@ function helpHTML(){
   <p><b>主循环</b>：生活页每天 3 点行动力，行动 → 日切（随机事件 + 睡眠恢复）→ 周结算（房租+伙食）→ 每 360 天长一岁。</p>
   <p><b>属性</b>：体力限制行动（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
   <p><b>打工</b>：收入 = 基础价 × 技术系数 × 心情系数 × 伙伴加成，结算走大成功 ×2.5 / 返工 ×0.4 / 生产事故倒赔的事件流，概率公示页可查。</p>
-  <p><b>伙伴</b>：最多 3 位随行。效果类型看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +30% 起）与好感等级（×1.0/1.15/1.3）。重复卡折算好感 +10。</p>
+  <p><b>伙伴</b>：最多 3 位随行。效果类型看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感等级（×1.0/1.15/1.3）。重复卡折算好感 +10。</p>
   <p><b>道具</b>：福袋开出的一次性道具，咖啡回体力、书籍涨技术、手办涨好感、刮刮乐看命。</p>
   <p><b>结局</b>：60 岁按综合分定档（普通码农 → 神之人生）；连续 ${LIFE.GRACE_WEEKS} 周欠租直接破产；手握 Fihag V1 另有彩蛋结局。</p>
   <p class="note">卡面指数为 Artificial Analysis v4.3 真实智能指数，稀有度分段据此重标。本作为 TokenGacha 精神续作，纯属娱乐。</p>
@@ -2477,6 +2497,7 @@ function handleModalAction(el){
 /* ================================================================
    LLMLife · 生活页交互 (ui/living.js)
    行动点击 → 引擎结算 → 演出（音效/粒子/飘字）→ 日志呈现 → 结局
+   结束今天 → 日切 → 新的一天弹窗；重开确认
    ================================================================ */
 
 /** 生活页行动按钮点击 */
@@ -2494,7 +2515,7 @@ function handleAction(id){
   } else {
     SFX.click();
   }
-  // 行动结果行进 toast 突出显示（打工/事件以外的小行动）
+  // 行动结果行进 toast 突出显示（打工以外的小行动）
   if(id !== 'work') toast(res.line, 1800);
   if(id === 'work' && res.line) bigMoneyFromLine(res.line);
   // 成就
@@ -2506,7 +2527,8 @@ function handleAction(id){
     }
   }
   renderAll();
-  if(S.ending) setTimeout(()=>showEnding(S.ending), 450);
+  if(S.ending){ setTimeout(()=>showEnding(S.ending), 450); return; }
+  if(!anyActionAvailable()) toast('💤 体力见底：结束今天，或用道具/明天再战', 2600);
 }
 function goldSmall(){ const g=document.getElementById('goldflash'); if(g){ g.classList.remove('go'); void g.offsetWidth; g.classList.add('go'); } }
 function bigMoneyFromLine(line){
@@ -2515,6 +2537,61 @@ function bigMoneyFromLine(line){
   const neg = m[1].startsWith('-');
   const amt = Number(m[1].replace(/[^\d]/g, '')) * (neg ? -1 : 1);
   bigMoneyPop(amt);
+}
+
+/** 「结束今天」→ 确认弹窗 */
+function handleEndDay(){
+  if(S.ending){ toast('本局已结束，开个新周目再战'); return; }
+  showModal(`<h3>🛏 结束今天<button class="x" data-act="close-modal">×</button></h3>
+  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡眠恢复（体力 +55 / 心情 -8）${dayHint()}</p>
+  <button class="big-btn" data-act="confirm-end-day">天黑了，睡觉 →</button>
+  <button class="big-btn ghost" data-act="close-modal">再肝一会儿 →</button>`);
+}
+function dayHint(){
+  const nextDay = S.life.day + 1;
+  return (nextDay - 1) % 7 === 0 ? '<br />⚠️ 明天醒来要交 <b>房租 + 伙食</b>，留意余额！' : '';
+}
+
+/** 确认日切 → 结算 → 新的一天弹窗 */
+function handleConfirmEndDay(){
+  closeModal();
+  const lines = endDay();
+  renderAll();
+  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); return; }
+  showModal(newDayHTML(lines));
+}
+function newDayHTML(lines){
+  const a = S.life.attrs;
+  const body = lines.length
+    ? lines.map(l=>{
+        const cls = l.startsWith('🎲') ? 'ev' : l.startsWith('🎂') ? 'ms' : '';
+        return `<div class="row ${cls}" style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;margin-bottom:6px">${l}</div>`;
+      }).join('')
+    : '<p style="color:var(--faint)">风平浪静的一天。</p>';
+  return `<h3>🌅 新的一天 · 第 ${S.life.day} 天（星期${(S.life.day - 1) % 7 + 1}）<button class="x" data-act="close-modal">×</button></h3>
+  ${body}
+  <div class="end-stats">
+    <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${S.life.staminaMax}</b></div>
+    <div class="cell"><span class="lb">心情</span><b>${Math.round(a.mood)}</b></div>
+    <div class="cell"><span class="lb">余额</span><b>${fmt(S.money)}</b></div>
+    <div class="cell"><span class="lb">年龄</span><b>${S.life.age} 岁</b></div>
+  </div>
+  <button class="big-btn" data-act="close-modal">开始新的一天 →</button>`;
+}
+
+/** header 重开 → 确认弹窗 */
+function handleRestartAsk(){
+  showModal(`<h3>🔄 重开新周目<button class="x" data-act="close-modal">×</button></h3>
+  <p>当前进度将被清空：<b>第 ${S.life.day} 天 · ${fmt(S.money)} · ${S.partners.length} 位伙伴</b>。</p>
+  <p style="color:var(--faint)">人生没有重开，但游戏有。想好了吗？</p>
+  <button class="big-btn danger" data-act="confirm-reset">确认重开</button>
+  <button class="big-btn ghost" data-act="close-modal">手滑了，继续过 →</button>`);
+}
+function handleConfirmReset(){
+  closeModal();
+  restart();
+  renderAll();
+  toast('🔄 新周目开始，22 岁的你又坐在了出租屋里');
 }
 
 /** 背包使用道具 */
@@ -2533,7 +2610,7 @@ function handleSlotAction(slot, uid){
   else toast('编队失败');
 }
 
-/** boot 阶段把处理器挂到渲染层与全局委托 */
+/** boot 阶段把处理器挂到渲染层 */
 function initLiving(){
   setActionHandler(handleAction);
 }
@@ -2763,33 +2840,38 @@ function showGacha(results, pool){
   }
 
   function flipOne(i){
-    const el = els[i];
-    if(el.classList.contains('flipped')) return;
-    el.classList.add('flipped','pop');
-    flippedCount++;
-    const res = results[i];
-    const rr = res.kind === 'item' ? res.rarity : dispOf(res).r; // 演出按伪装档位走
-    SFX.flip(i);
-    if(rr==='NB'){
-      setTimeout(()=>{
-        goldFlash();
-        const rect = el.getBoundingClientRect();
-        burst(rect.left+rect.width/2, rect.top+rect.height/2, ['#ff2d55','#ffd700','#41d9ff','#7c3aed','#22c55e','#ff6ec7','#fff'], 220, 13);
-        shake();
-      }, 250);
-    }else if(rr==='SSR'||rr==='UR'||rr==='UTR'){
-      setTimeout(()=>{
-        if(results[i]._halluc) goldFlash();
-        const rect = el.getBoundingClientRect();
-        burst(rect.left+rect.width/2, rect.top+rect.height/2,
-          rr==='UTR' ? ['#ff2d55','#f59e0b','#2f6bff','#fff'] : (rr==='UR' ? ['#ff5f6d','#f59e0b','#2f6bff','#fff'] : ['#f59e0b','#fde68a','#fff']),
-          rr==='UTR' ? 160 : (rr==='UR' ? 120 : 70), rr==='UTR' ? 11 : (rr==='UR' ? 9 : 7));
-        if(rr==='UR'||rr==='UTR') shake();
-      }, 250);
-    }
-    if(flippedCount >= results.length){
-      setTimeout(playBestSfx, 260);
-      finish();
+    try{
+      const el = els[i];
+      if(el.classList.contains('flipped')) return;
+      el.classList.add('flipped','pop');
+      flippedCount++;
+      const res = results[i];
+      const rr = res.kind === 'item' ? res.rarity : dispOf(res).r; // 演出按伪装档位走
+      SFX.flip(i);
+      if(rr==='NB'){
+        setTimeout(()=>{
+          goldFlash();
+          const rect = el.getBoundingClientRect();
+          burst(rect.left+rect.width/2, rect.top+rect.height/2, ['#ff2d55','#ffd700','#41d9ff','#7c3aed','#22c55e','#ff6ec7','#fff'], 220, 13);
+          shake();
+        }, 250);
+      }else if(rr==='SSR'||rr==='UR'||rr==='UTR'){
+        setTimeout(()=>{
+          if(results[i]._halluc) goldFlash();
+          const rect = el.getBoundingClientRect();
+          burst(rect.left+rect.width/2, rect.top+rect.height/2,
+            rr==='UTR' ? ['#ff2d55','#f59e0b','#2f6bff','#fff'] : (rr==='UR' ? ['#ff5f6d','#f59e0b','#2f6bff','#fff'] : ['#f59e0b','#fde68a','#fff']),
+            rr==='UTR' ? 160 : (rr==='UR' ? 120 : 70), rr==='UTR' ? 11 : (rr==='UR' ? 9 : 7));
+          if(rr==='UR'||rr==='UTR') shake();
+        }, 250);
+      }
+      if(flippedCount >= results.length){
+        setTimeout(playBestSfx, 260);
+        finish();
+      }
+    }catch(err){
+      console.error('[gacha] flip error', err);
+      finish(); // 单卡演出异常也不能困住玩家
     }
   }
 
@@ -2802,7 +2884,12 @@ function showGacha(results, pool){
   $('skip-btn').onclick = ()=>{ skipped = true; els.forEach((e, i)=>{ if(!e.classList.contains('flipped')) setTimeout(()=>flipOne(i), i*40); }); };
 
   function finish(){
-    $('gacha-summary').innerHTML = summaryHTML(results);
+    try{
+      $('gacha-summary').innerHTML = summaryHTML(results);
+    }catch(err){
+      console.error('[gacha] summary error', err);
+      $('gacha-summary').innerHTML = `共获得 <b>${results.length}</b> 个结果`;
+    }
     $('gacha-summary').classList.add('show');
     $('close-overlay').classList.add('show');
     setTimeout(showHalluc, skipped ? 2400 : 650);
@@ -2811,12 +2898,17 @@ function showGacha(results, pool){
 }
 
 function summaryHTML(results){
-  const items = results.filter(r=>r.kind==='item').length;
-  const best = results.reduce((a,r)=> RORDER.indexOf(dispOf(r).r) > RORDER.indexOf(dispOf(a).r) ? r : a, results[0]);
-  const m = dispOf(best);
-  const hex = RARITY[m.r].hex;
-  const dupeNote = results.filter(r=>r.kind==='partner').length ? ' · 重复伙伴自动折算好感' : '';
-  return `共获得 <b>${results.length}</b> 个结果${items ? `（含道具 ×${items}）` : ''} · 最佳: <b style="color:${hex}">${m.name}</b>（${m.r}）${dupeNote}`;
+  const partners = results.filter(r=>r.kind==='partner');
+  const items = results.filter(r=>r.kind==='item');
+  const parts = [`共获得 <b>${results.length}</b> 个结果`];
+  if(items.length) parts.push(`道具 ×${items.length}`);
+  if(partners.length){
+    const best = partners.reduce((a,r)=> RORDER.indexOf(dispOf(r).r) > RORDER.indexOf(dispOf(a).r) ? r : a, partners[0]);
+    const m = dispOf(best);
+    parts.push(`最佳伙伴: <b style="color:${RARITY[m.r].hex}">${m.name}</b>（${m.r}）`);
+    parts.push('重复伙伴自动折算好感');
+  }
+  return parts.join(' · ');
 }
 
 /* ---------- 道具卡面辅助（道具不走 MMAP） ---------- */
@@ -2877,6 +2969,8 @@ function bindUI(){
   $('btn-help').onclick = ()=>{ SFX.click(); showModal(helpHTML()); };
   $('btn-skin').onclick = ()=>{ SFX.click(); skinPickerHTML(); };
   $('btn-mute').onclick = ()=>{ toggleMuteUI(); };
+  $('btn-restart').onclick = ()=>{ SFX.click(); handleRestartAsk(); };
+  $('btn-end-day').onclick = ()=>{ SFX.click(); handleEndDay(); };
 
   // 弹窗/卡片内按钮委托: 成就分享、随行编排、道具使用、重开、皮肤
   document.addEventListener('click', e=>{
@@ -2885,6 +2979,9 @@ function bindUI(){
     const el = e.target.closest ? e.target.closest('[data-act]') : null;
     if(el){
       if(el.dataset.act === 'accept-halluc'){ acceptHalluc(); return; }
+      if(el.dataset.act === 'close-modal'){ SFX.click(); closeModal(); return; }
+      if(el.dataset.act === 'confirm-end-day'){ handleConfirmEndDay(); return; }
+      if(el.dataset.act === 'confirm-reset'){ handleConfirmReset(); return; }
       if(el.dataset.act === 'slot'){ handleSlotAction(el.dataset.slot, el.dataset.uid); return; }
       if(el.dataset.act === 'use-item'){ SFX.click(); handleUseItem(el.dataset.item); return; }
       if(handleModalAction(el)) return;
