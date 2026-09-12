@@ -4,7 +4,7 @@
    ================================================================ */
 import { ITEMS, ITEM_RARITY } from "./config.js";
 import { S, save } from "./state.js";
-import { favorAll } from "./partners.js";
+import { favorAll, staminaCeiling } from "./partners.js";
 
 const IMAP = Object.fromEntries(ITEMS.map(i => [i.id, i]));
 export const itemOf = id => IMAP[id];
@@ -25,11 +25,11 @@ export function randomItemByRarity(r){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 
-/* ---------- 属性结算工具（钳制规则集中在此） ---------- */
+/* ---------- 属性结算工具（钳制规则集中在此；体力上限含随行加成） ---------- */
 export function clampAttrs(){
   const a = S.life.attrs;
   a.mood = Math.min(100, Math.max(0, a.mood));
-  a.stamina = Math.min(S.life.staminaMax, Math.max(0, a.stamina));
+  a.stamina = Math.min(staminaCeiling(), Math.max(0, a.stamina));
   a.skill = Math.min(100, Math.max(0, a.skill));
   a.charm = Math.min(100, Math.max(0, a.charm));
 }
@@ -78,7 +78,7 @@ export function useItem(id){
   }
   if(it.special === 'fullstamina+8'){
     S.life.staminaMax += 8;
-    S.life.attrs.stamina = S.life.staminaMax;
+    S.life.attrs.stamina = staminaCeiling();
     return {ok:true, line:`${it.icon} 体力回满，上限 +8`, extra:{}};
   }
 

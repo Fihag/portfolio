@@ -2,11 +2,11 @@
    LLMLife · 渲染层 (ui/render.js)
    状态变化后全量重渲：头部芯片 / 生活页 / 伙伴页 / 背包页 / 数据页
    ================================================================ */
-import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX } from "../config.js";
+import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
 import { iconImg } from "../fx.js";
 import { validateResult } from "../validate.js";
-import { slotBoosts, favorNext, effectOf, bestPartner } from "../partners.js";
+import { slotBoosts, favorNext, effectOf, bestPartner, staminaCeiling } from "../partners.js";
 import { itemOf } from "../items.js";
 import { canDo } from "../life.js";
 import { bannerCountdownText } from "../banner.js";
@@ -27,7 +27,7 @@ function renderHeader(){
   }
   lastMoney = m;
   const stEl = $('h-stamina');
-  if(stEl) stEl.textContent = `${Math.round(S.life.attrs.stamina)}/${S.life.staminaMax}`;
+  if(stEl) stEl.textContent = `${Math.round(S.life.attrs.stamina)}/${Math.round(staminaCeiling())}`;
   const dEl = $('h-day'); if(dEl) dEl.textContent = S.life.day;
   const aEl = $('h-age'); if(aEl) aEl.textContent = S.life.age;
 }
@@ -35,11 +35,12 @@ function renderHeader(){
 /* ---------- 生活页 ---------- */
 function renderLife(){
   const a = S.life.attrs;
+  const ceil = staminaCeiling();
   const set = (id, v) => { const el = $(id); if(el) el.textContent = v; };
-  set('a-stamina', Math.round(a.stamina)); set('a-staminamax', S.life.staminaMax);
+  set('a-stamina', Math.round(a.stamina)); set('a-staminamax', Math.round(ceil));
   set('a-mood', Math.round(a.mood)); set('a-skill', Math.round(a.skill)); set('a-charm', Math.round(a.charm));
   const bar = (id, pct) => { const el = $(id); if(el) el.style.width = Math.max(0, Math.min(100, pct)) + '%'; };
-  bar('bar-stamina', a.stamina / S.life.staminaMax * 100);
+  bar('bar-stamina', a.stamina / ceil * 100);
   bar('bar-mood', a.mood);
   bar('bar-skill', a.skill);
   bar('bar-charm', a.charm);
@@ -249,12 +250,7 @@ function renderData(){
 }
 
 function endingScorePreview(){
-  const s = S;
-  const score = Math.round(
-    s.money/200 + s.life.attrs.skill*2 + s.life.attrs.charm*2
-    + s.partners.reduce((a,p)=>a+p.favor,0)*0.1 + s.partners.length*4
-    + (s.life.staminaMax - LIFE.STAMINA_MAX)
-  );
+  const score = endingScore(S, slotBoosts().staminaMax);
   const tier = [...ENDINGS].reverse().find(e => score >= e.min) || ENDINGS[ENDINGS.length - 1];
   return `${score}（${tier.title.replace(/^\S+\s/, '')}）`;
 }

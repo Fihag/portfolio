@@ -151,7 +151,6 @@ export const LIFE = {
   START_AGE: 22, RETIRE_AGE: 60,
   REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
-  SLEEP_RECOVER: 55,       // 日切自然恢复
   MOOD_DECAY: 8,           // 日切心情自然衰减
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
   RENT: 1200,              // 周结算房租
@@ -289,11 +288,11 @@ export const ENDINGS = [
 export const ENDING_BROKE = {id:'broke', title:'📉 破产流浪', desc:'连续欠租被房东请出家门。代码改得了 bug，改不了账单。'};
 /* 彩蛋结局: 手握 Fihag V1 且综合分 ≥150 时覆盖结算 */
 export const ENDING_CHOSEN = {id:'chosen', title:'🔮 天选之人', desc:'抽到了全站唯一 NB 级存在，人生直接封神——命运的 0.01% 落在了你头上。'};
-/* 综合分公式（单调，供结局与结算预览） */
-export const endingScore = s => Math.round(
+/* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成） */
+export const endingScore = (s, bonusStamina=0) => Math.round(
   s.money/200 + s.life.attrs.skill*2 + s.life.attrs.charm*2
   + (s.partners||[]).reduce((a,p)=>a+p.favor,0)*0.1 + (s.partners||[]).length*4
-  + (s.life.staminaMax - LIFE.STAMINA_MAX)
+  + (s.life.staminaMax - LIFE.STAMINA_MAX) + (bonusStamina||0)
 );
 
 /* ---------- 限定集合（当前赛季由 banner.js 的 syncBanner 维护） ---------- */

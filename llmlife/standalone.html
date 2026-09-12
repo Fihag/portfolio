@@ -918,7 +918,6 @@ const LIFE = {
   START_AGE: 22, RETIRE_AGE: 60,
   REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
-  SLEEP_RECOVER: 55,       // 日切自然恢复
   MOOD_DECAY: 8,           // 日切心情自然衰减
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
   RENT: 1200,              // 周结算房租
@@ -1056,11 +1055,11 @@ const ENDINGS = [
 const ENDING_BROKE = {id:'broke', title:'📉 破产流浪', desc:'连续欠租被房东请出家门。代码改得了 bug，改不了账单。'};
 /* 彩蛋结局: 手握 Fihag V1 且综合分 ≥150 时覆盖结算 */
 const ENDING_CHOSEN = {id:'chosen', title:'🔮 天选之人', desc:'抽到了全站唯一 NB 级存在，人生直接封神——命运的 0.01% 落在了你头上。'};
-/* 综合分公式（单调，供结局与结算预览） */
-const endingScore = s => Math.round(
+/* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成） */
+const endingScore = (s, bonusStamina=0) => Math.round(
   s.money/200 + s.life.attrs.skill*2 + s.life.attrs.charm*2
   + (s.partners||[]).reduce((a,p)=>a+p.favor,0)*0.1 + (s.partners||[]).length*4
-  + (s.life.staminaMax - LIFE.STAMINA_MAX)
+  + (s.life.staminaMax - LIFE.STAMINA_MAX) + (bonusStamina||0)
 );
 
 /* ---------- 限定集合（当前赛季由 banner.js 的 syncBanner 维护） ---------- */
@@ -1498,6 +1497,14 @@ function activePartners(){
 }
 
 /**
+ * 有效体力上限 = 基础上限（健身成长）+ 随行伙伴加成（实时计算，
+ * 编队/好感变化即时生效）。所有体力钳制必须用本函数而非裸读状态。
+ */
+function staminaCeiling(){
+  return S.life.staminaMax + slotBoosts().staminaMax;
+}
+
+/**
  * 随行伙伴加成合计
  * @returns {{work:number, learn:number, mood:number, charm:number, staminaMax:number}}
  *   work/learn/mood/charm 为加成小数（0.3 = +30%），staminaMax 为绝对值加成
@@ -1584,11 +1591,11 @@ function randomItemByRarity(r){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 
-/* ---------- 属性结算工具（钳制规则集中在此） ---------- */
+/* ---------- 属性结算工具（钳制规则集中在此；体力上限含随行加成） ---------- */
 function clampAttrs(){
   const a = S.life.attrs;
   a.mood = Math.min(100, Math.max(0, a.mood));
-  a.stamina = Math.min(S.life.staminaMax, Math.max(0, a.stamina));
+  a.stamina = Math.min(staminaCeiling(), Math.max(0, a.stamina));
   a.skill = Math.min(100, Math.max(0, a.skill));
   a.charm = Math.min(100, Math.max(0, a.charm));
 }
@@ -1637,7 +1644,7 @@ function useItem(id){
   }
   if(it.special === 'fullstamina+8'){
     S.life.staminaMax += 8;
-    S.life.attrs.stamina = S.life.staminaMax;
+    S.life.attrs.stamina = staminaCeiling();
     return {ok:true, line:`${it.icon} 体力回满，上限 +8`, extra:{}};
   }
 
@@ -1739,6 +1746,8 @@ function sampleWorkPay(skill, mood, workBoost){
 
 const ACTION_MAP = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
 const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+/* 收益展示：保留 1 位小数并去掉尾随 .0 */
+const trimNum = n => String(Math.round(n * 10) / 10);
 
 const actionOf = id => ACTION_MAP[id];
 
@@ -1788,24 +1797,25 @@ function doAction(actionId){
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
-      const gain = Math.max(1, Math.round(rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1)));
+      // 保留小数：伙伴加成在低基础收益上也要真实体现（渲染时四舍五入）
+      const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1));
       attr.skill = Math.min(100, attr.skill + gain);
-      applied.push(`技术+${gain}${moodSlow ? '（心情低落，效率减半）' : ''}`);
+      applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}`);
     }
     if(a.recover){
       const before = attr.stamina;
-      attr.stamina = Math.min(S.life.staminaMax, attr.stamina + a.recover);
-      applied.push(`体力+${attr.stamina - before}`);
+      attr.stamina = Math.min(staminaCeiling(), attr.stamina + a.recover);
+      applied.push(`体力+${trimNum(attr.stamina - before)}`);
     }
     if(a.mood){
-      const g = Math.round(a.mood * (1 + boosts.mood));
+      const g = a.mood * (1 + boosts.mood);
       attr.mood = Math.min(100, Math.max(0, attr.mood + g));
-      applied.push(`心情${g >= 0 ? '+' : ''}${g}`);
+      applied.push(`心情${g >= 0 ? '+' : ''}${trimNum(g)}`);
     }
     if(a.charm){
-      const g = Math.round(a.charm * (1 + boosts.charm));
+      const g = a.charm * (1 + boosts.charm);
       attr.charm = Math.min(100, attr.charm + g);
-      applied.push(`魅力+${g}`);
+      applied.push(`魅力+${trimNum(g)}`);
     }
     if(a.staminaMax){ S.life.staminaMax += a.staminaMax; applied.push(`体力上限+${a.staminaMax}`); }
     if(a.favor){ favorAll(a.favor); applied.push(`随行好感+${a.favor}`); }
@@ -1861,7 +1871,7 @@ function endDay(){
   S.life.day++;
   S.life.restUsed = 0;
   const attr = S.life.attrs;
-  attr.stamina = Math.min(S.life.staminaMax, attr.stamina + LIFE.SLEEP_RECOVER);
+  attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴上限加成）
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
   if((S.life.day - 1) % 7 === 0) lines.push(weekSettle());
   const newAge = LIFE.START_AGE + Math.floor((S.life.day - 1) / 360);
@@ -1893,10 +1903,10 @@ function weekSettle(){
 /* ---------- 结局判定（破产 / 60 岁退休 / Fihag 彩蛋） ---------- */
 function checkEnd(){
   if(S.ending) return S.ending;
+  const score = endingScore(S, slotBoosts().staminaMax);
   if(S.debtWeeks >= LIFE.GRACE_WEEKS){
-    S.ending = {...ENDING_BROKE, score: endingScore(S)};
+    S.ending = {...ENDING_BROKE, score};
   } else if(S.life.age >= LIFE.RETIRE_AGE){
-    const score = endingScore(S);
     if(S.dex.fihagv1 && score >= 150) S.ending = {...ENDING_CHOSEN, score};
     else S.ending = {...(ENDINGS.find(e => score >= e.min) || ENDINGS[ENDINGS.length - 1]), score};
   }
@@ -1995,7 +2005,7 @@ function renderHeader(){
   }
   lastMoney = m;
   const stEl = $('h-stamina');
-  if(stEl) stEl.textContent = `${Math.round(S.life.attrs.stamina)}/${S.life.staminaMax}`;
+  if(stEl) stEl.textContent = `${Math.round(S.life.attrs.stamina)}/${Math.round(staminaCeiling())}`;
   const dEl = $('h-day'); if(dEl) dEl.textContent = S.life.day;
   const aEl = $('h-age'); if(aEl) aEl.textContent = S.life.age;
 }
@@ -2003,11 +2013,12 @@ function renderHeader(){
 /* ---------- 生活页 ---------- */
 function renderLife(){
   const a = S.life.attrs;
+  const ceil = staminaCeiling();
   const set = (id, v) => { const el = $(id); if(el) el.textContent = v; };
-  set('a-stamina', Math.round(a.stamina)); set('a-staminamax', S.life.staminaMax);
+  set('a-stamina', Math.round(a.stamina)); set('a-staminamax', Math.round(ceil));
   set('a-mood', Math.round(a.mood)); set('a-skill', Math.round(a.skill)); set('a-charm', Math.round(a.charm));
   const bar = (id, pct) => { const el = $(id); if(el) el.style.width = Math.max(0, Math.min(100, pct)) + '%'; };
-  bar('bar-stamina', a.stamina / S.life.staminaMax * 100);
+  bar('bar-stamina', a.stamina / ceil * 100);
   bar('bar-mood', a.mood);
   bar('bar-skill', a.skill);
   bar('bar-charm', a.charm);
@@ -2217,12 +2228,7 @@ function renderData(){
 }
 
 function endingScorePreview(){
-  const s = S;
-  const score = Math.round(
-    s.money/200 + s.life.attrs.skill*2 + s.life.attrs.charm*2
-    + s.partners.reduce((a,p)=>a+p.favor,0)*0.1 + s.partners.length*4
-    + (s.life.staminaMax - LIFE.STAMINA_MAX)
-  );
+  const score = endingScore(S, slotBoosts().staminaMax);
   const tier = [...ENDINGS].reverse().find(e => score >= e.min) || ENDINGS[ENDINGS.length - 1];
   return `${score}（${tier.title.replace(/^\S+\s/, '')}）`;
 }
@@ -2394,7 +2400,7 @@ function welcomeHTML(){
 
 function helpHTML(){
   return `<h3>❓ 玩法说明<button class="x" onclick="closeModal()">×</button></h3>
-  <p><b>主循环</b>：生活页每天 3 点行动力，行动 → 日切（随机事件 + 睡眠恢复）→ 周结算（房租+伙食）→ 每 360 天长一岁。</p>
+  <p><b>主循环</b>：行动不设上限，体力说话 → 日切（随机事件 1~2 个 + 睡一觉体力回满，心情 -8）→ 周结算（房租+伙食）→ 每 360 天长一岁。</p>
   <p><b>属性</b>：体力限制行动（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
   <p><b>打工</b>：收入 = 基础价 × 技术系数 × 心情系数 × 伙伴加成，结算走大成功 ×2.5 / 返工 ×0.4 / 生产事故倒赔的事件流，概率公示页可查。</p>
   <p><b>伙伴</b>：最多 3 位随行。效果类型看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感等级（×1.0/1.15/1.3）。重复卡折算好感 +10。</p>
@@ -2543,7 +2549,7 @@ function bigMoneyFromLine(line){
 function handleEndDay(){
   if(S.ending){ toast('本局已结束，开个新周目再战'); return; }
   showModal(`<h3>🛏 结束今天<button class="x" data-act="close-modal">×</button></h3>
-  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡眠恢复（体力 +55 / 心情 -8）${dayHint()}</p>
+  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡一觉<b>体力回满</b>（心情 -8）${dayHint()}</p>
   <button class="big-btn" data-act="confirm-end-day">天黑了，睡觉 →</button>
   <button class="big-btn ghost" data-act="close-modal">再肝一会儿 →</button>`);
 }

@@ -54,7 +54,7 @@ function bigMoneyFromLine(line){
 export function handleEndDay(){
   if(S.ending){ toast('本局已结束，开个新周目再战'); return; }
   showModal(`<h3>🛏 结束今天<button class="x" data-act="close-modal">×</button></h3>
-  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡眠恢复（体力 +55 / 心情 -8）${dayHint()}</p>
+  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡一觉<b>体力回满</b>（心情 -8）${dayHint()}</p>
   <button class="big-btn" data-act="confirm-end-day">天黑了，睡觉 →</button>
   <button class="big-btn ghost" data-act="close-modal">再肝一会儿 →</button>`);
 }

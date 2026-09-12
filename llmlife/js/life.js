@@ -5,12 +5,14 @@
    ================================================================ */
 import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT } from "./config.js";
 import { S, save, addLedger, fmt, setState, defaultState, logToday, pick } from "./state.js";
-import { slotBoosts, favorAll } from "./partners.js";
+import { slotBoosts, favorAll, staminaCeiling } from "./partners.js";
 import { sampleWorkPay } from "./economy.js";
 import { addAttrs } from "./items.js";
 
 const ACTION_MAP = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
 const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+/* 收益展示：保留 1 位小数并去掉尾随 .0 */
+const trimNum = n => String(Math.round(n * 10) / 10);
 
 export const actionOf = id => ACTION_MAP[id];
 
@@ -60,24 +62,25 @@ export function doAction(actionId){
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
-      const gain = Math.max(1, Math.round(rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1)));
+      // 保留小数：伙伴加成在低基础收益上也要真实体现（渲染时四舍五入）
+      const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1));
       attr.skill = Math.min(100, attr.skill + gain);
-      applied.push(`技术+${gain}${moodSlow ? '（心情低落，效率减半）' : ''}`);
+      applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}`);
     }
     if(a.recover){
       const before = attr.stamina;
-      attr.stamina = Math.min(S.life.staminaMax, attr.stamina + a.recover);
-      applied.push(`体力+${attr.stamina - before}`);
+      attr.stamina = Math.min(staminaCeiling(), attr.stamina + a.recover);
+      applied.push(`体力+${trimNum(attr.stamina - before)}`);
     }
     if(a.mood){
-      const g = Math.round(a.mood * (1 + boosts.mood));
+      const g = a.mood * (1 + boosts.mood);
       attr.mood = Math.min(100, Math.max(0, attr.mood + g));
-      applied.push(`心情${g >= 0 ? '+' : ''}${g}`);
+      applied.push(`心情${g >= 0 ? '+' : ''}${trimNum(g)}`);
     }
     if(a.charm){
-      const g = Math.round(a.charm * (1 + boosts.charm));
+      const g = a.charm * (1 + boosts.charm);
       attr.charm = Math.min(100, attr.charm + g);
-      applied.push(`魅力+${g}`);
+      applied.push(`魅力+${trimNum(g)}`);
     }
     if(a.staminaMax){ S.life.staminaMax += a.staminaMax; applied.push(`体力上限+${a.staminaMax}`); }
     if(a.favor){ favorAll(a.favor); applied.push(`随行好感+${a.favor}`); }
@@ -133,7 +136,7 @@ export function endDay(){
   S.life.day++;
   S.life.restUsed = 0;
   const attr = S.life.attrs;
-  attr.stamina = Math.min(S.life.staminaMax, attr.stamina + LIFE.SLEEP_RECOVER);
+  attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴上限加成）
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
   if((S.life.day - 1) % 7 === 0) lines.push(weekSettle());
   const newAge = LIFE.START_AGE + Math.floor((S.life.day - 1) / 360);
@@ -165,10 +168,10 @@ export function weekSettle(){
 /* ---------- 结局判定（破产 / 60 岁退休 / Fihag 彩蛋） ---------- */
 export function checkEnd(){
   if(S.ending) return S.ending;
+  const score = endingScore(S, slotBoosts().staminaMax);
   if(S.debtWeeks >= LIFE.GRACE_WEEKS){
-    S.ending = {...ENDING_BROKE, score: endingScore(S)};
+    S.ending = {...ENDING_BROKE, score};
   } else if(S.life.age >= LIFE.RETIRE_AGE){
-    const score = endingScore(S);
     if(S.dex.fihagv1 && score >= 150) S.ending = {...ENDING_CHOSEN, score};
     else S.ending = {...(ENDINGS.find(e => score >= e.min) || ENDINGS[ENDINGS.length - 1]), score};
   }

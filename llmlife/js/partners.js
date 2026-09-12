@@ -36,6 +36,14 @@ export function activePartners(){
 }
 
 /**
+ * 有效体力上限 = 基础上限（健身成长）+ 随行伙伴加成（实时计算，
+ * 编队/好感变化即时生效）。所有体力钳制必须用本函数而非裸读状态。
+ */
+export function staminaCeiling(){
+  return S.life.staminaMax + slotBoosts().staminaMax;
+}
+
+/**
  * 随行伙伴加成合计
  * @returns {{work:number, learn:number, mood:number, charm:number, staminaMax:number}}
  *   work/learn/mood/charm 为加成小数（0.3 = +30%），staminaMax 为绝对值加成

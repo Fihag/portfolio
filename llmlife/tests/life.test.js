@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import { defaultState, setState, S } from "../js/state.js";
 import { LIFE, ENDINGS, MMAP, PROBS } from "../js/config.js";import { payoutParams, expectedWorkPay } from "../js/economy.js";
-import { recruit, setSlot, slotBoosts, favorLevel, boostOf, effectOf } from "../js/partners.js";
+import { recruit, setSlot, slotBoosts, favorLevel, boostOf, effectOf, staminaCeiling } from "../js/partners.js";
 import { addItem, useItem, itemCount, rollLottery } from "../js/items.js";
 import { doAction, endDay, weekSettle, checkEnd, checkMilestones, canDo, anyActionAvailable, restart } from "../js/life.js";
 
@@ -237,12 +237,47 @@ describe("回合引擎", () => {
     expect(S.ending.id).toBe("chosen");
   });
 
-  it("日切自然恢复体力并衰减心情", () => {
-    S.life.attrs.stamina = 0;
+  it("日切体力回满（含伙伴上限加成）并衰减心情", () => {
+    S.life.attrs.stamina = 5;
     S.life.attrs.mood = 50;
     endDay();
-    expect(S.life.attrs.stamina).toBe(LIFE.SLEEP_RECOVER);
+    expect(S.life.attrs.stamina).toBe(LIFE.STAMINA_MAX);
     expect(S.life.attrs.mood).toBe(42);
+  });
+
+  it("伙伴加成端到端：随行 Google 伙伴抬高体力上限，睡觉回满到新上限", () => {
+    const gem = recruit("gemini-3-8-flash").partner; // SSR Google +30% → +12 上限
+    setSlot(0, gem.uid);
+    expect(staminaCeiling()).toBe(112);
+    S.life.attrs.stamina = 0;
+    endDay();
+    expect(S.life.attrs.stamina).toBe(112); // 回满到加成后上限
+    setSlot(0, null);
+    expect(staminaCeiling()).toBe(100); // 下场立即回落
+  });
+
+  it("伙伴加成端到端：随行 Anthropic 伙伴打工收入 ×1.75", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // roll=ok 且 okRange 中点 → amt = base×1.3
+    const base = doAction("work");
+    const unslottedAmt = base.line.match(/¥([\d,.]+)/)[1];
+    const fable = recruit("claude-fable-5-1").partner; // UTR work +75%
+    setSlot(0, fable.uid);
+    S.life.attrs.stamina = 100;
+    const boosted = doAction("work");
+    const slottedAmt = boosted.line.match(/¥([\d,.]+)/)[1];
+    const ratio = parseFloat(slottedAmt.replace(/,/g, "")) / parseFloat(unslottedAmt.replace(/,/g, ""));
+    expect(ratio).toBeCloseTo(1.75, 2);
+    vi.restoreAllMocks();
+  });
+
+  it("伙伴加成端到端：学习收益保留小数（不被取整吞掉）", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0); // rand(2,4) → 2
+    const ds = recruit("deepseek-v4-1-flash").partner; // SSR Alibaba/DeepSeek 学习 +30%
+    setSlot(0, ds.uid);
+    const before = S.life.attrs.skill;
+    doAction("learn");
+    expect(S.life.attrs.skill - before).toBeCloseTo(2 * 1.3, 6); // 2.6 而非取整
+    vi.restoreAllMocks();
   });
 
   it("结局后禁止行动，restart 重开", () => {
