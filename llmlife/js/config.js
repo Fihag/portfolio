@@ -151,6 +151,7 @@ export const LIFE = {
   START_AGE: 22, RETIRE_AGE: 60,
   REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
+  STAMINA_CAP: 200,        // 体力上限软帽：健身/道具推到 200 后不再成长
   MOOD_DECAY: 8,           // 日切心情自然衰减
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
   RENT: 1200,              // 周结算房租
@@ -168,7 +169,7 @@ export const ACTIONS = [
   {id:'work',   name:'接单打工', icon:'💻', stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情与伙伴加成'},
   {id:'learn',  name:'学习充电', icon:'📚', stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', stamina:26, money:40, staminaMax:1, charm:2, desc:'提高体力上限，顺便涨点魅力'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
   {id:'social', name:'社交聚会', icon:'🍻', stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
   {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
 ];
@@ -219,7 +220,7 @@ export const ITEMS = [
   {id:'amulet',    name:'欧皇护身符',   icon:'🧿', r:'SSR',special:'pity+10',                      desc:'玄学加成：保底计数 +10'},
   {id:'pulltick',  name:'免费抽卡券',   icon:'🎫', r:'SSR',special:'pull',                         desc:'伙伴池免费单抽 ×1'},
   {id:'monitor',   name:'4K 显示器',    icon:'🖥️', r:'UR', effect:{skill:5, mood:15, staminaMax:3}, desc:'丝都看得清，一行都不会漏'},
-  {id:'energyweek',name:'一周能量补剂', icon:'🧪', r:'UR', special:'fullstamina+8',                desc:'体力回满，上限 +8，医生看了摇头'},
+  {id:'energyweek',name:'一周能量补剂', icon:'🧪', r:'UR', special:'fullstamina+8',                desc:'一周的量一针打完：体力回满，上限 +8，医生看了摇头'},
 ];
 /* 道具池出货时按稀有度随机抽道具（同稀有度内等权） */
 export const ITEM_RARITY = {

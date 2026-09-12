@@ -88,6 +88,17 @@ describe("道具系统", () => {
     expect(S.pity.partner).toBe(pityBefore + 10);
   });
 
+  it("道具体力上限成长同样吃 200 软帽", () => {
+    S.life.staminaMax = 199;
+    addItem("chair");
+    useItem("chair"); // +5 → 只补到 200
+    expect(S.life.staminaMax).toBe(200);
+    S.life.staminaMax = 150;
+    addItem("monitor");
+    useItem("monitor"); // 未到帽照常 +3
+    expect(S.life.staminaMax).toBe(153);
+  });
+
   it("刮刮乐分布有界且期望为正", () => {
     let sum = 0;
     for (let i = 0; i < 10000; i++) sum += rollLottery().amt;
@@ -191,6 +202,22 @@ describe("回合引擎", () => {
     S.life.attrs.stamina = 20;
     doAction("rest");
     expect(S.life.attrs.stamina).toBe(60);
+  });
+
+  it("撸铁比打工更累：42 体力门槛", () => {
+    S.life.attrs.stamina = 38; // 够打工但不够撸铁
+    expect(canDo("work").ok).toBe(true);
+    expect(canDo("gym").ok).toBe(false);
+  });
+
+  it("体力上限软帽 200：到帽后健身只涨魅力", () => {
+    S.life.staminaMax = LIFE.STAMINA_CAP;
+    S.life.attrs.stamina = LIFE.STAMINA_CAP;
+    S.money = 1000;
+    const r = doAction("gym");
+    expect(S.life.staminaMax).toBe(LIFE.STAMINA_CAP);
+    expect(S.life.attrs.charm).toBe(12);
+    expect(r.line).toContain("身体到极限");
   });
 
   it("周结算扣房租，付不起计欠租，两周破产结局", () => {

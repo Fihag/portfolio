@@ -2,7 +2,7 @@
    LLMLife · 道具层 (items.js)
    背包存取 / 效果结算（含刮刮乐、免费抽卡券等特殊道具）
    ================================================================ */
-import { ITEMS, ITEM_RARITY } from "./config.js";
+import { ITEMS, ITEM_RARITY, LIFE } from "./config.js";
 import { S, save } from "./state.js";
 import { favorAll, staminaCeiling } from "./partners.js";
 
@@ -34,6 +34,8 @@ export function clampAttrs(){
   a.charm = Math.min(100, Math.max(0, a.charm));
 }
 export function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0}){
+  // 体力上限成长吃软帽（健身与道具同一规则）
+  if(staminaMax > 0) staminaMax = Math.max(0, Math.min(staminaMax, LIFE.STAMINA_CAP - S.life.staminaMax));
   S.life.staminaMax += staminaMax;
   S.life.attrs.stamina += stamina;
   S.life.attrs.mood += mood;

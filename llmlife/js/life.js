@@ -82,7 +82,13 @@ export function doAction(actionId){
       attr.charm = Math.min(100, attr.charm + g);
       applied.push(`魅力+${trimNum(g)}`);
     }
-    if(a.staminaMax){ S.life.staminaMax += a.staminaMax; applied.push(`体力上限+${a.staminaMax}`); }
+    if(a.staminaMax){
+      // 体力上限软帽：到 LIFE.STAMINA_CAP 后不再成长，魅力照涨
+      const room = Math.max(0, LIFE.STAMINA_CAP - S.life.staminaMax);
+      const add = Math.min(a.staminaMax, room);
+      S.life.staminaMax += add;
+      applied.push(add > 0 ? `体力上限+${trimNum(add)}` : `身体到极限了（${LIFE.STAMINA_CAP}），这次只涨了魅力`);
+    }
     if(a.favor){ favorAll(a.favor); applied.push(`随行好感+${a.favor}`); }
     line = `${a.icon} ${a.name}${applied.length ? '：' + applied.join('，') : ''}`;
   }
