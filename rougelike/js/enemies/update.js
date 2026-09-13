@@ -526,7 +526,17 @@
                             this.fireAtPlayer(player);
                             this.fireballTimer = this.fireballCooldown;
                         }
-                    } else { mx = dx / d; my = dy / d; }
+                    } else if (this.typeKey === 'bomber' || !(this.flankAngle)) {
+                        mx = dx / d; my = dy / d; // 自爆虫直线冲锋；无侧翼角（Boss/远程）直追
+                    } else {
+                        // 侧翼包抄：目标向量按个体方位角旋转，远距离走弧线包抄、120px 内归零直冲（防玩家绕圈聚团）
+                        const fw = clamp((d - 120) / 380, 0, 1);
+                        const fa = this.flankAngle * fw;
+                        const ca = Math.cos(fa), sa = Math.sin(fa);
+                        const rx = dx * ca - dy * sa, ry = dx * sa + dy * ca;
+                        const rd = Math.hypot(rx, ry) || 0.01;
+                        mx = rx / rd; my = ry / rd;
+                    }
                     let sepX = 0, sepY = 0;
                     for (const other of game.enemies) {
                         if (other === this || !other.alive) continue;

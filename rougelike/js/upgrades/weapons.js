@@ -1,3 +1,17 @@
+            // 敌群最密处选点：统计各候选 radius 内的敌人数取最高（平局取距玩家更近者），
+            // 跳过与 placed 已落点过近（avoidDist）的候选；全部被避让时退回随机
+            function pickDenseSpot(alive, radius, placed, avoidDist) {
+                let best = null, bestCnt = -1, bestD = Infinity;
+                for (const cand of alive) {
+                    if (placed.some(p => Math.hypot(p.x - cand.x, p.y - cand.y) < avoidDist)) continue;
+                    let cnt = 0;
+                    for (const e of alive) if (Math.hypot(e.x - cand.x, e.y - cand.y) < radius) cnt++;
+                    const pd = dist(cand, game.player);
+                    if (cnt > bestCnt || (cnt === bestCnt && pd < bestD)) { bestCnt = cnt; best = cand; bestD = pd; }
+                }
+                if (!best) best = alive[randInt(0, alive.length - 1)];
+                return best;
+            }
             function updateWeapons(player, dt) {
                 for (const w of player.weapons) {
                     if (w.type === 'magic_missile') {
@@ -257,14 +271,7 @@
                                 // 优先落在敌群最密处；多朵云互相避开已落点
                                 const placed = [];
                                 for (let i = 0; i < w.cloudCount; i++) {
-                                    let best = null, bestCnt = -1;
-                                    for (const cand of alive) {
-                                        if (placed.some(p => Math.hypot(p.x - cand.x, p.y - cand.y) < 120)) continue;
-                                        let cnt = 0;
-                                        for (const e of alive) if (Math.hypot(e.x - cand.x, e.y - cand.y) < w.radius + 30) cnt++;
-                                        if (cnt > bestCnt) { bestCnt = cnt; best = cand; }
-                                    }
-                                    if (!best) best = alive[randInt(0, alive.length - 1)];
+                                    const best = pickDenseSpot(alive, w.radius + 30, placed, 120);
                                     placed.push(best);
                                     game.clouds.push({ x: best.x, y: best.y, radius: w.radius, life: w.duration, maxLife: w.duration, tickRate: w.tickRate, tickTimer: 0, dmg, burstChance: w.burstChance || 0, burstDmg: dmg * 0.6, burstRadius: 45, homing: !!w.evolved, target: best, spreadSlow: !!w.evolved });
                                     spawnParticles(best.x, best.y, 12, '#77dd55', 70, 0.5, 4);
@@ -276,12 +283,15 @@
                     } else if (w.type === 'gravity_well') {
                         const cd = w.cooldownTime * player.getEffectiveCooldownMult();
                         if (w.cooldown <= 0) {
-                            const alive = game.enemies.filter(e => e.alive && !e.dying);
+                            const alive = game.enemies.filter(e => e.alive && !e.dying && !e.deathMarked);
                             if (alive.length > 0) {
                                 const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                                 const edmg = w.explodeDamage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
+                                // 优先吸附敌群最密处（不再全图随机钉角落新怪）；多座奇点互相避开
+                                const placed = [];
                                 for (let i = 0; i < w.wellCount; i++) {
-                                    const t = alive[randInt(0, alive.length - 1)];
+                                    const t = pickDenseSpot(alive, w.pullRadius, placed, 120);
+                                    placed.push(t);
                                     game.wells.push({ x: t.x, y: t.y, radius: w.pullRadius, life: w.duration, maxLife: w.duration, tickRate: w.tickRate, tickTimer: 0, dmg, explodeDmg: edmg, explodeRadius: w.explodeRadius, shockwave: !!w.evolved, spin: 0 });
                                 }
                                 sound.play('summon');

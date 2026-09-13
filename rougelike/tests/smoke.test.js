@@ -380,3 +380,34 @@ describe("死神之指手动点击", () => {
     expect(R(`dmTrySelectAt(400+cam.x,500+cam.y)===true && game.deathMark.targets.length===1`)).toBe(true);
   });
 });
+
+describe("怪物侧翼包抄与奇点索敌", () => {
+  it("侧翼包抄：不同方位角的怪物从不同方向接近，不再聚团追尾", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=500; game.player.y=500;
+       var a = new Enemy(900, 500, 'zombie', 0); a.flankAngle = 0.9;
+       var b = new Enemy(900, 500, 'zombie', 0); b.flankAngle = -0.9;
+       game.enemies.push(a); game.enemies.push(b);`);
+    R(`for (var i = 0; i < 60; i++) update(1/60)`);
+    // 一只向上偏一只向下偏（绕行方向相反）
+    expect(R(`(game.enemies[0].y - 500) * (game.enemies[1].y - 500) < 0`)).toBe(true);
+  });
+  it("近距直冲：120px 内侧翼偏移归零，直线贴近", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=500; game.player.y=500;
+       var e = new Enemy(580, 500, 'zombie', 0); e.flankAngle = 0.9; game.enemies.push(e);`);
+    R(`for (var i = 0; i < 30; i++) update(1/60)`);
+    expect(R(`Math.abs(game.enemies[0].y - 500) < 3 && game.enemies[0].x < 580`)).toBe(true);
+  });
+  it("引力奇点密度索敌：优先吸附敌群最密处，不再随机钉角落新怪", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=500; game.player.y=500;
+       for (var i = 0; i < 4; i++) game.enemies.push(new Enemy(600 + i * 8, 500 + (i % 2) * 10, 'zombie', 0));
+       game.enemies.push(new Enemy(100, 100, 'zombie', 0));
+       game.player.weapons = [START_WEAPON_DEFS.gravity_well()];`);
+    R(`update(1/60)`);
+    expect(R(`game.wells.length`)).toBe(1);
+    expect(R(`Math.hypot(game.wells[0].x - 612, game.wells[0].y - 505) < 200`)).toBe(true); // 落在聚群处
+    expect(R(`Math.hypot(game.wells[0].x - 100, game.wells[0].y - 100) > 350`)).toBe(true); // 远离角落孤怪
+  });
+});
