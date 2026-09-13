@@ -262,9 +262,9 @@ describe("天罚炮台技能数值", () => {
     ).toBe(true);
     expect(R(`game.enemies[0].turretRapidTimer`)).toBeCloseTo(0.27, 5);
   });
-  it("弹速难度系数：简单×0.85 普通×1 困难×1.1 地狱×1.2 不可能×1.3", () => {
+  it("弹速难度系数：简单×0.85 普通×1 困难×1.06 地狱×1.14 不可能×1.2", () => {
     const { R } = loadGame();
-    const cases = [["easy", 0.85], ["normal", 1], ["hard", 1.1], ["hell", 1.2], ["impossible", 1.3]];
+    const cases = [["easy", 0.85], ["normal", 1], ["hard", 1.06], ["hell", 1.14], ["impossible", 1.2]];
     for (const [diff, m] of cases) {
       R(`game.selectedDifficulty = '${diff}'; var t = new Enemy(500, 500, 'turret', 0);`);
       expect(R(`t.turretSpdMult`)).toBe(m);
