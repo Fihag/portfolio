@@ -480,13 +480,13 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`Math.hypot(game.player.x - game.moonDomain.x, game.player.y - game.moonDomain.y) <= game.moonDomain.r`)).toBe(true);
   });
 
-  it("月刃环：一轮 6 发细长月牙弹幕（二阶段 8 发，反弹仅二阶段 1 次）", () => {
+  it("月刃环：一轮 6 发细长月牙弹幕（二阶段 8 发，两阶段均触界反弹 1 次）", () => {
     const { R } = loadGame();
     reachDomain(R);
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonBladeTimer = 0.01;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.moonBlade).length`)).toBe(6);
-    expect(R(`game.projectiles.filter(p => p.moonBlade).every(p => p.moonBounce === 0 && p.damage === 14 && Math.abs(Math.hypot(p.vx, p.vy) - 280) < 1)`)).toBe(true);
+    expect(R(`game.projectiles.filter(p => p.moonBlade).every(p => p.moonBounce === 1 && p.damage === 14 && Math.abs(Math.hypot(p.vx, p.vy) - 280) < 1)`)).toBe(true);
     // 二阶段 8 发（先清掉第一轮弹体再发射），反弹 1 次
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonPhase2 = true; mw.moonApplyBuffs(2); game.projectiles = []; mw.moonBladeTimer = 0.01;`);
     R(`update(1/60)`);
