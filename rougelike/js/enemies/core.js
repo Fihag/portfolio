@@ -326,16 +326,16 @@
                             game.clouds.push({ x: this.x, y: this.y, radius: this.plagueBurstRadius || 45, life: 1.5, maxLife: 1.5, tickRate: 0.5, tickTimer: 0, dmg: this.plagueBurstDmg || 5, burstChance: 0, burstDmg: 0, burstRadius: 45, homing: false, target: null, spreadSlow: this.plagueSpreadSlow || false });
                             spawnParticles(this.x, this.y, 10, '#77dd55', 70, 0.4, 3);
                         }
-                        // 天罚炮台：死亡神罚——全图降下陨石风暴（两波共 70 颗，覆盖中央 80% 区域，只对玩家判定）
+                        // 天罚炮台：死亡神罚——全图降下陨石风暴（两波共 100 颗约 7s，覆盖中央 80% 区域，只对玩家判定）
                         if (this.typeKey === 'turret') {
                             game.divineStrikes = game.divineStrikes || [];
                             const mdmg = this.turretMeteorDmg || 50;
-                            for (let i = 0; i < 70; i++) {
+                            for (let i = 0; i < 100; i++) {
                                 game.divineStrikes.push({
                                     x: rand(200, WORLD_W - 200), y: rand(150, WORLD_H - 150),
-                                    delay: (i < 35 ? 0.5 : 3.0) + (i % 35) * 0.06,
-                                    warn: 0.7, fall: 0, phase: undefined,
-                                    radius: 85, dmg: mdmg, hit: false, impactLife: 0
+                                    delay: i < 50 ? 0.5 + i * 0.05 : 3.5 + (i - 50) * 0.04,
+                                    warn: 1.0, fall: 0, phase: undefined,
+                                    radius: 105, dmg: mdmg, hit: false, impactLife: 0
                                 });
                             }
                             game.rings.push({ x: this.x, y: this.y, r: 20, maxR: 250, life: 0.5, maxLife: 0.5, color: '#ffcc55', width: 8 });

@@ -90,8 +90,8 @@
                             ctx.fillStyle = `rgba(255,210,90,${t * 0.75})`;
                             ctx.beginPath(); ctx.arc(st.x, st.y, ir * 0.55, 0, Math.PI * 2); ctx.fill();
                         } else if (st.phase === 'fall') {
-                            const p = clamp(st.fall / 0.22, 0, 1);
-                            const sy = st.y - (1 - p) * 320;
+                            const p = clamp(st.fall / 0.5, 0, 1);
+                            const sy = st.y - (1 - p) * 380;
                             ctx.save();
                             ctx.translate(st.x, sy);
                             const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);

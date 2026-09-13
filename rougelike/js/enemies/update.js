@@ -338,7 +338,7 @@
                                 this.turretVolleyAim = aim;
                                 for (let i = 0; i < 9; i++) {
                                     const a = aim - Math.PI / 180 * 10 + Math.PI / 180 * 2.5 * i;
-                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ffcc55', 7, true));
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ffcc55', 12, true));
                                 }
                                 sound.play('shoot');
                                 spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 6, '#ffdd88', 60, 0.3, 3);
@@ -348,7 +348,7 @@
                                 if (this.turretVolleySecond <= 0) {
                                     for (let i = 0; i < 9; i++) {
                                         const a = this.turretVolleyAim - Math.PI / 180 * 10 + Math.PI / 180 * 2.5 * i;
-                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ffcc55', 7, true));
+                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ffcc55', 12, true));
                                     }
                                     sound.play('shoot');
                                 }
@@ -357,7 +357,7 @@
                             this.turretRapidTimer = (this.turretRapidTimer === undefined ? 1.2 : this.turretRapidTimer) - dt;
                             if (this.turretRapidTimer <= 0) {
                                 this.turretRapidTimer = 0.15;
-                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(aim) * 430, Math.sin(aim) * 430, rapidDmg, 0, 0, '#ffcc55', 5.5, true));
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(aim) * 430, Math.sin(aim) * 430, rapidDmg, 0, 0, '#ffcc55', 10.5, true));
                                 spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 2, '#ffdd88', 50, 0.2, 2);
                             }
                             // 爆裂弹：4s 一轮 3 枚（弹速 450、射程 800），逼近玩家 210 内或射程尽头爆炸——爆心 35 伤 + 分裂 30 发环形弹（12° 整圆，弹速 380；尽头引爆 500）
@@ -366,7 +366,7 @@
                                 this.turretBurstTimer = 4;
                                 for (let i = -1; i <= 1; i++) {
                                     const a = aim + i * 0.16;
-                                    const shell = new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ff5544', 7.5, true);
+                                    const shell = new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ff5544', 12.5, true);
                                     shell.burstShell = true;
                                     shell.maxLifetime = 1.78; // 射程约 800
                                     shell.burstCoreDmg = this.turretBurstCoreDmg || 35;

@@ -198,20 +198,20 @@ describe("新武器与编队", () => {
     R(`var sx = t.x, sy = t.y; for (var i = 0; i < 90; i++) t.update(1/60, game.player);`);
     expect(R(`Math.abs(t.x - sx) < 0.01 && Math.abs(t.y - sy) < 0.01`)).toBe(true);
   });
-  it("炮台死亡神罚：全图 70 颗陨石两波，落点在中央 80% 区域，每颗 50 伤", () => {
+  it("炮台死亡神罚：全图 100 颗陨石两波约 7s，落点在中央 80% 区域，每颗 50 伤", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing';`);
     R(`var t = new Enemy(500, 500, 'turret', 0); t.hp = 1; game.enemies.push(t); t.takeDamage(9999999, 'test');`);
-    expect(R(`game.divineStrikes.length`)).toBe(70);
+    expect(R(`game.divineStrikes.length`)).toBe(100);
     expect(
-      R(`game.divineStrikes.every(s => s.dmg === 50 && s.x >= 200 && s.x <= 1800 && s.y >= 150 && s.y <= 1350 && s.warn === 0.7 && s.radius === 85)`)
+      R(`game.divineStrikes.every(s => s.dmg === 50 && s.x >= 200 && s.x <= 1800 && s.y >= 150 && s.y <= 1350 && s.warn === 1.0 && s.radius === 105)`)
     ).toBe(true);
-    expect(R(`game.divineStrikes.filter(s => s.delay < 3).length`)).toBe(35); // 第一波 35 颗（0.5s 起每 0.06s 一颗）
+    expect(R(`game.divineStrikes.filter(s => s.delay < 3).length`)).toBe(50); // 第一波 50 颗（0.5s 起每 0.05s 一颗）
     expect(R(`game.divineStrikes[0].delay`)).toBe(0.5);
-    expect(R(`game.divineStrikes[35].delay`)).toBe(3.0); // 第二波 3s 起
+    expect(R(`game.divineStrikes[50].delay`)).toBe(3.5); // 第二波 3.5s 起（末颗落地 ≈7s）
     // 落地判定：把一颗设为立即落地、玩家站落点 → 扣 50
     R(`var s0 = game.divineStrikes[0]; game.player.x = s0.x; game.player.y = s0.y; s0.delay = 0; s0.warn = 0.01;`);
-    R(`for (var i = 0; i < 25; i++) update(1/60)`);
+    R(`for (var i = 0; i < 40; i++) update(1/60)`);
     const hpAfter = R(`game.player.hp`);
     expect(hpAfter).toBeGreaterThan(50); // 挨了 50 伤（玩家有微量自然回血，允许小数）
     expect(hpAfter).toBeLessThan(51);
@@ -258,7 +258,7 @@ describe("天罚炮台技能数值", () => {
     R(`game.enemies[0].turretRapidTimer = 0.01;`);
     R(`update(1/60)`);
     expect(
-      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && Math.abs(Math.hypot(p.vx, p.vy) - 430) < 1)`)
+      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && p.size === 10.5 && Math.abs(Math.hypot(p.vx, p.vy) - 430) < 1)`)
     ).toBe(true);
     expect(R(`game.enemies[0].turretRapidTimer`)).toBeCloseTo(0.15, 5);
   });
@@ -269,7 +269,7 @@ describe("天罚炮台技能数值", () => {
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(9);
     expect(
-      R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 450) < 1 && p.damage === 20)`)
+      R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 450) < 1 && p.damage === 20 && p.size === 12)`)
     ).toBe(true);
     R(`for (var i = 0; i < 16; i++) update(1/60)`); // 越过 0.25s 连发间隔
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(18);
@@ -281,7 +281,7 @@ describe("天罚炮台技能数值", () => {
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(3);
     expect(
-      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 450) < 1 && Math.abs(p.maxLifetime - 1.78) < 0.001)`)
+      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 450) < 1 && Math.abs(p.maxLifetime - 1.78) < 0.001 && p.size === 12.5)`)
     ).toBe(true);
     expect(R(`game.enemies[0].turretBurstTimer`)).toBeCloseTo(4, 5);
     // 引爆：把一枚爆裂弹放到玩家 100px 处（< 210 引信）
@@ -290,7 +290,7 @@ describe("天罚炮台技能数值", () => {
     expect(R(`game.player.hp`)).toBe(65); // 爆心 35 伤（半径 110 内）
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2); // 引爆的弹体消失
     expect(
-      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 380) < 1 && p.damage === 22); })()`)
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 380) < 1 && p.damage === 22 && p.size === 9.5); })()`)
     ).toBe(true);
   });
   it("爆裂弹射程尽头引爆：分裂弹加速到 500", () => {
@@ -303,7 +303,7 @@ describe("天罚炮台技能数值", () => {
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2);
     expect(
-      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 500) < 1); })()`)
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 500) < 1 && p.size === 9.5); })()`)
     ).toBe(true);
   });
   it("扫射激光：0.5s 预警后发射，长 1200 处命中 35 伤，冷却 5s", () => {
