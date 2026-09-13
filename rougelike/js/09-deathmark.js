@@ -79,6 +79,8 @@
 
             function updateDeathMark(dt) {
                 const dm = game.deathMark;
+                // 月之领域：死神之指被禁用（整体停摆，出场恢复）
+                if (game.moonDomain && game.moonDomain.active) return;
                 // 清理已死亡目标
                 for (let i = dm.targets.length - 1; i >= 0; i--) {
                     const t = dm.targets[i];
@@ -148,6 +150,8 @@
 
             function dmTrySelectAt(x, y) {
                 const dm = game.deathMark;
+                // 月之领域：死神之指被禁用
+                if (game.moonDomain && game.moonDomain.active) return false;
                 // 手动模式：最多同时锁定 3 名敌人（无 CD，抹杀后空出名额可继续标记）
                 if (dm.targets.length >= 3) return false;
                 let best = null, bestD = Infinity;

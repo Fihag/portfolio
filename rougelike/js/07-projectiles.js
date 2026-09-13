@@ -14,7 +14,10 @@
                     for (const tp of this.trailPositions) tp.life -= dt;
                     this.trailPositions = this.trailPositions.filter(tp => tp.life > 0);
                     this.x += this.vx * dt; this.y += this.vy * dt;
-                    if (this.x < -120 || this.x > WORLD_W + 120 || this.y < -120 || this.y > WORLD_H + 120) this.alive = false;
+                    // 月之领域内弹体豁免世界越界销毁（领域位于世界外负坐标）
+                    const moonSafe = game.moonDomain && game.moonDomain.active
+                        && Math.hypot(this.x - game.moonDomain.x, this.y - game.moonDomain.y) < game.moonDomain.r + 240;
+                    if (!moonSafe && (this.x < -120 || this.x > WORLD_W + 120 || this.y < -120 || this.y > WORLD_H + 120)) this.alive = false;
                 }
                 draw(ctx) {
                     if (this.isEnemy) {

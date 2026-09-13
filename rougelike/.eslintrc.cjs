@@ -71,6 +71,7 @@ module.exports = {
     H: "writable",
     WORLD_W: "readonly",
     WORLD_H: "readonly",
+    MOON_DOMAIN: "readonly",
     cam: "writable",
     PIXEL_SCALE: "writable",
     game: "writable",
@@ -176,6 +177,10 @@ module.exports = {
     spawnEnemy: "readonly",
     spawnBoss: "readonly",
     spawnSuperBoss: "readonly",
+    spawnMoonWitch: "readonly",
+    moonDomainEnter: "readonly",
+    moonDomainExit: "readonly",
+    MOON_RELIC_FIELDS: "readonly",
     // 11-game
     update: "readonly",
     draw: "readonly",

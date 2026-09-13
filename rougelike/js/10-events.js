@@ -279,3 +279,73 @@
                 game.rings.push({ x: x, y: y, r: 14, maxR: 340, life: 0.6, maxLife: 0.6, color: '#ff55ff', width: 8 });
                 game.rings.push({ x: x, y: y, r: 8, maxR: 250, life: 0.45, maxLife: 0.45, color: '#ffffff', width: 3 });
             }
+
+            // ==================== 幽月魔女（特殊 boss：整局两次，不进常规轮换池、不计出场次数） ====================
+            // 领域内禁用的圣物字段组（进场快照清零、出场恢复）
+            const MOON_RELIC_FIELDS = ['relicVamp', 'relicThorn', 'relicGreed', 'relicBomb', 'relicDodgeChance',
+                'relicLastStandRate', 'relicGuard', 'relicClone', 'relicTimeStop', 'relicChoiceCrown'];
+
+            function spawnMoonWitch(isSecond) {
+                if (game.bossOnField || !game.player) return;
+                const p = game.player;
+                // 降临点：玩家指向地图中心方向 350px（钳制在世界内；离玩家过近则反方向）
+                let dx0 = WORLD_W / 2 - p.x, dy0 = WORLD_H / 2 - p.y;
+                const dd0 = Math.hypot(dx0, dy0) || 1;
+                let x = clamp(p.x + dx0 / dd0 * 350, 120, WORLD_W - 120);
+                let y = clamp(p.y + dy0 / dd0 * 350, 120, WORLD_H - 120);
+                if (Math.hypot(x - p.x, y - p.y) < 220) {
+                    x = clamp(p.x - dx0 / dd0 * 350, 120, WORLD_W - 120);
+                    y = clamp(p.y - dy0 / dd0 * 350, 120, WORLD_H - 120);
+                }
+                game.moonWitchStatMult = isSecond ? 3 : 1;
+                const boss = new Enemy(x, y, 'moonwitch', game.difficultyLevel - 1);
+                game.moonWitchStatMult = 0;
+                boss.moonSecond = !!isSecond;
+                // 第二次：先播复活动画（镜片倒飞重组）再降临
+                boss.moonIntro = isSecond ? 'revive' : 'descend';
+                boss.moonIntroT = isSecond ? 2.2 : 2.5;
+                boss.moonShielded = true; // 演出期间免伤
+                game.enemies.push(boss);
+                game.bossOnField = true;
+                game.moonWitchCount++;
+                game.warningText = isSecond ? '镜中倒影重组——幽月魔女 再临！' : '幽月魔女 降临！';
+                game.warningTimer = 2.5;
+                sound.play('bossWarn');
+                triggerShake(5, 0.3);
+                game.rings.push({ x: x, y: y, r: 10, maxR: 260, life: 0.6, maxLife: 0.6, color: '#b090ff', width: 6 });
+                spawnParticles(x, y, 20, '#b090ff', 100, 0.7, 5);
+            }
+
+            // 进入月之领域：锁血上限 150、受伤 +10%、禁用死神之指与全部圣物（快照备份）
+            function moonDomainEnter(p) {
+                const dom = game.moonDomain;
+                if (!dom) return;
+                dom.relicSnap = {};
+                for (const f of MOON_RELIC_FIELDS) { dom.relicSnap[f] = p[f]; p[f] = 0; }
+                if (p.soulShield) {
+                    dom.shieldSnap = { soulShield: p.soulShield, soulShieldMax: p.soulShieldMax, soulShieldRegenTime: p.soulShieldRegenTime, soulShieldAmount: p.soulShieldAmount, soulShieldLevel: p.soulShieldLevel };
+                    p.soulShield = false; p.soulShieldAmount = 0; p.soulShieldMax = 0;
+                }
+                dom.deathMarkEnabled = game.deathMark.enabled;
+                game.deathMark.enabled = false;
+                dom.prevMaxHp = p.maxHp;
+                p.maxHp = 150;
+                p.hp = Math.min(p.hp, 150);
+                dom.prevTaken = p.damageTakenMultiplier || 1;
+                p.damageTakenMultiplier = dom.prevTaken * 1.1;
+                game.warningText = '月之领域：回复-70% 受伤+10% 圣物失效';
+                game.warningTimer = 3;
+            }
+
+            // 离开月之领域（boss 死亡）：恢复全部快照
+            function moonDomainExit(p) {
+                const dom = game.moonDomain;
+                if (!dom) return;
+                if (dom.relicSnap) for (const f of MOON_RELIC_FIELDS) p[f] = dom.relicSnap[f];
+                if (dom.shieldSnap) Object.assign(p, dom.shieldSnap);
+                game.deathMark.enabled = !!dom.deathMarkEnabled;
+                if (dom.prevMaxHp) { p.maxHp = dom.prevMaxHp; p.hp = Math.min(p.hp, p.maxHp); }
+                if (dom.prevTaken) p.damageTakenMultiplier = dom.prevTaken;
+                game.moonDomain = null;
+                game.moonWaves = [];
+            }

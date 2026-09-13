@@ -10,22 +10,30 @@
                     }
                     if (this.deathMarked) { return; }
                     if (this.freezeTimer > 0) { this.freezeTimer -= dt; return; }
-                    // ===== 熔岩巨兽：两段式死亡演出（连续爆燃+熔岩池，结束才真正死亡结算） =====
+                    // ===== 两段式死亡演出（熔岩巨兽爆燃 / 幽月魔女镜碎，结束才真正死亡结算） =====
                     if (this.dying) {
                         this.deathTimer -= dt;
                         this.deathBurstTimer -= dt;
                         if (this.deathBurstTimer <= 0) {
                             this.deathBurstTimer = 0.32;
-                            // 360° 环形螺旋弹幕（每跳 16 发，随演出旋转）
-                            const ringN = 16;
-                            for (let i = 0; i < ringN; i++) {
-                                const ba = (Math.PI * 2 / ringN) * i + this.deathTimer * 2;
-                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ba) * rand(180, 280), Math.sin(ba) * rand(180, 280), this.lavaDmg, 0, 0, '#ff7722', 9, true));
+                            if (this.typeKey === 'lavabeast') {
+                                // 360° 环形螺旋弹幕（每跳 16 发，随演出旋转）
+                                const ringN = 16;
+                                for (let i = 0; i < ringN; i++) {
+                                    const ba = (Math.PI * 2 / ringN) * i + this.deathTimer * 2;
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ba) * rand(180, 280), Math.sin(ba) * rand(180, 280), this.lavaDmg, 0, 0, '#ff7722', 9, true));
+                                }
+                                if (game.fireZones.length < 40) game.fireZones.push({ x: clamp(this.x + rand(-70, 70), 25, WORLD_W - 25), y: clamp(this.y + rand(-70, 70), 25, WORLD_H - 25), radius: rand(42, 68), damage: this.lavaPoolDmg, remaining: 3, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
+                                spawnParticles(this.x + rand(-18, 18), this.y + rand(-18, 18), 10, '#ff8833', 130, 0.5, 5);
+                                triggerShake(4, 0.15);
+                                sound.play('explosion');
+                            } else if (this.typeKey === 'moonwitch') {
+                                // 镜片迸散
+                                spawnParticles(this.x + rand(-16, 16), this.y + rand(-16, 16), 12, '#d8e4ff', 150, 0.6, 4);
+                                spawnFx(this.x, this.y, 8, '#ffffff', { shape: 'square', glow: true, speed: 170, life: 0.6, size: 5, rotSpeed: 6 });
+                                triggerShake(5, 0.2);
+                                sound.play('moonBreak');
                             }
-                            if (game.fireZones.length < 40) game.fireZones.push({ x: clamp(this.x + rand(-70, 70), 25, WORLD_W - 25), y: clamp(this.y + rand(-70, 70), 25, WORLD_H - 25), radius: rand(42, 68), damage: this.lavaPoolDmg, remaining: 3, tickRate: 0.5, tickTimer: 0, rgb: '255,120,40' });
-                            spawnParticles(this.x + rand(-18, 18), this.y + rand(-18, 18), 10, '#ff8833', 130, 0.5, 5);
-                            triggerShake(4, 0.15);
-                            sound.play('explosion');
                         }
                         if (this.deathTimer <= 0) {
                             // 演出结束：真伤通道重入死亡结算（经验/掉落/计数）
@@ -432,6 +440,287 @@
                                     this.turretDropTimer = 2; // 场上已满，稍后再投
                                 }
                             }
+                        } else if (this.typeKey === 'moonwitch') {
+                            // ===== 幽月魔女：异空间领域机制怪（走位保持距离 + 六技能 + 二阶段无敌循环 + 穿梭被动） =====
+                            const spdM = this.moonSpdMult || 1;
+                            // ---- 降临/复活动画/拽入演出状态机（期间免伤、不行动） ----
+                            if (this.moonIntro) {
+                                this.moonIntroT -= dt;
+                                const p0 = game.player;
+                                if (this.moonIntro === 'revive') {
+                                    // 第二次降临：镜片倒飞重组（外圈碎光不断闪现的近似）
+                                    if (Math.random() < 0.7) spawnParticles(this.x + rand(-150, 150), this.y + rand(-150, 150), 1, '#c8b4ff', 40, 0.45, 3);
+                                    if (this.moonIntroT <= 0) { this.moonIntro = 'descend'; this.moonIntroT = 2.5; }
+                                    return;
+                                }
+                                if (this.moonIntro === 'descend') {
+                                    if (this.moonIntroT <= 0) {
+                                        this.moonIntro = 'pull'; this.moonIntroT = 0.9; this.moonIntroState = 'gather';
+                                        sound.play('moonDescend');
+                                        game.rings.push({ x: this.x, y: this.y, r: 10, maxR: 320, life: 0.55, maxLife: 0.55, color: '#b090ff', width: 8 });
+                                        game.rings.push({ x: this.x, y: this.y, r: 6, maxR: 220, life: 0.4, maxLife: 0.4, color: '#ffffff', width: 3 });
+                                        triggerShake(9, 0.5); game.flashWhite = 0.28;
+                                        spawnParticles(this.x, this.y, 34, '#b090ff', 150, 0.7, 6);
+                                        spawnFx(this.x, this.y, 18, '#e0d0ff', { shape: 'star', glow: true, speed: 170, life: 0.7, size: 6 });
+                                    }
+                                    return;
+                                }
+                                if (this.moonIntro === 'pull') {
+                                    if (this.moonIntroState === 'gather') {
+                                        game.moonPullDim = Math.min(0.5, (game.moonPullDim || 0) + dt * 0.6);
+                                        if (Math.random() < 0.5) spawnParticles(this.x + rand(-90, 90), this.y + rand(-90, 90), 1, '#c8b4ff', 60, 0.4, 3);
+                                        if (this.moonIntroT <= 0) { this.moonIntroState = 'chain'; this.moonIntroT = 0.7; sound.play('moonPull'); }
+                                    } else if (this.moonIntroState === 'chain') {
+                                        game.moonPullDim = Math.min(0.7, (game.moonPullDim || 0) + dt * 0.4);
+                                        p0.slowTimer = 0.1; p0.slowAmount = 0.5; // 锁链缠身：重减速
+                                        if (this.moonIntroT <= 0) {
+                                            this.moonIntroState = 'drag'; this.moonIntroT = 0.8;
+                                            this.moonDragFrom = { x: p0.x, y: p0.y };
+                                            game.moonReturnPos = { x: p0.x, y: p0.y };
+                                            this.moonDragTo = { x: this.x, y: this.y + 150 };
+                                        }
+                                    } else if (this.moonIntroState === 'drag') {
+                                        game.moonPullDim = Math.min(0.9, (game.moonPullDim || 0) + dt * 0.7);
+                                        const k = clamp(1 - this.moonIntroT / 0.8, 0, 1);
+                                        const ease = k * k; // 缓入：越拽越快
+                                        p0.x = this.moonDragFrom.x + (this.moonDragTo.x - this.moonDragFrom.x) * ease;
+                                        p0.y = this.moonDragFrom.y + (this.moonDragTo.y - this.moonDragFrom.y) * ease;
+                                        p0.slowTimer = 0.1; p0.slowAmount = 0.9;
+                                        if (Math.random() < 0.6) spawnParticles(p0.x + rand(-14, 14), p0.y + rand(-14, 14), 1, '#d0c0ff', 40, 0.3, 2);
+                                        if (this.moonIntroT <= 0) {
+                                            // 进入异空间领域
+                                            game.moonDomain = { active: true, x: MOON_DOMAIN.x, y: MOON_DOMAIN.y, r: MOON_DOMAIN.r, phase2: false };
+                                            game.warningText = '已被拽入月之领域！';
+                                            game.warningTimer = 2;
+                                            moonDomainEnter(p0); // 副作用提示覆盖入场提示（信息优先）
+                                            p0.x = game.moonDomain.x; p0.y = game.moonDomain.y + 170;
+                                            p0.invincibleTimer = Math.max(p0.invincibleTimer || 0, 1.5);
+                                            this.x = game.moonDomain.x; this.y = game.moonDomain.y - 40;
+                                            game.moonPullDim = 0;
+                                            this.moonIntro = null; this.moonShielded = false;
+                                            game.flashWhite = 0.32; triggerShake(8, 0.4);
+                                            sound.play('moonShield');
+                                            game.rings.push({ x: p0.x, y: p0.y, r: 10, maxR: 300, life: 0.5, maxLife: 0.5, color: '#b090ff', width: 6 });
+                                            this.moonApplyBuffs(1); // 领域一阶段加成
+                                        }
+                                    }
+                                    return; // 演出期间 boss 不行动
+                                }
+                            }
+                            // ---- 二阶段触发（60% 血）：领域翻转，数值翻倍 + 变身无敌 2.5s ----
+                            if (!this.moonPhase2 && this.hp / this.maxHp <= 0.60) {
+                                this.moonPhase2 = true;
+                                this.moonTransformT = 2.5;
+                                this.moonApplyBuffs(2);
+                                if (game.moonDomain) game.moonDomain.r = MOON_DOMAIN.r2;
+                                game.warningText = '领域翻转！幽月魔女二阶段！';
+                                game.warningTimer = 2;
+                                sound.play('moonShield');
+                                game.rings.push({ x: this.x, y: this.y, r: 12, maxR: 380, life: 0.6, maxLife: 0.6, color: '#ff70d0', width: 8 });
+                                triggerShake(7, 0.4);
+                                spawnParticles(this.x, this.y, 26, '#ff9ade', 140, 0.7, 5);
+                            }
+                            // ---- 月盾状态归集（takeDamage 免伤守卫读此标志；分支末尾再刷新一次，确保触发当帧生效） ----
+                            this.moonRefreshShield();
+                            if (this.moonTransformT > 0) {
+                                this.moonTransformT -= dt;
+                                if (this.moonTransformT <= 0) {
+                                    this.moonCycleShielded = true; this.moonCycleT = 5;
+                                    sound.play('moonShield');
+                                }
+                                return; // 变身期间定身
+                            }
+                            // ---- 二阶段无敌循环：无敌 5s → 破绽 8s（升空期间计时暂停） ----
+                            if (this.moonPhase2 && !this.moonAirborne) {
+                                this.moonCycleT -= dt;
+                                if (this.moonCycleT <= 0) {
+                                    this.moonCycleShielded = !this.moonCycleShielded;
+                                    this.moonCycleT = this.moonCycleShielded ? 5 : 8;
+                                    sound.play(this.moonCycleShielded ? 'moonShield' : 'moonBreak');
+                                    spawnParticles(this.x, this.y, this.moonCycleShielded ? 14 : 20, this.moonCycleShielded ? '#cfe0ff' : '#ffffff', 110, 0.5, 4);
+                                }
+                            }
+                            // ---- 升月轰炸：空中不可选中阶段（天际激光扫射 + 弹幕雨） ----
+                            if (this.moonAirborne) {
+                                this.moonAscendT += dt;
+                                const aimA = Math.atan2(player.y - this.y, player.x - this.x);
+                                if (this.moonLaserState === 'charging') {
+                                    this.moonLaserT -= dt; this.moonLaserAngle = aimA;
+                                    if (this.moonLaserT <= 0) { this.moonLaserState = 'firing'; this.moonLaserT = 1.2; this.moonLaserHit = false; }
+                                } else if (this.moonLaserState === 'firing') {
+                                    this.moonLaserT -= dt;
+                                    this.moonLaserAngle += dt * Math.PI / 180 * 100;
+                                    if (!this.moonLaserHit) {
+                                        const rx = player.x - this.x, ry = player.y - this.y;
+                                        const dirX = Math.cos(this.moonLaserAngle), dirY = Math.sin(this.moonLaserAngle);
+                                        const along = clamp(rx * dirX + ry * dirY, 0, 900);
+                                        const px = rx - dirX * along, py = ry - dirY * along;
+                                        if (px * px + py * py < (16 + player.size) * (16 + player.size)) {
+                                            player.takeDamage(this.moonLaserDmg || 20);
+                                            this.moonLaserHit = true;
+                                        }
+                                    }
+                                    if (this.moonLaserT <= 0) this.moonLaserState = 'idle';
+                                }
+                                this.moonRainTimer -= dt;
+                                if (this.moonRainTimer <= 0 && this.moonRainWaves > 0) {
+                                    this.moonRainTimer = 0.9;
+                                    this.moonRainWaves--;
+                                    for (let i = 0; i < 8; i++) {
+                                        const ra = aimA + rand(-0.7, 0.7);
+                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ra) * 300 * spdM, Math.sin(ra) * 300 * spdM, this.moonRainDmg, 0, 0, '#d8ccff', 7, true));
+                                    }
+                                    sound.play('shoot');
+                                }
+                                if (this.moonAscendT >= this.moonAscendDur && this.moonLaserState !== 'firing') {
+                                    this.moonAirborne = false;
+                                    this.moonSlamWarn = 0.7;
+                                    this.moonSlamX = player.x; this.moonSlamY = player.y;
+                                }
+                                return; // 空中不执行普攻/移动
+                            }
+                            // 砸落预警（仍在空中，落点圈显示）→ 落地冲击 + 硬直破绽
+                            if (this.moonSlamWarn !== undefined && this.moonSlamWarn > 0) {
+                                this.moonSlamWarn -= dt;
+                                if (this.moonSlamWarn <= 0) {
+                                    this.x = this.moonSlamX; this.y = this.moonSlamY;
+                                    if (dist(this, player) < 120 + player.size) player.takeDamage(this.moonSlamDmg || 30);
+                                    game.rings.push({ x: this.x, y: this.y, r: 10, maxR: 150, life: 0.45, maxLife: 0.45, color: '#c9b0ff', width: 7 });
+                                    spawnParticles(this.x, this.y, 24, '#c9b0ff', 150, 0.6, 5);
+                                    triggerShake(10, 0.4);
+                                    sound.play('moonDescend');
+                                    this.moonStunT = 0.8;
+                                    this.moonSlamWarn = undefined;
+                                    this.moonAscendTimer = 14 * (this.moonCdMult || 1);
+                                }
+                                return;
+                            }
+                            if (this.moonStunT > 0) { this.moonStunT -= dt; return; } // 砸落后硬直（可输出窗口）
+                            // ---- 被动·穿梭：被逼到领域边界且玩家逼近 → 镜面点对称转移到对侧（CD 30s） ----
+                            this.moonBlinkCd = (this.moonBlinkCd === undefined ? 0 : this.moonBlinkCd) - dt;
+                            if (this.moonBlinkT > 0) this.moonBlinkT -= dt;
+                            if (this.moonBlinkCd <= 0 && game.moonDomain && game.moonDomain.active) {
+                                const dxc = this.x - game.moonDomain.x, dyc = this.y - game.moonDomain.y;
+                                if (Math.hypot(dxc, dyc) > game.moonDomain.r - 130 && dist(this, player) < 240) {
+                                    this.moonBlinkCd = 30;
+                                    const fx0 = this.x, fy0 = this.y;
+                                    this.x = 2 * game.moonDomain.x - this.x;
+                                    this.y = 2 * game.moonDomain.y - this.y;
+                                    this.moonBlinkT = 0.4;
+                                    this.moonBlinkFrom = { x: fx0, y: fy0 };
+                                    game.rings.push({ x: fx0, y: fy0, r: 8, maxR: 90, life: 0.35, maxLife: 0.35, color: '#cfe0ff', width: 5 });
+                                    game.rings.push({ x: this.x, y: this.y, r: 8, maxR: 90, life: 0.35, maxLife: 0.35, color: '#cfe0ff', width: 5 });
+                                    spawnParticles(fx0, fy0, 14, '#cfe0ff', 110, 0.45, 4);
+                                    spawnParticles(this.x, this.y, 14, '#cfe0ff', 110, 0.45, 4);
+                                    sound.play('moonPull');
+                                }
+                            }
+                            // ---- 技能1：月刃环（360° 弹幕，触领域边界反弹 1/2 次） ----
+                            this.moonBladeTimer = (this.moonBladeTimer === undefined ? 2.5 : this.moonBladeTimer) - dt;
+                            if (this.moonBladeTimer <= 0) {
+                                this.moonBladeTimer = 4 * this.moonCdMult;
+                                const n = this.moonPhase2 ? 18 : 14;
+                                const bs = (this.moonPhase2 ? 320 : 280) * spdM;
+                                const off = rand(0, Math.PI * 2);
+                                for (let i = 0; i < n; i++) {
+                                    const a = off + (Math.PI * 2 / n) * i;
+                                    const pj = new Projectile(this.x, this.y, Math.cos(a) * bs, Math.sin(a) * bs, this.moonBladeDmg, 0, 0, '#9fb4ff', 8, true);
+                                    pj.moonBlade = true;
+                                    pj.moonBounce = this.moonPhase2 ? 2 : 1;
+                                    game.projectiles.push(pj);
+                                }
+                                sound.play('shoot');
+                            }
+                            // ---- 技能2：追月弹（限转向追踪弹） ----
+                            this.moonOrbTimer = (this.moonOrbTimer === undefined ? 3.5 : this.moonOrbTimer) - dt;
+                            if (this.moonOrbTimer <= 0) {
+                                this.moonOrbTimer = 5.5 * this.moonCdMult;
+                                const n = this.moonPhase2 ? 5 : 3;
+                                for (let i = 0; i < n; i++) {
+                                    const a = rand(0, Math.PI * 2);
+                                    const pj = new Projectile(this.x, this.y, Math.cos(a) * 160, Math.sin(a) * 160, this.moonOrbDmg, 0, 0, '#c9a6ff', 9, true);
+                                    pj.moonHoming = true;
+                                    pj.moonSpdM = spdM;
+                                    pj.maxLifetime = 4.5;
+                                    game.projectiles.push(pj);
+                                }
+                                sound.play('spirit');
+                            }
+                            // ---- 技能3：月光洗礼（预警圈 → 落地伤害） ----
+                            this.moonBaptTimer = (this.moonBaptTimer === undefined ? 5 : this.moonBaptTimer) - dt;
+                            if (this.moonBaptTimer <= 0 && !this.moonStrikes) {
+                                this.moonBaptTimer = 7 * this.moonCdMult;
+                                const n = this.moonPhase2 ? 5 : 3;
+                                this.moonStrikes = [];
+                                for (let i = 0; i < n; i++) {
+                                    const ox = i === 0 ? 0 : Math.cos(i * 2.4) * 120, oy = i === 0 ? 0 : Math.sin(i * 2.4) * 120;
+                                    this.moonStrikes.push({ x: player.x + ox, y: player.y + oy, warn: this.moonPhase2 ? 0.7 : 0.9, r: 90, dmg: this.moonBaptDmg, done: false });
+                                }
+                                sound.play('bossWarn');
+                            }
+                            if (this.moonStrikes) {
+                                let anyAlive = false;
+                                for (const st of this.moonStrikes) {
+                                    if (st.done) continue;
+                                    anyAlive = true;
+                                    st.warn -= dt;
+                                    if (st.warn <= 0) {
+                                        st.done = true;
+                                        if (dist(player, st) < st.r + player.size) player.takeDamage(st.dmg);
+                                        game.rings.push({ x: st.x, y: st.y, r: 8, maxR: st.r, life: 0.35, maxLife: 0.35, color: '#c9a6ff', width: 5 });
+                                        spawnParticles(st.x, st.y, 14, '#c9a6ff', 120, 0.5, 4);
+                                        triggerShake(2, 0.1);
+                                        sound.play('meteor');
+                                    }
+                                }
+                                if (!anyAlive) this.moonStrikes = null;
+                            }
+                            // ---- 技能4：镜月分身（一击碎的镜影） ----
+                            this.moonCloneTimer = (this.moonCloneTimer === undefined ? 6 : this.moonCloneTimer) - dt;
+                            if (this.moonCloneTimer <= 0) {
+                                this.moonCloneTimer = 12 * this.moonCdMult;
+                                const n = this.moonPhase2 ? 3 : 2;
+                                for (let i = 0; i < n; i++) {
+                                    if (game.enemies.length >= MAX_ENEMIES) break;
+                                    const ang = rand(0, Math.PI * 2);
+                                    const c = new Enemy(this.x + Math.cos(ang) * rand(120, 200), this.y + Math.sin(ang) * rand(120, 200), 'moonshade', game.difficultyLevel - 1);
+                                    if ((this.moonStatMult || 1) > 1) {
+                                        c.damage = Math.floor(c.damage * this.moonStatMult);
+                                        c.hp = Math.floor(c.hp * this.moonStatMult); c.maxHp = c.hp;
+                                    }
+                                    c.bossMinion = this;
+                                    game.enemies.push(c);
+                                    spawnParticles(c.x, c.y, 8, '#b9a6ff', 70, 0.4, 3);
+                                }
+                                sound.play('summon');
+                            }
+                            // ---- 技能5：满月收缩（边界光环留缺口向圆心碾压） ----
+                            this.moonWaveTimer = (this.moonWaveTimer === undefined ? 6 : this.moonWaveTimer) - dt;
+                            if (this.moonWaveTimer <= 0) {
+                                this.moonWaveTimer = 10 * this.moonCdMult;
+                                game.moonWaves.push({
+                                    r: (game.moonDomain ? game.moonDomain.r : MOON_DOMAIN.r) - 10,
+                                    gap: rand(0, Math.PI * 2),
+                                    gapW: this.moonPhase2 ? 40 : 50,
+                                    speed: this.moonPhase2 ? 210 : 170,
+                                    dmg: this.moonWaveDmg, hit: false, warn: 1.0
+                                });
+                                sound.play('bossWarn');
+                            }
+                            // ---- 技能6：升月轰炸（升空不可选中 → 激光+弹幕雨 → 砸落冲击波+硬直） ----
+                            this.moonAscendTimer = (this.moonAscendTimer === undefined ? 8 : this.moonAscendTimer) - dt;
+                            if (this.moonAscendTimer <= 0) {
+                                this.moonAscendTimer = 999; // 砸落结算时重置为 14×CD
+                                this.moonAirborne = true;
+                                this.moonAscendT = 0;
+                                this.moonAscendDur = this.moonPhase2 ? 4.5 : 3.5;
+                                this.moonRainWaves = this.moonPhase2 ? 3 : 2;
+                                this.moonRainTimer = 1.0;
+                                this.moonLaserState = 'charging'; this.moonLaserT = 0.6;
+                                sound.play('bossWarn');
+                                spawnParticles(this.x, this.y, 16, '#c9b0ff', 90, 0.5, 4);
+                            }
+                            this.moonRefreshShield(); // 升空/穿梭触发当帧即免伤
                         } else {
                             // ===== 死神骑士：剑气 + 冲击波 + 狂暴 =====
                             let slashCd = this.slashCooldown;
@@ -517,7 +806,18 @@
                     const dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx, dy) || 0.01;
                     const spd = this.getEffectiveSpeed();
                     let mx = 0, my = 0;
-                    if (this.isRanged) {
+                    if (this.typeKey === 'moonwitch') {
+                        // 幽月魔女：与玩家保持 300±40 距离带 + 缓慢环绕侧移（不贴脸追击，走位型机制怪）
+                        this.moonStrafeT = (this.moonStrafeT === undefined ? rand(3, 5) : this.moonStrafeT) - dt;
+                        if (this.moonStrafeT <= 0) { this.moonStrafeT = rand(3, 5); this.moonStrafeDir = -(this.moonStrafeDir || 1); }
+                        let radial = 0;
+                        if (d < 260) radial = -1; else if (d > 340) radial = 1;
+                        const tx0 = -dy / d, ty0 = dx / d;
+                        mx = dx / d * radial * 0.9 + tx0 * (this.moonStrafeDir || 1) * 0.55;
+                        my = dy / d * radial * 0.9 + ty0 * (this.moonStrafeDir || 1) * 0.55;
+                        const ml = Math.hypot(mx, my) || 1;
+                        mx /= ml; my /= ml;
+                    } else if (this.isRanged) {
                         const desiredDist = this.attackRange + 50;
                         if (d < desiredDist - 30) { mx = -(dx / d); my = -(dy / d); }
                         else if (d > desiredDist + 30) { mx = dx / d; my = dy / d; }
@@ -547,7 +847,17 @@
                     if (this.typeKey !== 'turret') {
                         this.x += mx * spd * dt + sepX * dt * 0.8; this.y += my * spd * dt + sepY * dt * 0.8;
                     }
-                    this.x = clamp(this.x, this.size, WORLD_W - this.size); this.y = clamp(this.y, this.size, WORLD_H - this.size);
+                    if ((this.typeKey === 'moonwitch' || this.typeKey === 'moonshade') && game.moonDomain && game.moonDomain.active) {
+                        // 月之领域内实体：只受领域圆约束（领域位于世界外坐标，禁用世界钳制）
+                        const cd0 = Math.hypot(this.x - game.moonDomain.x, this.y - game.moonDomain.y) || 0.01;
+                        const maxR0 = game.moonDomain.r - this.size - 6;
+                        if (cd0 > maxR0) {
+                            this.x = game.moonDomain.x + (this.x - game.moonDomain.x) / cd0 * maxR0;
+                            this.y = game.moonDomain.y + (this.y - game.moonDomain.y) / cd0 * maxR0;
+                        }
+                    } else {
+                        this.x = clamp(this.x, this.size, WORLD_W - this.size); this.y = clamp(this.y, this.size, WORLD_H - this.size);
+                    }
                     if (dist(this, player) < this.size + player.size) {
                         if (this.isGhost) {
                             if (this.dotDamage > 0) {
@@ -590,6 +900,36 @@
                     sound.play('bossWarn');
                     triggerShake(8, 0.5);
                     spawnParticles(this.x, this.y, 30, '#ff5522', 150, 0.7, 6);
+                }
+
+            Enemy.prototype.enterMoonShatter = function() {
+                    // 幽月魔女镜面碎裂演出：裂纹闪现 + 镜片四散 + 白闪，演出毕走真伤重入死亡结算（届时领域崩塌）
+                    this.dying = true;
+                    this.hp = 0;
+                    this.deathTimer = 1.4;
+                    this.deathBurstTimer = 0.2;
+                    this.moonAirborne = false;
+                    this.moonSlamWarn = undefined;
+                    game.warningText = '幽月魔女 镜面碎裂！';
+                    game.warningTimer = 1.4;
+                    sound.play('moonShatter');
+                    triggerShake(9, 0.5);
+                    game.flashWhite = 0.3;
+                    spawnParticles(this.x, this.y, 22, '#d8e4ff', 160, 0.8, 5);
+                }
+
+            Enemy.prototype.moonRefreshShield = function() {
+                    // 月盾免伤标志归集：升空 / 穿梭 / 二阶段（变身期或无敌循环期）
+                    this.moonShielded = !!this.moonAirborne || (this.moonBlinkT || 0) > 0
+                        || (this.moonPhase2 && (this.moonTransformT > 0 || this.moonCycleShielded));
+                }
+
+            Enemy.prototype.moonApplyBuffs = function(stage) {
+                    // 领域加成：一阶段 伤×1.2 速×1.3 CD-20%；二阶段翻倍（按构造基准重算，避免叠乘污染）
+                    const cfg = stage === 1 ? { dmg: 1.2, spd: 1.3, cd: 0.8 } : { dmg: 1.4, spd: 1.6, cd: 0.6 };
+                    this.damage = Math.floor((this.moonBaseDmg || this.damage) * cfg.dmg);
+                    this.speed = (this.moonBaseSpd || this.speed) * cfg.spd;
+                    this.moonCdMult = cfg.cd;
                 }
 
             Enemy.prototype.fireAtPlayer = function(player) {

@@ -76,7 +76,14 @@
                     frost:      { min: 80,  fn: () => { tone(1200, 0.12, 'sine', 0.14, 1800); tone(800, 0.2, 'triangle', 0.16, 300); noise(0.12, 0.14, 3500); } },
                     bossWarn:   { min: 0,   fn: () => { tone(220, 0.4, 'sawtooth', 0.24, 110); } },
                     summon:     { min: 200, fn: () => { tone(300, 0.1, 'triangle', 0.16, 200); tone(180, 0.12, 'sine', 0.14, 120, 0.08); } },
-                    acidSpit:   { min: 250, fn: () => { tone(320, 0.15, 'sawtooth', 0.22, 140); noise(0.1, 0.2, 900); } }
+                    acidSpit:   { min: 250, fn: () => { tone(320, 0.15, 'sawtooth', 0.22, 140); noise(0.1, 0.2, 900); } },
+                    // 幽月魔女专属音效
+                    moonRumble:  { min: 400, fn: () => { tone(48, 0.5, 'sine', 0.20, 38); tone(96, 0.4, 'triangle', 0.08, 70); } },
+                    moonDescend: { min: 0,   fn: () => { noise(0.5, 0.45, 500); tone(160, 0.5, 'sawtooth', 0.30, 50); tone(70, 0.6, 'sine', 0.26, 32); } },
+                    moonPull:    { min: 300, fn: () => { tone(1400, 0.3, 'sine', 0.14, 300); tone(700, 0.35, 'triangle', 0.16, 160, 0.05); noise(0.2, 0.12, 1800); } },
+                    moonShield:  { min: 200, fn: () => { tone(520, 0.2, 'sine', 0.20, 900); tone(1040, 0.3, 'sine', 0.14, 1400, 0.08); } },
+                    moonBreak:   { min: 200, fn: () => { noise(0.25, 0.30, 2600); tone(1200, 0.2, 'square', 0.14, 300); } },
+                    moonShatter: { min: 0,   fn: () => { noise(0.6, 0.42, 3000); tone(1800, 0.4, 'triangle', 0.20, 400); tone(900, 0.5, 'sine', 0.18, 200, 0.1); tone(60, 0.7, 'sine', 0.24, 30); } }
                 };
 
                 function play(name) {

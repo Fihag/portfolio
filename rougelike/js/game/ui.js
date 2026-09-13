@@ -84,12 +84,19 @@
                     while (accumulator >= fixedDt) { update(fixedDt); accumulator -= fixedDt; }
                 }
                 resizeCanvas();
-                if (game.player) { game.player.x = clamp(game.player.x, game.player.size, WORLD_W - game.player.size); game.player.y = clamp(game.player.y, game.player.size, WORLD_H - game.player.size); }
-                // ===== 镜头跟随玩家（世界固定大于视口；视口比世界大时世界居中） =====
+                // 月之领域：玩家与世界边界钳制均旁路（领域在世界外坐标），仅保留领域圆钳制（Player.update 内）
+                const moonActive = game.moonDomain && game.moonDomain.active;
+                if (game.player && !moonActive) { game.player.x = clamp(game.player.x, game.player.size, WORLD_W - game.player.size); game.player.y = clamp(game.player.y, game.player.size, WORLD_H - game.player.size); }
+                // ===== 镜头跟随玩家（世界固定大于视口；视口比世界大时世界居中；领域内自由跟随） =====
                 if (game.player) {
-                    const cx = WORLD_W - W, cy = WORLD_H - H;
-                    cam.x = cx <= 0 ? cx / 2 : clamp(game.player.x - W / 2, 0, cx);
-                    cam.y = cy <= 0 ? cy / 2 : clamp(game.player.y - H / 2, 0, cy);
+                    if (moonActive) {
+                        cam.x = game.player.x - W / 2;
+                        cam.y = game.player.y - H / 2;
+                    } else {
+                        const cx = WORLD_W - W, cy = WORLD_H - H;
+                        cam.x = cx <= 0 ? cx / 2 : clamp(game.player.x - W / 2, 0, cx);
+                        cam.y = cy <= 0 ? cy / 2 : clamp(game.player.y - H / 2, 0, cy);
+                    }
                 }
                 draw(ctx);
                 requestAnimationFrame(gameLoop);

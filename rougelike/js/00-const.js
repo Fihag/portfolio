@@ -126,6 +126,8 @@
             // ===== 世界尺寸与镜头（世界固定大于视口，镜头跟随玩家，大小屏难度一致） =====
             const WORLD_W = 2000, WORLD_H = 1500;
             const cam = { x: 0, y: 0 };
+            // ===== 幽月魔女异空间领域：世界外预留的独立地图锚点（y 为负，玩家/相机钳制在领域期间旁路世界边界） =====
+            const MOON_DOMAIN = { x: WORLD_W / 2, y: -1300, r: 430, r2: 460 };
             // 像素缩放（devicePixelRatio，上限 2）：draw 每帧据此重置变换，避免上一帧残余变换导致清屏错位/残影
             let PIXEL_SCALE = 1;
 
@@ -182,7 +184,10 @@ const $inp = (id) => document.getElementById(id);
                     enabled: false, mode: 'auto',
                     targets: [], markDuration: 0.5
                 },
-                rings: [], levelFlash: 0, flashWhite: 0
+                rings: [], levelFlash: 0, flashWhite: 0,
+                // 幽月魔女：整局两次的特殊领域 boss（击杀第 2/5 个常规 boss 后 10s 降临）
+                moonIntroTimer: 0, moonWitchCount: 0, moonDomain: null, moonReturnPos: null,
+                moonWaves: [], moonPullDim: 0, moonWitchStatMult: 0
             };
 
 

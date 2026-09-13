@@ -41,8 +41,8 @@
                     this.isGhost = def.isGhost || false;
                     this.isBoss = isBoss;
                     this.fireballTimer = this.isRanged ? rand(0, def.fireballCooldown) : 0;
-                    // 侧翼包抄方位角（±26°~60°，个体持久）：近战小怪远距离沿弧线接近，防绕圈聚团；Boss/远程/自爆虫为 0（直冲/距离带）
-                    this.flankAngle = isBoss || def.isRanged || typeKey === 'bomber' ? 0 : (Math.random() < 0.5 ? -1 : 1) * rand(0.45, 1.05);
+                    // 侧翼包抄方位角（±26°~60°，个体持久）：近战小怪远距离沿弧线接近，防绕圈聚团；Boss/远程/自爆虫/镜月分身为 0（直冲/距离带）
+                    this.flankAngle = isBoss || def.isRanged || typeKey === 'bomber' || typeKey === 'moonshade' ? 0 : (Math.random() < 0.5 ? -1 : 1) * rand(0.45, 1.05);
                     this.fireballCooldown = def.fireballCooldown || 0;
                     this.fireballDamage = def.fireballDamage || 0;
                     this.fireballSpeed = def.fireballSpeed || 0;
@@ -78,6 +78,9 @@
                         } else if (this.typeKey === 'turret') {
                             // 天罚炮台：原地不动输出窗口大，全 Boss 最高减伤弥补
                             this.damageReduction = 0.65;
+                        } else if (this.typeKey === 'moonwitch') {
+                            // 幽月魔女：走位型机制怪，低减伤（无敌窗口另有专门机制）
+                            this.damageReduction = 0.25;
                         } else {
                             this.damageReduction = 0;
                         }
@@ -179,6 +182,28 @@
                         // 子弹弹速随难度系数（简单×0.85 → 不可能×1.3，单源 DIFFICULTIES.bulletSpd）
                         this.turretSpdMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bulletSpd || 1;
                     }
+                    // ===== 幽月魔女：固定技能伤害（不走出场成长），第二次降临全数值 ×3 =====
+                    if (this.typeKey === 'moonwitch') {
+                        const mult = game.moonWitchStatMult || 1;
+                        this.moonStatMult = mult;
+                        this.hp = Math.floor(this.hp * mult); this.maxHp = this.hp;
+                        this.damage = Math.floor(this.damage * mult);
+                        this.speed = this.speed * mult;
+                        this.moonBaseDmg = this.damage; this.moonBaseSpd = this.speed;
+                        this.moonBladeDmg = Math.floor(16 * mult);   // 月刃环单发
+                        this.moonOrbDmg = Math.floor(22 * mult);     // 追月弹
+                        this.moonBaptDmg = Math.floor(28 * mult);    // 月光洗礼
+                        this.moonLaserDmg = Math.floor(20 * mult);   // 升空扫射激光
+                        this.moonRainDmg = Math.floor(14 * mult);    // 弹幕雨单发
+                        this.moonWaveDmg = Math.floor(24 * mult);    // 满月收缩环
+                        this.moonSlamDmg = Math.floor(30 * mult);    // 砸落冲击
+                        this.moonSpdMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bulletSpd || 1;
+                        this.moonPhase2 = false; this.moonCycleShielded = false;
+                        this.moonTransformT = 0; this.moonCycleT = 0;
+                        this.moonAirborne = false; this.moonAscendT = 0;
+                        this.moonShielded = false; this.moonBlinkT = 0; this.moonBlinkCd = 0;
+                        this.moonCdMult = 1;
+                    }
                 }
 
                 getEffectiveSpeed() { return this.slowTimer > 0 ? this.speed * (1 - this.slowAmount) : this.speed; }
@@ -190,6 +215,8 @@
                     if (this.dying && !trueDamage) return;
                     // ===== 震地跃击滞空：免伤 =====
                     if (this.leaping && !trueDamage) return;
+                    // ===== 幽月魔女月盾（二阶段无敌循环 / 升空 / 穿梭 / 降临演出）：免伤（真伤仍可穿透，与 dying/leaping 同规） =====
+                    if (this.moonShielded && !trueDamage) return;
                     // ===== 护盾吸收（真伤无视） =====
                     if (this.isBoss && this.invincible && !trueDamage) {
                         if (this.shieldHp > 0) {
@@ -226,6 +253,8 @@
                     if (this.hp <= 0) {
                         // 熔岩巨兽两段式死亡：首次致死先进入濒死爆燃演出（期间免伤），演出结束才真正死亡并掉落奖励
                         if (this.typeKey === 'lavabeast' && !this.dying) { this.enterLavaDeath(); return; }
+                        // 幽月魔女：镜面碎裂演出（期间免伤），演出毕领域崩塌
+                        if (this.typeKey === 'moonwitch' && !this.dying) { this.enterMoonShatter(); return; }
                         this.alive = false; game.kills++; game.score += this.xpValue;
                         // 熔岩巨兽专属：死亡新星 360° 大量弹幕同时迸发（四环 256 发）
                         if (this.typeKey === 'lavabeast') {
@@ -239,8 +268,18 @@
                             }
                             triggerShake(6, 0.3);
                         }
-                        // Boss 击杀计数（用于超级Boss召唤）
-                        if (this.isBoss && !this.isSuperBoss) game.bossKilledCount++;
+                        // Boss 击杀计数（用于超级Boss召唤；幽月魔女为特殊 boss，不计入）
+                        if (this.isBoss && !this.isSuperBoss && this.typeKey !== 'moonwitch') {
+                            game.bossKilledCount++;
+                            // 幽月魔女触发钩：第 2 / 第 5 个常规 boss 被击败后 10 秒降临（整局两次）
+                            if ((game.bossKilledCount === 2 || game.bossKilledCount === 5) && game.moonWitchCount < 2
+                                && game.moonIntroTimer <= 0 && !(game.moonDomain && game.moonDomain.active)) {
+                                game.moonIntroTimer = 10;
+                                game.warningText = '月亮在凝视你……';
+                                game.warningTimer = 3;
+                                sound.play('moonRumble');
+                            }
+                        }
                         // 灵魂碎片改为结算时按整体击杀数计算（见死亡结算处），此处不再累加
                         sound.play(this.isBoss ? 'bossDie' : 'enemyDie');
                         // 怨灵死亡：清除其 DoT 效果
@@ -295,6 +334,28 @@
                             // 母皇死亡：巢穴崩塌，清除其幼体
                             if (this.typeKey === 'broodmother') {
                                 for (const e of game.enemies) if (e.bossMinion === this) e.alive = false;
+                            }
+                            // 幽月魔女死亡：领域崩塌——送回玩家、恢复圣物/血量快照、分身随之碎裂
+                            if (this.typeKey === 'moonwitch') {
+                                const dom = game.moonDomain;
+                                if (dom && dom.active) {
+                                    game.flashWhite = 0.4;
+                                    game.rings.push({ x: dom.x, y: dom.y, r: 40, maxR: dom.r, life: 0.6, maxLife: 0.6, color: '#cfe0ff', width: 8 });
+                                    spawnParticles(game.player.x, game.player.y, 30, '#cfe0ff', 150, 0.6, 5);
+                                    game.player.x = game.moonReturnPos ? game.moonReturnPos.x : WORLD_W / 2;
+                                    game.player.y = game.moonReturnPos ? game.moonReturnPos.y : WORLD_H / 2;
+                                    game.player.invincibleTimer = Math.max(game.player.invincibleTimer || 0, 1.5);
+                                    moonDomainExit(game.player);
+                                    triggerShake(6, 0.3);
+                                    game.warningText = '月之领域已崩塌！';
+                                    game.warningTimer = 2;
+                                }
+                                for (const e of game.enemies) {
+                                    if (e.alive && e.typeKey === 'moonshade') {
+                                        e.alive = false;
+                                        spawnParticles(e.x, e.y, 8, '#b9a6ff', 90, 0.4, 3);
+                                    }
+                                }
                             }
                             // 触发Boss掉落（本局已领取过的唯一道具从池中过滤，池空则不再掉落；延迟1.5秒让死亡特效完整展示；
                             // 若期间玩家升级，则等升级面板关闭后再弹出，避免被选项卡掉）

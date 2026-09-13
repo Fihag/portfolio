@@ -56,6 +56,79 @@
                 }
             }
 
+            // ==================== 月之领域：异空间背景（蓝紫深空 + 黑洞环绕 + 透明地板 + 符文边界） ====================
+            function drawBlackHole(ctx, x, y, r, spin, phase2) {
+                const col = phase2 ? '255,130,220' : '150,180,255';
+                // 吸积盘弧线（三圈椭圆，转速错开）
+                for (let k = 0; k < 3; k++) {
+                    ctx.strokeStyle = `rgba(${col},${0.5 - k * 0.12})`;
+                    ctx.lineWidth = 3 - k * 0.6;
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, r * (1.35 + k * 0.28), r * (0.5 + k * 0.1), spin * (0.5 + k * 0.3) + k, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                // 暗核（黑心 + 相对论辉光边缘）
+                const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, '#000006');
+                g.addColorStop(0.62, '#0a0618');
+                g.addColorStop(0.82, phase2 ? 'rgba(190,70,200,0.55)' : 'rgba(90,110,220,0.5)');
+                g.addColorStop(1, 'rgba(60,40,140,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+            }
+
+            function drawMoonDomain(ctx, dom) {
+                const vx0 = cam.x, vy0 = cam.y;
+                // 深空底（蓝紫纵向渐变，二阶段转亮紫红）
+                const bg = ctx.createLinearGradient(0, vy0, 0, vy0 + H);
+                if (dom.phase2) { bg.addColorStop(0, '#140a2e'); bg.addColorStop(0.5, '#241040'); bg.addColorStop(1, '#0d0620'); }
+                else { bg.addColorStop(0, '#0d1233'); bg.addColorStop(0.5, '#1a1445'); bg.addColorStop(1, '#0a0825'); }
+                ctx.fillStyle = bg; ctx.fillRect(vx0 - 10, vy0 - 10, W + 20, H + 20);
+                // 星尘（确定性伪随机 + 闪烁）
+                for (let i = 0; i < 110; i++) {
+                    const sx = vx0 + (((Math.sin(i * 127.1) * 43758.5453) % 1) + 1) % 1 * W;
+                    const sy = vy0 + (((Math.sin(i * 311.7) * 12543.853) % 1) + 1) % 1 * H;
+                    const tw = 0.3 + Math.abs(Math.sin(game.time * 1.5 + i)) * 0.6;
+                    ctx.fillStyle = `rgba(210,220,255,${0.25 * tw})`;
+                    ctx.fillRect(sx, sy, 1.6, 1.6);
+                }
+                // 黑洞：一座悬于领域后方主视觉位，一座绕领域缓行
+                const oa = game.time * 0.12;
+                drawBlackHole(ctx, dom.x + Math.cos(oa) * (dom.r + 260), dom.y + Math.sin(oa) * (dom.r + 260), 46, game.time * 0.9, dom.phase2);
+                drawBlackHole(ctx, dom.x - dom.r * 0.25, dom.y - dom.r * 0.35, 110, game.time * (dom.phase2 ? 1.6 : 1.0), dom.phase2);
+                // 透明地板：极淡高光盘（虚空感）
+                const floorG = ctx.createRadialGradient(dom.x, dom.y, dom.r * 0.1, dom.x, dom.y, dom.r * 0.98);
+                floorG.addColorStop(0, dom.phase2 ? 'rgba(190,120,255,0.10)' : 'rgba(120,140,255,0.08)');
+                floorG.addColorStop(0.75, dom.phase2 ? 'rgba(150,80,230,0.05)' : 'rgba(90,110,220,0.04)');
+                floorG.addColorStop(1, 'rgba(80,60,200,0)');
+                ctx.fillStyle = floorG;
+                ctx.beginPath(); ctx.arc(dom.x, dom.y, dom.r * 0.98, 0, Math.PI * 2); ctx.fill();
+                // 满月收缩环（碾压带 + 安全缺口）
+                if (game.moonWaves && game.moonWaves.length) {
+                    for (const wv of game.moonWaves) {
+                        const wa = wv.warn > 0 ? 0.35 : 0.8;
+                        const half = wv.gapW * Math.PI / 180 / 2;
+                        ctx.strokeStyle = `rgba(200,190,255,${wa})`; ctx.lineWidth = 26;
+                        ctx.beginPath(); ctx.arc(dom.x, dom.y, wv.r, wv.gap + half, wv.gap - half + Math.PI * 2); ctx.stroke();
+                        ctx.strokeStyle = `rgba(255,255,255,${wa * 0.5})`; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.arc(dom.x, dom.y, wv.r, wv.gap + half, wv.gap - half + Math.PI * 2); ctx.stroke();
+                    }
+                }
+                // 边界：发光符文双环（外实环 + 旋转虚线环 + 符文节点）
+                const bcol = dom.phase2 ? '255,120,210' : '150,170,255';
+                ctx.strokeStyle = `rgba(${bcol},0.75)`; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(dom.x, dom.y, dom.r, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = `rgba(${bcol},0.35)`; ctx.lineWidth = 2;
+                ctx.setLineDash([14, 10]); ctx.lineDashOffset = -game.time * 30;
+                ctx.beginPath(); ctx.arc(dom.x, dom.y, dom.r - 10, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([]); ctx.lineDashOffset = 0;
+                for (let i = 0; i < 12; i++) {
+                    const ra = game.time * 0.2 + Math.PI * 2 / 12 * i;
+                    ctx.fillStyle = `rgba(${bcol},0.8)`;
+                    ctx.beginPath(); ctx.arc(dom.x + Math.cos(ra) * (dom.r - 20), dom.y + Math.sin(ra) * (dom.r - 20), 3, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
             function draw(ctx) {
                 // 每帧从确定的变换开始：重置为像素缩放再清屏/铺底色，避免上一帧残留变换导致清屏错位、顶端出现残影
                 ctx.setTransform(PIXEL_SCALE, 0, 0, PIXEL_SCALE, 0, 0);
@@ -63,15 +136,19 @@
                 ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, W, H);
                 const shake = getShakeOffset();
                 ctx.save(); ctx.translate(shake.x, shake.y);
-                // ===== 世界空间：镜头平移后绘制世界底色、网格与世界内全部实体 =====
+                // ===== 世界空间：镜头平移后绘制世界底色、网格与世界内全部实体（月之领域内整体替换为异空间背景） =====
                 ctx.save(); ctx.translate(-cam.x, -cam.y);
-                ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
-                ctx.strokeStyle = 'rgba(255,180,120,0.05)'; ctx.lineWidth = 1;
-                for (let gx = 40; gx < WORLD_W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, WORLD_H); ctx.stroke(); }
-                for (let gy = 40; gy < WORLD_H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(WORLD_W, gy); ctx.stroke(); }
-                // 世界边界提示线
-                ctx.strokeStyle = 'rgba(255,150,80,0.35)'; ctx.lineWidth = 3;
-                ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
+                if (game.moonDomain && game.moonDomain.active) {
+                    drawMoonDomain(ctx, game.moonDomain);
+                } else {
+                    ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+                    ctx.strokeStyle = 'rgba(255,180,120,0.05)'; ctx.lineWidth = 1;
+                    for (let gx = 40; gx < WORLD_W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, WORLD_H); ctx.stroke(); }
+                    for (let gy = 40; gy < WORLD_H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(WORLD_W, gy); ctx.stroke(); }
+                    // 世界边界提示线
+                    ctx.strokeStyle = 'rgba(255,150,80,0.35)'; ctx.lineWidth = 3;
+                    ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
+                }
                 for (const orb of game.experienceOrbs) {
                     const floatY = Math.sin(game.time * 3 + orb.floatOffset) * 3;
                     const alpha = orb.life < 3 ? orb.life / 3 : 1;
@@ -271,6 +348,11 @@
                     ctx.fillStyle = '#ff9f43';
                     ctx.beginPath(); ctx.arc(joystick.baseX + joystick.dx, joystick.baseY + joystick.dy, 26, 0, Math.PI * 2); ctx.fill();
                     ctx.globalAlpha = 1;
+                }
+                // 拽入演出：屏幕渐暗（坠入月之领域的过程感）
+                if (game.moonPullDim > 0) {
+                    ctx.fillStyle = `rgba(12,8,34,${clamp(game.moonPullDim, 0, 0.92)})`;
+                    ctx.fillRect(0, 0, W, H);
                 }
                 // Boss 出场白闪
                 if (game.flashWhite > 0) {

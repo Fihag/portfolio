@@ -51,7 +51,11 @@
                     if (rate <= 0 || this.maxHp <= 0) return 1;
                     return 1 + clamp((this.maxHp - this.hp) / this.maxHp, 0, 1) * rate;
                 }
-                getEffectiveSpeed() { return this.speed * this.speedMultiplier * (this.slowTimer > 0 ? (1 - this.slowAmount) : 1) * (this.burstTimer > 0 ? 1.4 : 1); }
+                getEffectiveSpeed() {
+                    // 月之领域内：移速 -8%（领域副作用）
+                    const moonSlow = (game.moonDomain && game.moonDomain.active) ? 0.92 : 1;
+                    return this.speed * this.speedMultiplier * (this.slowTimer > 0 ? (1 - this.slowAmount) : 1) * (this.burstTimer > 0 ? 1.4 : 1) * moonSlow;
+                }
                 getEffectiveCooldownMult() { return (this.globalCooldownMultiplier || 1) * (this.burstTimer > 0 ? 0.6 : 1); }
 
                 takeDamage(amount, sourceType = 'default', ignoreInvincible = false) {
@@ -237,8 +241,19 @@
                     if (mx !== 0 || my !== 0) { const mag = Math.hypot(mx, my); mx /= mag; my /= mag; }
                     const spd = this.getEffectiveSpeed();
                     this.x += mx * spd * dt; this.y += my * spd * dt;
-                    this.x = clamp(this.x, this.size, WORLD_W - this.size);
-                    this.y = clamp(this.y, this.size, WORLD_H - this.size);
+                    const moonDom = game.moonDomain;
+                    if (moonDom && moonDom.active) {
+                        // 月之领域：玩家被钳制在领域圆内（领域位于世界外，禁用世界边界钳制）
+                        const mdx = this.x - moonDom.x, mdy = this.y - moonDom.y;
+                        const md = Math.hypot(mdx, mdy) || 0.01;
+                        const mMax = moonDom.r - this.size;
+                        if (md > mMax) { const ms = mMax / md; this.x = moonDom.x + mdx * ms; this.y = moonDom.y + mdy * ms; }
+                        // 领域内血量上限强制锁死 150（升级/宝箱提升在领域内无效，出场恢复）
+                        if (this.maxHp !== 150) this.maxHp = 150;
+                    } else {
+                        this.x = clamp(this.x, this.size, WORLD_W - this.size);
+                        this.y = clamp(this.y, this.size, WORLD_H - this.size);
+                    }
                     if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
                     if (this.flashTimer > 0) this.flashTimer -= dt;
                     if (this.riskBuffTimer > 0) this.riskBuffTimer -= dt;
@@ -255,7 +270,9 @@
                     if (this.killSpeedTimer > 0) { this.killSpeedTimer -= dt; if (this.killSpeedTimer <= 0) { this.speedMultiplier = (this.speedMultiplier || 1) - 0.15 * this.killSpeedStacks; this.killSpeedStacks = 0; } }
                     updateBuffTimers(this, dt);
                     if (this.hpRegenPercent > 0 && this.hp < this.maxHp) {
-                        this.hp = Math.min(this.maxHp, this.hp + this.hpRegenPercent * this.maxHp * dt);
+                        // 月之领域：自然回血速度 -70%（回复-0.3 倍）
+                        const regenMult = (game.moonDomain && game.moonDomain.active) ? 0.3 : 1;
+                        this.hp = Math.min(this.maxHp, this.hp + this.hpRegenPercent * this.maxHp * regenMult * dt);
                     }
                     for (let i = this.dotEffects.length - 1; i >= 0; i--) {
                         const dot = this.dotEffects[i];

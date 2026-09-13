@@ -213,6 +213,37 @@
                         }
                         if (!proj.alive) continue;
                         if (proj.isEnemy) {
+                            // 追月弹：限转向率追踪 + 持续加速
+                            if (proj.moonHoming) {
+                                const hx = player.x - proj.x, hy = player.y - proj.y;
+                                const hd = Math.hypot(hx, hy) || 1;
+                                const cur = Math.hypot(proj.vx, proj.vy) || 1;
+                                const ca2 = Math.atan2(proj.vy, proj.vx);
+                                const ta2 = Math.atan2(hy, hx);
+                                let da2 = ta2 - ca2;
+                                while (da2 > Math.PI) da2 -= Math.PI * 2;
+                                while (da2 < -Math.PI) da2 += Math.PI * 2;
+                                const na2 = ca2 + clamp(da2, -2.6 * cappedDt, 2.6 * cappedDt);
+                                const ns2 = Math.min(300 * (proj.moonSpdM || 1), cur + 90 * cappedDt);
+                                proj.vx = Math.cos(na2) * ns2; proj.vy = Math.sin(na2) * ns2;
+                            }
+                            // 月刃环：触领域边界法线反弹（次数耗尽后越界销毁）
+                            if (proj.moonBlade && game.moonDomain && game.moonDomain.active) {
+                                const bdx0 = proj.x - game.moonDomain.x, bdy0 = proj.y - game.moonDomain.y;
+                                const bd0 = Math.hypot(bdx0, bdy0);
+                                const bMax = game.moonDomain.r - proj.size;
+                                if (bd0 > bMax && (proj.moonBounce || 0) > 0) {
+                                    const nx0 = bdx0 / bd0, ny0 = bdy0 / bd0;
+                                    const dot0 = proj.vx * nx0 + proj.vy * ny0;
+                                    if (dot0 > 0) {
+                                        proj.moonBounce--;
+                                        proj.vx -= 2 * dot0 * nx0; proj.vy -= 2 * dot0 * ny0;
+                                        proj.x = game.moonDomain.x + nx0 * bMax; proj.y = game.moonDomain.y + ny0 * bMax;
+                                        spawnParticles(proj.x, proj.y, 4, '#b8c8ff', 80, 0.25, 3);
+                                        sound.play('hit');
+                                    }
+                                }
+                            }
                             // 爆裂弹逼近玩家（100 内）自动爆炸分裂
                             if (proj.burstShell && !proj.burstDone) {
                                 const bdx = player.x - proj.x, bdy = player.y - proj.y;
@@ -264,6 +295,14 @@
                         }
                     }
                     game.projectiles = game.projectiles.filter(p => p.alive);
+                    // 月之领域：除幽月魔女/镜月分身外全部小怪冻结（异空间内纯 1v1，领域破碎后恢复）
+                    if (game.moonDomain && game.moonDomain.active) {
+                        for (const e of game.enemies) {
+                            if (e.alive && e.typeKey !== 'moonwitch' && e.typeKey !== 'moonshade') {
+                                e.freezeTimer = Math.max(e.freezeTimer || 0, 0.06);
+                            }
+                        }
+                    }
                     for (const enemy of game.enemies) if (enemy.alive) enemy.update(cappedDt, player);
                     game.enemies = game.enemies.filter(e => e.alive);
                     // 贪婪之石：经验球自动飞向玩家（全图吸引）
@@ -308,8 +347,8 @@
                             game.waveTimer = WAVE_INTERVAL_AFTER;
                         }
                     }
-                    // 普通刷怪：精英预警期间照常刷（精英落地时才清场普通小怪）
-                    if (!dbg.pauseSpawn) {
+                    // 普通刷怪：精英预警期间照常刷（精英落地时才清场普通小怪）；月之领域内暂停刷怪
+                    if (!dbg.pauseSpawn && !(game.moonDomain && game.moonDomain.active)) {
                         if (game.spawnTimer <= 0) {
                             // 炮台在场：小怪出场频率 +10%（间隔 ×0.9）
                             game.spawnTimer = game.spawnInterval * (game.enemies.some(e => e.alive && e.typeKey === 'turret') ? 0.9 : 1);
@@ -399,6 +438,44 @@
                     if (game.achCheckTimer <= 0) {
                         game.achCheckTimer = 0.5;
                         checkAchievements();
+                    }
+                    // ===== 幽月魔女降临倒计时：第 5 秒起屏幕缓慢震动渐强，归零触发降临 =====
+                    if (game.moonIntroTimer > 0) {
+                        game.moonIntroTimer -= cappedDt;
+                        if (game.moonIntroTimer <= 5 && game.moonIntroTimer + cappedDt > 5) {
+                            game.warningText = '幽月魔女 即将降临！';
+                            game.warningTimer = 2.5;
+                        }
+                        if (game.moonIntroTimer <= 5) {
+                            const ramp = clamp((5 - game.moonIntroTimer) / 5, 0, 1);
+                            triggerShake(0.4 + ramp * 2.1, 0.1);
+                            if (Math.random() < 0.05) sound.play('moonRumble');
+                        }
+                        if (game.moonIntroTimer <= 0) {
+                            game.moonIntroTimer = 0;
+                            spawnMoonWitch(game.moonWitchCount >= 1);
+                        }
+                    }
+                    // 月之领域：满月收缩环（自边界向圆心碾压，安全缺口外碾压即伤）
+                    if (game.moonWaves && game.moonWaves.length && game.moonDomain && game.moonDomain.active) {
+                        for (let i = game.moonWaves.length - 1; i >= 0; i--) {
+                            const wv = game.moonWaves[i];
+                            if (wv.warn > 0) { wv.warn -= cappedDt; continue; }
+                            wv.r -= wv.speed * cappedDt;
+                            if (wv.r <= 30) { game.moonWaves.splice(i, 1); continue; }
+                            if (!wv.hit) {
+                                const pd0 = Math.hypot(player.x - game.moonDomain.x, player.y - game.moonDomain.y);
+                                if (Math.abs(pd0 - wv.r) < 13 + player.size * 0.5) {
+                                    let gd0 = Math.atan2(player.y - game.moonDomain.y, player.x - game.moonDomain.x) - wv.gap;
+                                    while (gd0 > Math.PI) gd0 -= Math.PI * 2;
+                                    while (gd0 < -Math.PI) gd0 += Math.PI * 2;
+                                    if (Math.abs(gd0) > wv.gapW * Math.PI / 180 / 2) {
+                                        player.takeDamage(wv.dmg);
+                                        wv.hit = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                     // ===== Boss 生成（含 5 秒预警；与精英波次互斥） =====
                     if (game.superBossDelay > 0) game.superBossDelay -= cappedDt;

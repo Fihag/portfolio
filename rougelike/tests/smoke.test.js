@@ -411,3 +411,177 @@ describe("怪物侧翼包抄与奇点索敌", () => {
     expect(R(`Math.hypot(game.wells[0].x - 100, game.wells[0].y - 100) > 350`)).toBe(true); // 远离角落孤怪
   });
 });
+
+describe("幽月魔女与月之领域", () => {
+  // 杀 2 个常规 boss 触发降临倒计时
+  function setupMoon(R) {
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=700; game.player.y=700;
+       var kb1 = new Enemy(400, 400, 'boss', 0); game.enemies.push(kb1); kb1.takeDamage(9999999, 'test');
+       var kb2 = new Enemy(600, 400, 'broodmother', 0); game.enemies.push(kb2); kb2.takeDamage(9999999, 'test');`);
+  }
+  // 走完 10s 倒计时 + 降临 + 拽入演出，进入领域；并屏蔽技能/升级避免干扰
+  function reachDomain(R) {
+    setupMoon(R);
+    R(`for (var i = 0; i < 610; i++) update(1/60)`);
+    R(`for (var i = 0; i < 300; i++) update(1/60)`);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch');
+       mw.moonBladeTimer = 999; mw.moonOrbTimer = 999; mw.moonBaptTimer = 999;
+       mw.moonCloneTimer = 999; mw.moonWaveTimer = 999; mw.moonAscendTimer = 999;
+       game.player.xpToNext = 999999999;`);
+  }
+  function quietBoss(R) {
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch');
+       mw.moonBladeTimer = 999; mw.moonOrbTimer = 999; mw.moonBaptTimer = 999;
+       mw.moonCloneTimer = 999; mw.moonWaveTimer = 999; mw.moonAscendTimer = 999;`);
+  }
+
+  it("击杀第 2 个常规 boss 后 10 秒降临；不占常规出场次数与击杀计数", () => {
+    const { R } = loadGame();
+    setupMoon(R);
+    expect(R(`game.moonIntroTimer`)).toBe(10);
+    expect(R(`game.bossAppearedCount`)).toBe(0);
+    expect(R(`game.bossKilledCount`)).toBe(2);
+    R(`for (var i = 0; i < 610; i++) update(1/60)`);
+    expect(R(`game.enemies.some(e => e.typeKey === 'moonwitch')`)).toBe(true);
+    expect(R(`game.moonWitchCount`)).toBe(1);
+    expect(R(`game.bossOnField`)).toBe(true);
+    expect(R(`game.bossAppearedCount`)).toBe(0);
+  });
+
+  it("拽入异空间：领域开启、玩家入场，锁血 150 / 圣物失效 / 死神之指禁用 / 回血-70% / 移速-8%", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=700; game.player.y=700;
+       game.player.relicVamp = 1; game.player.relicTimeStop = 1; game.player.relicChoiceCrown = 1; game.deathMark.enabled = true;`);
+    R(`var kb1 = new Enemy(400, 400, 'boss', 0); game.enemies.push(kb1); kb1.takeDamage(9999999, 'test');
+       var kb2 = new Enemy(600, 400, 'broodmother', 0); game.enemies.push(kb2); kb2.takeDamage(9999999, 'test');`);
+    R(`for (var i = 0; i < 910; i++) update(1/60)`);
+    expect(R(`game.moonDomain && game.moonDomain.active`)).toBe(true);
+    expect(R(`game.moonWitchCount`)).toBe(1);
+    expect(R(`Math.hypot(game.player.x - game.moonDomain.x, game.player.y - game.moonDomain.y) <= game.moonDomain.r`)).toBe(true);
+    expect(R(`game.player.maxHp`)).toBe(150);
+    expect(R(`game.player.relicVamp`)).toBe(0);
+    expect(R(`game.player.relicTimeStop`)).toBe(0);
+    expect(R(`game.player.relicChoiceCrown`)).toBe(0);
+    expect(R(`game.deathMark.enabled`)).toBe(false);
+    // 回血 -70%：1 秒后 hp = 80 + 0.017×150×0.3 = 80.765（静置无技能干扰）
+    quietBoss(R);
+    R(`game.player.hp = 80;`);
+    R(`for (var i = 0; i < 60; i++) update(1/60)`);
+    expect(R(`game.player.hp`)).toBeCloseTo(80.765, 2);
+    // 移速 ×0.92
+    expect(R(`Math.abs(game.player.getEffectiveSpeed() / (game.player.speed * game.player.speedMultiplier) - 0.92) < 0.01`)).toBe(true);
+  });
+
+  it("领域钳制：玩家被拉出边界立即拉回圆内", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`game.player.x = game.moonDomain.x + 2000; game.player.y = game.moonDomain.y;`);
+    R(`update(1/60)`);
+    expect(R(`Math.hypot(game.player.x - game.moonDomain.x, game.player.y - game.moonDomain.y) <= game.moonDomain.r`)).toBe(true);
+  });
+
+  it("月刃环触界反弹：法线反射且反弹次数递减（一阶段 1 次）", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`var pj = new Projectile(game.moonDomain.x + game.moonDomain.r - 20, game.moonDomain.y, 300, 0, 10, 0, 0, '#fff', 8, true);
+       pj.moonBlade = true; pj.moonBounce = 1; game.projectiles.push(pj);`);
+    R(`for (var i = 0; i < 4; i++) update(1/60)`);
+    expect(R(`(function(){ var p = game.projectiles.find(q => q.moonBlade); return p && p.vx < 0 && p.moonBounce === 0; })()`)).toBe(true);
+    expect(R(`(function(){ var p = game.projectiles.find(q => q.moonBlade); return p && Math.hypot(p.x - game.moonDomain.x, p.y - game.moonDomain.y) <= game.moonDomain.r; })()`)).toBe(true);
+  });
+
+  it("二阶段：60% 血触发变身无敌；无敌期免伤，破绽窗口可扣血", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.hp = mw.maxHp * 0.5;`);
+    R(`update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonPhase2`)).toBe(true);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonShielded`)).toBe(true);
+    expect(R(`game.moonDomain.r`)).toBe(460); // 领域半径扩张
+    // 无敌期免伤
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); var hp0 = mw.hp; mw.takeDamage(100, 'test');`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(R(`hp0`));
+    // 变身结束进入循环 → 强制推进到破绽窗口
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonTransformT = 0.01;`);
+    R(`for (var i = 0; i < 3; i++) update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonCycleShielded`)).toBe(true);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonCycleShielded = true; mw.moonCycleT = 0.01;`);
+    R(`for (var i = 0; i < 2; i++) update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonShielded`)).toBe(false);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); var hp1 = mw.hp; mw.takeDamage(100, 'test');`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBeLessThan(R(`hp1`));
+  });
+
+  it("升月轰炸：升空免伤，砸落冲击波近距离伤害", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonAscendTimer = 0.01;`);
+    R(`update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonAirborne`)).toBe(true);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonShielded`)).toBe(true);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); var hpA = mw.hp; mw.takeDamage(100, 'test');`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(R(`hpA`));
+    // 快进到砸落：玩家站在落点 50px 处（50 < 120 冲击半径）
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonRainWaves = 0;
+       game.player.x = mw.x + 50; game.player.y = mw.y;
+       mw.moonAscendDur = 0.02; mw.moonAscendT = 0.03; mw.moonLaserState = 'idle';`);
+    R(`for (var i = 0; i < 3; i++) update(1/60)`);
+    R(`for (var i = 0; i < 45; i++) update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonAscendTimer`)).toBeCloseTo(11.2, 1); // 14×0.8 重置
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonStunT`)).toBeGreaterThan(0); // 砸落后硬直破绽
+  });
+
+  it("走位 AI：不贴脸追击，与玩家保持距离带", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); game.player.x = mw.x + 60; game.player.y = mw.y;`);
+    R(`for (var i = 0; i < 240; i++) update(1/60)`);
+    const dist = R(`Math.hypot(game.player.x - game.enemies.find(e => e.typeKey === 'moonwitch').x, game.player.y - game.enemies.find(e => e.typeKey === 'moonwitch').y)`);
+    expect(dist).toBeGreaterThan(150);
+    expect(dist).toBeLessThan(450);
+  });
+
+  it("被动·穿梭：被逼到边界且玩家逼近时镜面点对称转移到对侧，CD 30s", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch');
+       mw.x = game.moonDomain.x + game.moonDomain.r - 110; mw.y = game.moonDomain.y;
+       game.player.x = mw.x - 100; game.player.y = mw.y;
+       var bfx = mw.x; var bfy = mw.y;`);
+    R(`update(1/60)`);
+    expect(R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); Math.abs(mw.x - (2 * game.moonDomain.x - bfx)) < 3 && Math.abs(mw.y - (2 * game.moonDomain.y - bfy)) < 3`)).toBe(true);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonBlinkCd`)).toBeGreaterThan(29);
+    // CD 未就绪不触发
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonBlinkCd = 5;
+       mw.x = game.moonDomain.x + game.moonDomain.r - 110; mw.y = game.moonDomain.y;
+       game.player.x = mw.x - 100; game.player.y = mw.y;`);
+    R(`update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonBlinkCd`)).toBeGreaterThan(4.9);
+  });
+
+  it("死亡镜碎：演出期间领域保持，演出毕领域崩塌、玩家送回并恢复全部快照", () => {
+    const { R } = loadGame();
+    reachDomain(R);
+    R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.hp = 1; mw.takeDamage(9999999, 'test');`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').dying`)).toBe(true);
+    expect(R(`game.moonDomain && game.moonDomain.active`)).toBe(true);
+    R(`for (var i = 0; i < 110; i++) update(1/60)`);
+    expect(R(`game.moonDomain`)).toBe(null);
+    expect(R(`game.enemies.some(e => e.typeKey === 'moonwitch')`)).toBe(false);
+    expect(R(`Math.hypot(game.player.x - game.moonReturnPos.x, game.player.y - game.moonReturnPos.y) < 2`)).toBe(true);
+    expect(R(`game.player.maxHp`)).toBe(100); // 快照恢复（普通难度基础 100）
+    expect(R(`game.bossKilledCount`)).toBe(2); // 幽月魔女不计击杀数
+  });
+
+  it("第二次降临：第 5 个常规 boss 击杀后触发，先复活动画且全数值 ×3", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=700; game.player.y=700; game.moonWitchCount=1; game.bossKilledCount=4;`);
+    R(`var kb = new Enemy(400, 400, 'boss', 0); game.enemies.push(kb); kb.takeDamage(9999999, 'test');`);
+    expect(R(`game.moonIntroTimer`)).toBe(10);
+    expect(R(`game.bossKilledCount`)).toBe(5);
+    R(`for (var i = 0; i < 610; i++) update(1/60)`);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonIntro`)).toBe('revive');
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonStatMult`)).toBe(3);
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(6600); // 2200×3
+  });
+});

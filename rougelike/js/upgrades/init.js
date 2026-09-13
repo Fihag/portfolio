@@ -70,6 +70,9 @@
                 game.noBossDrop = false;
                 game.rings = []; game.levelFlash = 0; game.flashWhite = 0;
                 game.bossWarnTimer = 0; game.superBossDelay = 0; game.levelupLock = 0; game.pendingSuperBoss = false;
+                // 幽月魔女状态复位
+                game.moonIntroTimer = 0; game.moonWitchCount = 0; game.moonDomain = null; game.moonReturnPos = null;
+                game.moonWaves = []; game.moonPullDim = 0; game.moonWitchStatMult = 0;
                 game.deathMark.targets = [];
                 if (typeof syncDeathMarkUI === 'function') syncDeathMarkUI();
                 dbg.pauseGame = false;
