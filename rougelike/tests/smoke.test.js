@@ -225,6 +225,15 @@ describe("新武器与编队", () => {
     R(`update(1/60)`);
     expect(R(`game.enemies.filter(e => e.alive).length`)).toBe(3); // 空场首刷 3 只
   });
+  it("天罚炮台固定降临在地图正中心", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state='playing'; game.enemies.length = 0; game.bossOnField = false;`);
+    // Math.random=0.999 → bossTypes[3]='turret'（普通难度分支）
+    R(`var _or = Math.random; Math.random = function () { return 0.999; }; spawnBoss(); Math.random = _or;`);
+    expect(R(`game.enemies[game.enemies.length - 1].typeKey`)).toBe("turret");
+    expect(R(`game.enemies[game.enemies.length - 1].x`)).toBe(1000); // WORLD_W/2
+    expect(R(`game.enemies[game.enemies.length - 1].y`)).toBe(750); // WORLD_H/2
+  });
 });
 
 describe("死神之指手动点击", () => {

@@ -223,6 +223,8 @@
                     const bossTypes = ['boss', 'broodmother', 'assassin', 'turret'];
                     bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
                 }
+                // 天罚炮台是原地建筑，固定降临在地图正中心
+                if (bossType === 'turret') { x = WORLD_W / 2; y = WORLD_H / 2; }
                 const boss = new Enemy(x, y, bossType, diffBonus);
                 game.enemies.push(boss);
                 game.bossOnField = true;
