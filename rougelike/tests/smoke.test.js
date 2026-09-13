@@ -448,7 +448,7 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.bossAppearedCount`)).toBe(0);
   });
 
-  it("拽入异空间：领域开启、玩家入场，锁血 150 / 圣物失效 / 死神之指禁用 / 回血-70% / 移速-8%", () => {
+  it("拽入异空间：领域开启、玩家入场，锁血 150 / 圣物失效 / 死神之指禁用 / 回血-70% / 移速-10%", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=700; game.player.y=700;
        game.player.relicVamp = 1; game.player.relicTimeStop = 1; game.player.relicChoiceCrown = 1; game.deathMark.enabled = true;`);
@@ -468,8 +468,8 @@ describe("幽月魔女与月之领域", () => {
     R(`game.player.hp = 80;`);
     R(`for (var i = 0; i < 60; i++) update(1/60)`);
     expect(R(`game.player.hp`)).toBeCloseTo(80.765, 2);
-    // 移速 ×0.92
-    expect(R(`Math.abs(game.player.getEffectiveSpeed() / (game.player.speed * game.player.speedMultiplier) - 0.92) < 0.01`)).toBe(true);
+    // 移速 ×0.90
+    expect(R(`Math.abs(game.player.getEffectiveSpeed() / (game.player.speed * game.player.speedMultiplier) - 0.90) < 0.01`)).toBe(true);
   });
 
   it("领域钳制：玩家被拉出边界立即拉回圆内", () => {
@@ -486,7 +486,7 @@ describe("幽月魔女与月之领域", () => {
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonBladeTimer = 0.01;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.moonBlade).length`)).toBe(5);
-    expect(R(`game.projectiles.filter(p => p.moonBlade).every(p => p.moonBounce === 1 && p.damage === 16 && Math.abs(Math.hypot(p.vx, p.vy) - 280) < 1)`)).toBe(true);
+    expect(R(`game.projectiles.filter(p => p.moonBlade).every(p => p.moonBounce === 1 && p.damage === 14 && Math.abs(Math.hypot(p.vx, p.vy) - 280) < 1)`)).toBe(true);
     // 二阶段 7 发（先清掉第一轮弹体再发射）
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonPhase2 = true; mw.moonApplyBuffs(2); game.projectiles = []; mw.moonBladeTimer = 0.01;`);
     R(`update(1/60)`);

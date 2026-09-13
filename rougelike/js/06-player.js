@@ -52,8 +52,8 @@
                     return 1 + clamp((this.maxHp - this.hp) / this.maxHp, 0, 1) * rate;
                 }
                 getEffectiveSpeed() {
-                    // 月之领域内：移速 -8%（领域副作用）
-                    const moonSlow = (game.moonDomain && game.moonDomain.active) ? 0.92 : 1;
+                    // 月之领域内：移速 -10%（领域副作用）
+                    const moonSlow = (game.moonDomain && game.moonDomain.active) ? 0.90 : 1;
                     return this.speed * this.speedMultiplier * (this.slowTimer > 0 ? (1 - this.slowAmount) : 1) * (this.burstTimer > 0 ? 1.4 : 1) * moonSlow;
                 }
                 getEffectiveCooldownMult() { return (this.globalCooldownMultiplier || 1) * (this.burstTimer > 0 ? 0.6 : 1); }

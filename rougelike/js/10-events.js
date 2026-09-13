@@ -331,9 +331,7 @@
                 dom.prevMaxHp = p.maxHp;
                 p.maxHp = 150;
                 p.hp = Math.min(p.hp, 150);
-                dom.prevTaken = p.damageTakenMultiplier || 1;
-                p.damageTakenMultiplier = dom.prevTaken * 1.1;
-                game.warningText = '月之领域：回复-70% 受伤+10% 圣物失效';
+                game.warningText = '月之领域：回复-70% 移速-10% 圣物失效';
                 game.warningTimer = 3;
             }
 
@@ -345,7 +343,6 @@
                 if (dom.shieldSnap) Object.assign(p, dom.shieldSnap);
                 game.deathMark.enabled = !!dom.deathMarkEnabled;
                 if (dom.prevMaxHp) { p.maxHp = dom.prevMaxHp; p.hp = Math.min(p.hp, p.maxHp); }
-                if (dom.prevTaken) p.damageTakenMultiplier = dom.prevTaken;
                 game.moonDomain = null;
                 game.moonWaves = [];
             }
