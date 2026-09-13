@@ -1,8 +1,8 @@
-            // 爆裂弹爆炸：爆心 35 伤（半径 140），分裂 30 发环形子弹（12° 整圆；逼近引爆弹速 380 / 射程尽头引爆 500）
+            // 爆裂弹爆炸：爆心 35 伤（半径 140），分裂 30 发环形子弹（12° 整圆；逼近引爆弹速 355 / 射程尽头引爆 475）
             function burstShellExplode(x, y, player, o) {
                 const coreDmg = (o && o.coreDmg) || 35;
                 const splitDmg = (o && o.splitDmg) || 22;
-                const splitSpd = (o && o.splitSpeed) || 380;
+                const splitSpd = (o && o.splitSpeed) || 355;
                 spawnParticles(x, y, 14, '#ff7744', 90, 0.4, 4);
                 spawnFx(x, y, 10, '#ffaa66', { shape: 'star', glow: true, speed: 130, life: 0.4, size: 5 });
                 game.rings.push({ x: x, y: y, r: 8, maxR: 140, life: 0.3, maxLife: 0.3, color: '#ff6644', width: 5 });
@@ -10,7 +10,7 @@
                 if (Math.hypot(player.x - x, player.y - y) < 140 + player.size) player.takeDamage(coreDmg);
                 for (let i = 0; i < 30; i++) {
                     const a = Math.PI * 2 * i / 30;
-                    game.projectiles.push(new Projectile(x, y, Math.cos(a) * splitSpd, Math.sin(a) * splitSpd, splitDmg, 0, 0, '#ff8855', 9.5, true));
+                    game.projectiles.push(new Projectile(x, y, Math.cos(a) * splitSpd, Math.sin(a) * splitSpd, splitDmg, 0, 0, '#ff8855', 7, true));
                 }
             }
             function update(dt) {
@@ -206,10 +206,10 @@
                             if (game.fireZones.length >= 40) game.fireZones.shift();
                             game.fireZones.push({ x: proj.x, y: proj.y, radius: proj.poolRadius || 75, damage: proj.poolDamage || 10, remaining: 4, tickRate: 0.4, tickTimer: 0, rgb: '120,255,80' });
                         }
-                        // 爆裂弹射程尽头：原地爆炸分裂（分裂弹加速到 500）
+                        // 爆裂弹射程尽头：原地爆炸分裂（分裂弹加速到 475）
                         if (!proj.alive && proj.burstShell && !proj.burstDone) {
                             proj.burstDone = true;
-                            burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 500 });
+                            burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 475 });
                         }
                         if (!proj.alive) continue;
                         if (proj.isEnemy) {
@@ -219,7 +219,7 @@
                                 if (bdx * bdx + bdy * bdy < 210 * 210) {
                                     proj.burstDone = true;
                                     proj.alive = false;
-                                    burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 380 });
+                                    burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 355 });
                                     continue;
                                 }
                             }

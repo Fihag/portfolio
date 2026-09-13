@@ -330,7 +330,7 @@
                             const aim = Math.atan2(player.y - this.y, player.x - this.x);
                             this.turretAim = aim;
                             const rapidDmg = this.turretRapidDmg || 20;
-                            // 扇形炮击：2s 一轮，9 发 ±10°（2.5° 间隔）连发两次（间隔 0.25s），弹速 450
+                            // 扇形炮击：2s 一轮，9 发 ±10°（2.5° 间隔）连发两次（间隔 0.25s），弹速 425
                             this.turretVolleyTimer = (this.turretVolleyTimer === undefined ? 2.0 : this.turretVolleyTimer) - dt;
                             if (this.turretVolleyTimer <= 0) {
                                 this.turretVolleyTimer = 2;
@@ -338,7 +338,7 @@
                                 this.turretVolleyAim = aim;
                                 for (let i = 0; i < 9; i++) {
                                     const a = aim - Math.PI / 180 * 10 + Math.PI / 180 * 2.5 * i;
-                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ffcc55', 12, true));
+                                    game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 425, Math.sin(a) * 425, rapidDmg, 0, 0, '#ffcc55', 9.5, true));
                                 }
                                 sound.play('shoot');
                                 spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 6, '#ffdd88', 60, 0.3, 3);
@@ -348,27 +348,27 @@
                                 if (this.turretVolleySecond <= 0) {
                                     for (let i = 0; i < 9; i++) {
                                         const a = this.turretVolleyAim - Math.PI / 180 * 10 + Math.PI / 180 * 2.5 * i;
-                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ffcc55', 12, true));
+                                        game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * 425, Math.sin(a) * 425, rapidDmg, 0, 0, '#ffcc55', 9.5, true));
                                     }
                                     sound.play('shoot');
                                 }
                             }
-                            // 常驻速射：0.15s 一发直射弹（弹速 430）
+                            // 常驻速射：0.22s 一发直射弹（弹速 405）
                             this.turretRapidTimer = (this.turretRapidTimer === undefined ? 1.2 : this.turretRapidTimer) - dt;
                             if (this.turretRapidTimer <= 0) {
-                                this.turretRapidTimer = 0.15;
-                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(aim) * 430, Math.sin(aim) * 430, rapidDmg, 0, 0, '#ffcc55', 10.5, true));
+                                this.turretRapidTimer = 0.22;
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(aim) * 405, Math.sin(aim) * 405, rapidDmg, 0, 0, '#ffcc55', 8, true));
                                 spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 2, '#ffdd88', 50, 0.2, 2);
                             }
-                            // 爆裂弹：4s 一轮 3 枚（弹速 450、射程 800），逼近玩家 210 内或射程尽头爆炸——爆心 35 伤 + 分裂 30 发环形弹（12° 整圆，弹速 380；尽头引爆 500）
+                            // 爆裂弹：4s 一轮 3 枚（弹速 425、射程 800），逼近玩家 210 内或射程尽头爆炸——爆心 35 伤 + 分裂 30 发环形弹（12° 整圆，弹速 355；尽头引爆 475）
                             this.turretBurstTimer = (this.turretBurstTimer === undefined ? 3.0 : this.turretBurstTimer) - dt;
                             if (this.turretBurstTimer <= 0) {
                                 this.turretBurstTimer = 4;
                                 for (let i = -1; i <= 1; i++) {
                                     const a = aim + i * 0.16;
-                                    const shell = new Projectile(this.x, this.y, Math.cos(a) * 450, Math.sin(a) * 450, rapidDmg, 0, 0, '#ff5544', 12.5, true);
+                                    const shell = new Projectile(this.x, this.y, Math.cos(a) * 425, Math.sin(a) * 425, rapidDmg, 0, 0, '#ff5544', 10, true);
                                     shell.burstShell = true;
-                                    shell.maxLifetime = 1.78; // 射程约 800
+                                    shell.maxLifetime = 1.88; // 射程约 800
                                     shell.burstCoreDmg = this.turretBurstCoreDmg || 35;
                                     shell.burstSplitDmg = this.turretSplitDmg || 22;
                                     game.projectiles.push(shell);
@@ -376,12 +376,12 @@
                                 sound.play('shoot');
                                 spawnParticles(this.x, this.y, 8, '#ff9966', 70, 0.3, 3);
                             }
-                            // 扫射激光：锁定(0.5s 预警) → 发射(0.5s，120°/s 扫 60°，长 1200 穿透，线上 35 伤，每束判定一次)，冷却 5s
+                            // 扫射激光：锁定(0.7s 预警) → 发射(0.5s，120°/s 扫 60°，长 1200 穿透，线上 30 伤，每束判定一次)，冷却 5s
                             this.turretLaserTimer = (this.turretLaserTimer === undefined ? 5.0 : this.turretLaserTimer) - dt;
                             if (!this.turretLaserState || this.turretLaserState === 'idle') {
                                 if (this.turretLaserTimer <= 0) {
                                     this.turretLaserState = 'charging';
-                                    this.turretLaserT = 0.5;
+                                    this.turretLaserT = 0.7;
                                     this.turretLaserAngle = aim;
                                 }
                             } else if (this.turretLaserState === 'charging') {
@@ -402,7 +402,7 @@
                                     const along = clamp(rx * dirX + ry * dirY, 0, 1200);
                                     const px = rx - dirX * along, py = ry - dirY * along;
                                     if (px * px + py * py < (18 + player.size) * (18 + player.size)) {
-                                        player.takeDamage(this.turretLaserDmg || 35);
+                                        player.takeDamage(this.turretLaserDmg || 30);
                                         this.turretLaserHit = true;
                                     }
                                 }

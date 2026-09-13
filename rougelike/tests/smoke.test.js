@@ -252,70 +252,70 @@ describe("天罚炮台技能数值", () => {
   function setupTurret(R) {
     R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.bossOnField=true; game.player.x=500; game.player.y=400; var t=new Enemy(1000,750,'turret',0); game.enemies.push(t);`);
   }
-  it("常驻速射：0.15s 一发直射弹（伤 20、弹速 430）", () => {
+  it("常驻速射：0.22s 一发直射弹（伤 20、弹速 405）", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretRapidTimer = 0.01;`);
     R(`update(1/60)`);
     expect(
-      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && p.size === 10.5 && Math.abs(Math.hypot(p.vx, p.vy) - 430) < 1)`)
+      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && p.size === 8 && Math.abs(Math.hypot(p.vx, p.vy) - 405) < 1)`)
     ).toBe(true);
-    expect(R(`game.enemies[0].turretRapidTimer`)).toBeCloseTo(0.15, 5);
+    expect(R(`game.enemies[0].turretRapidTimer`)).toBeCloseTo(0.22, 5);
   });
-  it("扇形炮击：2s 一轮 9 发 ±10°（弹速 450）连发两次", () => {
+  it("扇形炮击：2s 一轮 9 发 ±10°（弹速 425）连发两次", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretVolleyTimer = 0.01; game.enemies[0].turretRapidTimer = 999; game.enemies[0].turretBurstTimer = 999;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(9);
     expect(
-      R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 450) < 1 && p.damage === 20 && p.size === 12)`)
+      R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 425) < 1 && p.damage === 20 && p.size === 9.5)`)
     ).toBe(true);
     R(`for (var i = 0; i < 16; i++) update(1/60)`); // 越过 0.25s 连发间隔
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(18);
   });
-  it("爆裂弹：一轮 3 枚（弹速 450 射程 800），逼近玩家 210 内爆炸——爆心 35 伤 + 分裂 30 发（12° 整圆、弹速 380、伤 22）", () => {
+  it("爆裂弹：一轮 3 枚（弹速 425 射程 800），逼近玩家 210 内爆炸——爆心 35 伤 + 分裂 30 发（12° 整圆、弹速 355、伤 22）", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretBurstTimer = 0.01; game.enemies[0].turretRapidTimer = 999;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(3);
     expect(
-      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 450) < 1 && Math.abs(p.maxLifetime - 1.78) < 0.001 && p.size === 12.5)`)
+      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 425) < 1 && Math.abs(p.maxLifetime - 1.88) < 0.001 && p.size === 10)`)
     ).toBe(true);
     expect(R(`game.enemies[0].turretBurstTimer`)).toBeCloseTo(4, 5);
     // 引爆：把一枚爆裂弹放到玩家 100px 处（< 210 引信）
     R(`var s = game.projectiles.find(p => p.burstShell); s.x = game.player.x + 100; s.y = game.player.y; s.vx = 0; s.vy = 0;`);
     R(`update(1/60)`);
-    expect(R(`game.player.hp`)).toBe(65); // 爆心 35 伤（半径 110 内）
+    expect(R(`game.player.hp`)).toBe(65); // 爆心 35 伤（半径 140 内）
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2); // 引爆的弹体消失
     expect(
-      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 380) < 1 && p.damage === 22 && p.size === 9.5); })()`)
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 355) < 1 && p.damage === 22 && p.size === 7); })()`)
     ).toBe(true);
   });
-  it("爆裂弹射程尽头引爆：分裂弹加速到 500", () => {
+  it("爆裂弹射程尽头引爆：分裂弹加速到 475", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretBurstTimer = 0.01; game.enemies[0].turretRapidTimer = 999;`);
     R(`update(1/60)`);
     // 一枚放远（距玩家 > 210 不触引信），并把寿命耗尽 → 射程尽头引爆
-    R(`var s = game.projectiles.find(p => p.burstShell); s.x = 100; s.y = 100; s.vx = 0; s.vy = 0; s.lifetime = 1.79;`);
+    R(`var s = game.projectiles.find(p => p.burstShell); s.x = 100; s.y = 100; s.vx = 0; s.vy = 0; s.lifetime = 1.89;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2);
     expect(
-      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 500) < 1 && p.size === 9.5); })()`)
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 475) < 1 && p.size === 7); })()`)
     ).toBe(true);
   });
-  it("扫射激光：0.5s 预警后发射，长 1200 处命中 35 伤，冷却 5s", () => {
+  it("扫射激光：0.7s 预警后发射，长 1200 处命中 30 伤，冷却 5s", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretLaserTimer = 0.01; game.enemies[0].turretRapidTimer = 999; game.enemies[0].turretVolleyTimer = 999; game.enemies[0].turretBurstTimer = 999;`);
-    R(`for (var i = 0; i < 32; i++) update(1/60)`); // 越过 0.5s 预警
+    R(`for (var i = 0; i < 46; i++) update(1/60)`); // 越过 0.7s 预警
     expect(R(`game.enemies[0].turretLaserState`)).toBe("firing");
     // 玩家站在下一帧扫到的光束方向 1100px 处（< 1200）
     R(`var la = game.enemies[0].turretLaserAngle + Math.PI / 180 * 120 * (1/60); game.player.x = 1000 + Math.cos(la) * 1100; game.player.y = 750 + Math.sin(la) * 1100;`);
     R(`update(1/60)`);
-    expect(R(`game.player.hp`)).toBe(65);
+    expect(R(`game.player.hp`)).toBeCloseTo(70, 0); // 命中 30 伤（同帧自然回血 ±0.5 内）
     R(`game.enemies[0].turretLaserT = 0.01; update(1/60)`);
     expect(R(`game.enemies[0].turretLaserTimer`)).toBeCloseTo(5, 5);
   });
@@ -336,7 +336,7 @@ describe("天罚炮台技能数值", () => {
     R(`var t5 = new Enemy(500, 500, 'turret', 0);`);
     const g = Math.pow(1.06, 4);
     expect(R(`t5.turretRapidDmg`)).toBe(Math.floor(20 * g)); // 25
-    expect(R(`t5.turretLaserDmg`)).toBe(Math.floor(35 * g));
+    expect(R(`t5.turretLaserDmg`)).toBe(Math.floor(30 * g));
     expect(R(`t5.turretSplitDmg`)).toBe(Math.floor(22 * g));
     R(`game.diffMult = 1.9; var t6 = new Enemy(500, 500, 'turret', 0);`);
     expect(R(`t6.turretRapidDmg`)).toBe(Math.floor(20 * g * 1.9)); // 47

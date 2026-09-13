@@ -172,7 +172,7 @@
                         this.turretRapidDmg = Math.floor(20 * skGrow);      // 速射弹/炮击/弹体接触
                         this.turretBurstCoreDmg = Math.floor(35 * skGrow);  // 爆裂弹爆心
                         this.turretSplitDmg = Math.floor(22 * skGrow);      // 分裂环形弹
-                        this.turretLaserDmg = Math.floor(35 * skGrow);      // 扫射激光
+                        this.turretLaserDmg = Math.floor(30 * skGrow);      // 扫射激光
                         this.turretMeteorDmg = Math.floor(50 * skGrow);     // 死亡神罚陨石
                     }
                 }
