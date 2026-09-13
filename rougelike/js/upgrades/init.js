@@ -63,7 +63,7 @@
                 game.warningText = ''; game.warningTimer = 0;
                 game.fireZones = [];
                 game.burningZones = []; game.chainLightningVisuals = []; game.bossDropChoices = null; game.meteorVisuals = [];
-                game.beams = []; game.clouds = []; game.wells = []; game.turretDeathLasers = [];
+                game.beams = []; game.clouds = []; game.wells = []; game.divineStrikes = [];
                 game.bossDropPending = false;
                 game.shadowZones = [];
                 game.shadowTrails = [];

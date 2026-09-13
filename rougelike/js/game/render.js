@@ -78,17 +78,36 @@
                     ctx.fillStyle = `rgba(255,215,0,${alpha})`; ctx.beginPath(); ctx.arc(orb.x, orb.y + floatY, 5, 0, Math.PI * 2); ctx.fill();
                     ctx.fillStyle = `rgba(255,255,200,${alpha*0.8})`; ctx.beginPath(); ctx.arc(orb.x, orb.y + floatY, 2.5, 0, Math.PI * 2); ctx.fill();
                 }
-                // 天罚炮台死亡过载激光（四向射线渐隐）
-                if (game.turretDeathLasers && game.turretDeathLasers.length) {
-                    for (const dl of game.turretDeathLasers) {
-                        const fade = clamp(dl.life / dl.maxLife, 0, 1);
-                        ctx.save();
-                        ctx.translate(dl.x, dl.y); ctx.rotate(dl.angle);
-                        ctx.fillStyle = `rgba(255,90,60,${0.4 * fade})`;
-                        ctx.fillRect(0, -14, 500, 28);
-                        ctx.fillStyle = `rgba(255,230,200,${0.85 * fade})`;
-                        ctx.fillRect(0, -3, 500, 6);
-                        ctx.restore();
+                // 天罚炮台死亡神罚陨石（预警虚线圈 / 坠落光柱 / 落地火光）
+                if (game.divineStrikes && game.divineStrikes.length) {
+                    for (const st of game.divineStrikes) {
+                        if (st.delay > 0) continue;
+                        if (st.phase === 'impact') {
+                            const t = clamp(st.impactLife / 0.35, 0, 1);
+                            const ir = st.radius * (1.3 - t * 0.3);
+                            ctx.fillStyle = `rgba(255,120,40,${t * 0.55})`;
+                            ctx.beginPath(); ctx.arc(st.x, st.y, ir, 0, Math.PI * 2); ctx.fill();
+                            ctx.fillStyle = `rgba(255,210,90,${t * 0.75})`;
+                            ctx.beginPath(); ctx.arc(st.x, st.y, ir * 0.55, 0, Math.PI * 2); ctx.fill();
+                        } else if (st.phase === 'fall') {
+                            const p = clamp(st.fall / 0.22, 0, 1);
+                            const sy = st.y - (1 - p) * 320;
+                            ctx.save();
+                            ctx.translate(st.x, sy);
+                            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
+                            grad.addColorStop(0, '#ffff88'); grad.addColorStop(0.4, '#ff6600'); grad.addColorStop(1, 'rgba(255,0,0,0)');
+                            ctx.fillStyle = grad;
+                            ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+                            ctx.restore();
+                            ctx.strokeStyle = 'rgba(255,150,0,0.65)'; ctx.lineWidth = 4;
+                            ctx.beginPath(); ctx.moveTo(st.x, sy - 8); ctx.lineTo(st.x, sy - 90); ctx.stroke();
+                        } else {
+                            const blink = 0.3 + Math.abs(Math.sin(game.time * 12)) * 0.35;
+                            ctx.strokeStyle = `rgba(255,90,50,${blink})`; ctx.lineWidth = 2;
+                            ctx.setLineDash([6, 6]);
+                            ctx.beginPath(); ctx.arc(st.x, st.y, st.radius, 0, Math.PI * 2); ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
                     }
                 }
                 // 宝箱绘制：金色宝箱 + 发光 + 脉动

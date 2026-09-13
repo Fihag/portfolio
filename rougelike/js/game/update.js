@@ -1,13 +1,16 @@
-            // 爆裂弹爆炸：爆心 20 伤（半径 110），分裂 18 发环形子弹（弹速 350、伤 22）
-            function burstShellExplode(x, y, player) {
+            // 爆裂弹爆炸：爆心 35 伤（半径 110），分裂 30 发环形子弹（12° 整圆；逼近引爆弹速 380 / 射程尽头引爆 500）
+            function burstShellExplode(x, y, player, o) {
+                const coreDmg = (o && o.coreDmg) || 35;
+                const splitDmg = (o && o.splitDmg) || 22;
+                const splitSpd = (o && o.splitSpeed) || 380;
                 spawnParticles(x, y, 14, '#ff7744', 90, 0.4, 4);
                 spawnFx(x, y, 10, '#ffaa66', { shape: 'star', glow: true, speed: 130, life: 0.4, size: 5 });
                 game.rings.push({ x: x, y: y, r: 8, maxR: 110, life: 0.3, maxLife: 0.3, color: '#ff6644', width: 5 });
                 sound.play('explosion');
-                if (Math.hypot(player.x - x, player.y - y) < 110 + player.size) player.takeDamage(20);
-                for (let i = 0; i < 18; i++) {
-                    const a = Math.PI * 2 * i / 18;
-                    game.projectiles.push(new Projectile(x, y, Math.cos(a) * 350, Math.sin(a) * 350, 22, 0, 0, '#ff8855', 4.5, true));
+                if (Math.hypot(player.x - x, player.y - y) < 110 + player.size) player.takeDamage(coreDmg);
+                for (let i = 0; i < 30; i++) {
+                    const a = Math.PI * 2 * i / 30;
+                    game.projectiles.push(new Projectile(x, y, Math.cos(a) * splitSpd, Math.sin(a) * splitSpd, splitDmg, 0, 0, '#ff8855', 4.5, true));
                 }
             }
             function update(dt) {
@@ -44,22 +47,29 @@
                             }
                         }
                     }
-                    // 天罚炮台死亡过载激光：四向射线 0.4s，对玩家各判定一次
-                    if (game.turretDeathLasers && game.turretDeathLasers.length) {
-                        for (const dl of game.turretDeathLasers) {
-                            dl.life -= cappedDt;
-                            if (!dl.hit) {
-                                const rx = player.x - dl.x, ry = player.y - dl.y;
-                                const dirX = Math.cos(dl.angle), dirY = Math.sin(dl.angle);
-                                const along = clamp(rx * dirX + ry * dirY, 0, 500);
-                                const px = rx - dirX * along, py = ry - dirY * along;
-                                if (px * px + py * py < (12 + player.size) * (12 + player.size)) {
-                                    player.takeDamage(30);
-                                    dl.hit = true;
+                    // 天罚炮台死亡神罚：陨石两波坠落（预警→坠落→落地），每颗只对玩家判定一次
+                    if (game.divineStrikes && game.divineStrikes.length) {
+                        for (const st of game.divineStrikes) {
+                            if (st.delay > 0) { st.delay -= cappedDt; continue; }
+                            if (st.phase === 'impact') { st.impactLife -= cappedDt; continue; }
+                            if (st.phase === 'fall') {
+                                st.fall += cappedDt;
+                                if (st.fall >= 0.22) {
+                                    st.phase = 'impact'; st.impactLife = 0.35;
+                                    sound.play('meteor');
+                                    if (dist(player, st) < st.radius + player.size) player.takeDamage(st.dmg);
+                                    spawnParticles(st.x, st.y, 16, '#ff6600', 110, 0.5, 5);
+                                    spawnParticles(st.x, st.y, 10, '#ffcc44', 150, 0.4, 4);
+                                    game.rings.push({ x: st.x, y: st.y, r: 8, maxR: st.radius, life: 0.35, maxLife: 0.35, color: '#ffcc55', width: 5 });
+                                    triggerShake(2, 0.1);
                                 }
+                                continue;
                             }
+                            // 预警阶段：虚线圈标记落点
+                            st.warn -= cappedDt;
+                            if (st.warn <= 0) { st.phase = 'fall'; st.fall = 0; }
                         }
-                        game.turretDeathLasers = game.turretDeathLasers.filter(dl => dl.life > 0);
+                        game.divineStrikes = game.divineStrikes.filter(st => st.phase !== 'impact' || st.impactLife > 0);
                     }
                     // 更新星落燃烧区域
                     if (game.burningZones) {
@@ -196,20 +206,20 @@
                             if (game.fireZones.length >= 40) game.fireZones.shift();
                             game.fireZones.push({ x: proj.x, y: proj.y, radius: proj.poolRadius || 75, damage: proj.poolDamage || 10, remaining: 4, tickRate: 0.4, tickTimer: 0, rgb: '120,255,80' });
                         }
-                        // 爆裂弹射程尽头：原地爆炸分裂
+                        // 爆裂弹射程尽头：原地爆炸分裂（分裂弹加速到 500）
                         if (!proj.alive && proj.burstShell && !proj.burstDone) {
                             proj.burstDone = true;
-                            burstShellExplode(proj.x, proj.y, player);
+                            burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 500 });
                         }
                         if (!proj.alive) continue;
                         if (proj.isEnemy) {
-                            // 爆裂弹逼近玩家（140 内）自动爆炸分裂
+                            // 爆裂弹逼近玩家（210 内）自动爆炸分裂
                             if (proj.burstShell && !proj.burstDone) {
                                 const bdx = player.x - proj.x, bdy = player.y - proj.y;
-                                if (bdx * bdx + bdy * bdy < 140 * 140) {
+                                if (bdx * bdx + bdy * bdy < 210 * 210) {
                                     proj.burstDone = true;
                                     proj.alive = false;
-                                    burstShellExplode(proj.x, proj.y, player);
+                                    burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 380 });
                                     continue;
                                 }
                             }
@@ -301,7 +311,8 @@
                     // 普通刷怪：精英预警期间照常刷（精英落地时才清场普通小怪）
                     if (!dbg.pauseSpawn) {
                         if (game.spawnTimer <= 0) {
-                            game.spawnTimer = game.spawnInterval;
+                            // 炮台在场：小怪出场频率 +10%（间隔 ×0.9）
+                            game.spawnTimer = game.spawnInterval * (game.enemies.some(e => e.alive && e.typeKey === 'turret') ? 0.9 : 1);
                             // 按场上存量反向调节批次：怪少多刷（≤3→3 连刷）、4~12→2、>12→1，保持场上始终有压力
                             const aliveNow = game.enemies.filter(e => e.alive).length;
                             const batch = aliveNow <= 3 ? 3 : (aliveNow <= 12 ? 2 : 1);

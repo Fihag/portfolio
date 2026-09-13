@@ -359,7 +359,7 @@
                             const d = Math.hypot(e.x - wl.x, e.y - wl.y);
                             if (d < 1 || d > wl.radius) continue;
                             if (!e.isBoss) {
-                                const f = (e.isElite ? 0.5 : 1) * (1 - d / wl.radius) * 160 * dt;
+                                const f = (e.isElite ? 0.5 : 1) * (1 - d / wl.radius) * 176 * dt; // 吸力 176（原 160 +10%）
                                 e.x = clamp(e.x - (e.x - wl.x) / d * f, e.size, WORLD_W - e.size);
                                 e.y = clamp(e.y - (e.y - wl.y) / d * f, e.size, WORLD_H - e.size);
                             }

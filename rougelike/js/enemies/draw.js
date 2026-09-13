@@ -67,16 +67,16 @@
                             ctx.strokeStyle = `rgba(255,60,40,${0.35 + cp * 0.4})`; ctx.lineWidth = 2;
                             ctx.setLineDash([8, 10]);
                             ctx.beginPath(); ctx.moveTo(this.x, this.y);
-                            ctx.lineTo(this.x + Math.cos(this.turretLaserAngle) * 700, this.y + Math.sin(this.turretLaserAngle) * 700);
+                            ctx.lineTo(this.x + Math.cos(this.turretLaserAngle) * 1200, this.y + Math.sin(this.turretLaserAngle) * 1200);
                             ctx.stroke(); ctx.setLineDash([]);
                         } else if (firing) {
                             ctx.save();
                             ctx.translate(this.x, this.y); ctx.rotate(this.turretLaserAngle);
                             const fade = clamp(this.turretLaserT / 0.5, 0, 1);
                             ctx.fillStyle = `rgba(255,90,60,${0.35 * fade})`;
-                            ctx.fillRect(0, -18, 700, 36);
+                            ctx.fillRect(0, -18, 1200, 36);
                             ctx.fillStyle = `rgba(255,220,200,${0.9 * fade})`;
-                            ctx.fillRect(0, -4, 700, 8);
+                            ctx.fillRect(0, -4, 1200, 8);
                             ctx.restore();
                         }
                     }

@@ -166,6 +166,15 @@
                     if (this.shieldBase) this.shieldBase = Math.floor(this.shieldBase * dm);
                     // 不可能模式：怪物速度额外 ×1.15
                     if (game.selectedDifficulty === 'impossible') this.speed *= 1.15;
+                    // 天罚炮台技能伤害：随全 Boss 共用出场次数 +6%/次（封顶 4 次）并吃难度倍率
+                    if (this.typeKey === 'turret') {
+                        const skGrow = Math.pow(1.06, Math.min(Math.max((game.bossAppearedCount || 1) - 1, 0), 4)) * dm;
+                        this.turretRapidDmg = Math.floor(20 * skGrow);      // 速射弹/炮击/弹体接触
+                        this.turretBurstCoreDmg = Math.floor(35 * skGrow);  // 爆裂弹爆心
+                        this.turretSplitDmg = Math.floor(22 * skGrow);      // 分裂环形弹
+                        this.turretLaserDmg = Math.floor(35 * skGrow);      // 扫射激光
+                        this.turretMeteorDmg = Math.floor(50 * skGrow);     // 死亡神罚陨石
+                    }
                 }
 
                 getEffectiveSpeed() { return this.slowTimer > 0 ? this.speed * (1 - this.slowAmount) : this.speed; }
@@ -317,13 +326,18 @@
                             game.clouds.push({ x: this.x, y: this.y, radius: this.plagueBurstRadius || 45, life: 1.5, maxLife: 1.5, tickRate: 0.5, tickTimer: 0, dmg: this.plagueBurstDmg || 5, burstChance: 0, burstDmg: 0, burstRadius: 45, homing: false, target: null, spreadSlow: this.plagueSpreadSlow || false });
                             spawnParticles(this.x, this.y, 10, '#77dd55', 70, 0.4, 3);
                         }
-                        // 天罚炮台：核心过载——四向过载激光 + 中心大爆
+                        // 天罚炮台：死亡神罚——全图降下陨石风暴（两波共 70 颗，覆盖中央 80% 区域，只对玩家判定）
                         if (this.typeKey === 'turret') {
-                            game.turretDeathLasers = game.turretDeathLasers || [];
-                            for (let i = 0; i < 4; i++) {
-                                game.turretDeathLasers.push({ x: this.x, y: this.y, angle: (Math.PI / 2) * i, life: 0.4, maxLife: 0.4, hit: false });
+                            game.divineStrikes = game.divineStrikes || [];
+                            const mdmg = this.turretMeteorDmg || 50;
+                            for (let i = 0; i < 70; i++) {
+                                game.divineStrikes.push({
+                                    x: rand(200, WORLD_W - 200), y: rand(150, WORLD_H - 150),
+                                    delay: (i < 35 ? 0.5 : 3.0) + (i % 35) * 0.06,
+                                    warn: 0.7, fall: 0, phase: undefined,
+                                    radius: 85, dmg: mdmg, hit: false, impactLife: 0
+                                });
                             }
-                            if (game.player && dist(this, game.player) < 250 + game.player.size) game.player.takeDamage(60);
                             game.rings.push({ x: this.x, y: this.y, r: 20, maxR: 250, life: 0.5, maxLife: 0.5, color: '#ffcc55', width: 8 });
                             spawnParticles(this.x, this.y, 40, '#ffdd88', 160, 0.7, 6);
                             triggerShake(8, 0.5);

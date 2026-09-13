@@ -187,6 +187,12 @@
                 if (t > 60 && Math.random() < 0.12) typeKey = 'warlock';
                 const diffBonus = game.difficultyLevel - 1;
                 const ne = new Enemy(x, y, typeKey, diffBonus);
+                // 天罚炮台在场光环：小怪速度 +10%、血量/接触伤 +5%（出场频率 +10% 在刷怪批次处）
+                if (game.enemies.some(e => e.alive && e.typeKey === 'turret')) {
+                    ne.speed *= 1.10;
+                    ne.hp = Math.floor(ne.hp * 1.05); ne.maxHp = ne.hp;
+                    ne.damage = Math.floor(ne.damage * 1.05);
+                }
                 // ===== 词缀系统（默认仅不可能模式，普通小怪 50% 概率携带一条；debug 可覆盖概率/难度限制） =====
                 const affixAllowed = dbg.affixAnywhere ? true : game.selectedDifficulty === 'impossible';
                 const affixChance = (dbg.affixChance !== undefined && dbg.affixChance !== null) ? dbg.affixChance : 0.5;
