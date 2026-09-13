@@ -615,7 +615,7 @@
                                     sound.play('moonPull');
                                 }
                             }
-                            // ---- 技能1：月刃环（360° 5 发细长月牙弹幕，触领域边界反弹 1/2 次） ----
+                            // ---- 技能1：月刃环（360° 5 发细长月牙弹幕，一阶段不反弹、二阶段触界反弹 1 次） ----
                             this.moonBladeTimer = (this.moonBladeTimer === undefined ? 2.5 : this.moonBladeTimer) - dt;
                             if (this.moonBladeTimer <= 0) {
                                 this.moonBladeTimer = 4 * this.moonCdMult;
@@ -626,7 +626,7 @@
                                     const a = off + (Math.PI * 2 / n) * i;
                                     const pj = new Projectile(this.x, this.y, Math.cos(a) * bs, Math.sin(a) * bs, this.moonBladeDmg, 0, 0, '#9fb4ff', 8, true);
                                     pj.moonBlade = true;
-                                    pj.moonBounce = this.moonPhase2 ? 2 : 1;
+                                    pj.moonBounce = this.moonPhase2 ? 1 : 0;
                                     game.projectiles.push(pj);
                                 }
                                 sound.play('shoot');
