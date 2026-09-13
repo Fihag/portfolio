@@ -379,7 +379,7 @@
                                 sound.play('shoot');
                                 spawnParticles(this.x, this.y, 8, '#ff9966', 70, 0.3, 3);
                             }
-                            // 扫射激光：锁定(0.7s 预警) → 发射(0.5s，120°/s 扫 60°，长 1200 穿透，线上 30 伤，每束判定一次)，冷却 5.5s
+                            // 扫射激光：锁定(0.7s 预警) → 发射(0.5s，120°/s 扫 60°，长 1200 穿透，线上 24 伤，每束判定一次)，冷却 6s
                             this.turretLaserTimer = (this.turretLaserTimer === undefined ? 5.0 : this.turretLaserTimer) - dt;
                             if (!this.turretLaserState || this.turretLaserState === 'idle') {
                                 if (this.turretLaserTimer <= 0) {
@@ -405,13 +405,13 @@
                                     const along = clamp(rx * dirX + ry * dirY, 0, 1200);
                                     const px = rx - dirX * along, py = ry - dirY * along;
                                     if (px * px + py * py < (18 + player.size) * (18 + player.size)) {
-                                        player.takeDamage(this.turretLaserDmg || 30);
+                                        player.takeDamage(this.turretLaserDmg || 24);
                                         this.turretLaserHit = true;
                                     }
                                 }
                                 if (this.turretLaserT <= 0) {
                                     this.turretLaserState = 'idle';
-                                    this.turretLaserTimer = 5.5;
+                                    this.turretLaserTimer = 6;
                                 }
                             }
                             // 投放精英自爆虫：8.5s 一批 3 只（属性 ×1.4），场上自爆虫上限 6

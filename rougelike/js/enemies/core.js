@@ -172,7 +172,7 @@
                         this.turretRapidDmg = Math.floor(20 * skGrow);      // 速射弹/炮击/弹体接触
                         this.turretBurstCoreDmg = Math.floor(35 * skGrow);  // 爆裂弹爆心
                         this.turretSplitDmg = Math.floor(22 * skGrow);      // 分裂环形弹
-                        this.turretLaserDmg = Math.floor(30 * skGrow);      // 扫射激光
+                        this.turretLaserDmg = Math.floor(24 * skGrow);      // 扫射激光
                         this.turretMeteorDmg = Math.floor(50 * skGrow);     // 死亡神罚陨石
                         // 子弹弹速随难度系数（简单×0.85 → 不可能×1.3，单源 DIFFICULTIES.bulletSpd）
                         this.turretSpdMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bulletSpd || 1;

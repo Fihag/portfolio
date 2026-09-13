@@ -314,7 +314,7 @@ describe("天罚炮台技能数值", () => {
       R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 465) < 1 && p.size === 7); })()`)
     ).toBe(true);
   });
-  it("扫射激光：0.7s 预警后发射，长 1200 处命中 30 伤，冷却 5.5s", () => {
+  it("扫射激光：0.7s 预警后发射，长 1200 处命中 24 伤，冷却 6s", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretLaserTimer = 0.01; game.enemies[0].turretRapidTimer = 999; game.enemies[0].turretVolleyTimer = 999; game.enemies[0].turretBurstTimer = 999;`);
@@ -323,9 +323,9 @@ describe("天罚炮台技能数值", () => {
     // 玩家站在下一帧扫到的光束方向 1100px 处（< 1200）
     R(`var la = game.enemies[0].turretLaserAngle + Math.PI / 180 * 120 * (1/60); game.player.x = 1000 + Math.cos(la) * 1100; game.player.y = 750 + Math.sin(la) * 1100;`);
     R(`update(1/60)`);
-    expect(R(`game.player.hp`)).toBeCloseTo(70, 0); // 命中 30 伤（同帧自然回血 ±0.5 内）
+    expect(R(`game.player.hp`)).toBeCloseTo(76, 0); // 命中 24 伤（同帧自然回血 ±0.5 内）
     R(`game.enemies[0].turretLaserT = 0.01; update(1/60)`);
-    expect(R(`game.enemies[0].turretLaserTimer`)).toBeCloseTo(5.5, 5);
+    expect(R(`game.enemies[0].turretLaserTimer`)).toBeCloseTo(6, 5);
   });
   it("自爆虫投放：8.5s 一批 3 只精英（×1.4）", () => {
     const { R } = loadGame();
@@ -344,7 +344,7 @@ describe("天罚炮台技能数值", () => {
     R(`var t5 = new Enemy(500, 500, 'turret', 0);`);
     const g = Math.pow(1.06, 4);
     expect(R(`t5.turretRapidDmg`)).toBe(Math.floor(20 * g)); // 25
-    expect(R(`t5.turretLaserDmg`)).toBe(Math.floor(30 * g));
+    expect(R(`t5.turretLaserDmg`)).toBe(Math.floor(24 * g));
     expect(R(`t5.turretSplitDmg`)).toBe(Math.floor(22 * g));
     R(`game.diffMult = 1.9; var t6 = new Enemy(500, 500, 'turret', 0);`);
     expect(R(`t6.turretRapidDmg`)).toBe(Math.floor(20 * g * 1.9)); // 47
