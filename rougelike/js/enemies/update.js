@@ -619,7 +619,7 @@
                             this.moonBladeTimer = (this.moonBladeTimer === undefined ? 2.5 : this.moonBladeTimer) - dt;
                             if (this.moonBladeTimer <= 0) {
                                 this.moonBladeTimer = 4 * this.moonCdMult;
-                                const n = this.moonPhase2 ? 7 : 5;
+                                const n = this.moonPhase2 ? 8 : 6;
                                 const bs = (this.moonPhase2 ? 320 : 280) * spdM;
                                 const off = rand(0, Math.PI * 2);
                                 for (let i = 0; i < n; i++) {
