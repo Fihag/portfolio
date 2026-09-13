@@ -1,3 +1,15 @@
+            // 爆裂弹爆炸：爆心 20 伤（半径 110），分裂 18 发环形子弹（弹速 350、伤 22）
+            function burstShellExplode(x, y, player) {
+                spawnParticles(x, y, 14, '#ff7744', 90, 0.4, 4);
+                spawnFx(x, y, 10, '#ffaa66', { shape: 'star', glow: true, speed: 130, life: 0.4, size: 5 });
+                game.rings.push({ x: x, y: y, r: 8, maxR: 110, life: 0.3, maxLife: 0.3, color: '#ff6644', width: 5 });
+                sound.play('explosion');
+                if (Math.hypot(player.x - x, player.y - y) < 110 + player.size) player.takeDamage(20);
+                for (let i = 0; i < 18; i++) {
+                    const a = Math.PI * 2 * i / 18;
+                    game.projectiles.push(new Projectile(x, y, Math.cos(a) * 350, Math.sin(a) * 350, 22, 0, 0, '#ff8855', 4.5, true));
+                }
+            }
             function update(dt) {
                 if (game.state === 'gameover') return;
                 const cappedDt = Math.min(dt, 0.1);
@@ -184,8 +196,23 @@
                             if (game.fireZones.length >= 40) game.fireZones.shift();
                             game.fireZones.push({ x: proj.x, y: proj.y, radius: proj.poolRadius || 75, damage: proj.poolDamage || 10, remaining: 4, tickRate: 0.4, tickTimer: 0, rgb: '120,255,80' });
                         }
+                        // 爆裂弹射程尽头：原地爆炸分裂
+                        if (!proj.alive && proj.burstShell && !proj.burstDone) {
+                            proj.burstDone = true;
+                            burstShellExplode(proj.x, proj.y, player);
+                        }
                         if (!proj.alive) continue;
                         if (proj.isEnemy) {
+                            // 爆裂弹逼近玩家（140 内）自动爆炸分裂
+                            if (proj.burstShell && !proj.burstDone) {
+                                const bdx = player.x - proj.x, bdy = player.y - proj.y;
+                                if (bdx * bdx + bdy * bdy < 140 * 140) {
+                                    proj.burstDone = true;
+                                    proj.alive = false;
+                                    burstShellExplode(proj.x, proj.y, player);
+                                    continue;
+                                }
+                            }
                             if (dist(proj, player) < proj.size + player.size) {
                                 player.takeDamage(proj.damage, 'default', proj.ignoreIFrame === true);
                                 proj.alive = false;

@@ -34,6 +34,13 @@
                         } else {
                             ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
                             ctx.fillStyle = '#ffaa00'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.6, 0, Math.PI * 2); ctx.fill();
+                            // 爆裂弹：脉冲警示圈（临近爆炸）
+                            if (this.burstShell) {
+                                ctx.globalAlpha = 0.45;
+                                ctx.strokeStyle = '#ff6655'; ctx.lineWidth = 2;
+                                ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 4 + Math.sin(this.lifetime * 18) * 1.8, 0, Math.PI * 2); ctx.stroke();
+                                ctx.globalAlpha = 1;
+                            }
                         }
                     } else {
                         for (let i = 0; i < this.trailPositions.length; i++) {

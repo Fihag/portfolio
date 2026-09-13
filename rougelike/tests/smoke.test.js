@@ -236,6 +236,41 @@ describe("新武器与编队", () => {
   });
 });
 
+describe("天罚炮台新增技能", () => {
+  function setupTurret(R) {
+    R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.bossOnField=true; game.player.x=500; game.player.y=400; var t=new Enemy(1000,750,'turret',0); game.enemies.push(t);`);
+  }
+  it("常驻速射：0.3s 一发直射弹（伤 20、弹速 350）", () => {
+    const { R } = loadGame();
+    setupTurret(R);
+    R(`game.enemies[0].turretRapidTimer = 0.01;`);
+    R(`update(1/60)`);
+    expect(
+      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && Math.abs(Math.hypot(p.vx, p.vy) - 350) < 1)`)
+    ).toBe(true);
+    expect(R(`game.enemies[0].turretRapidTimer`)).toBeCloseTo(0.3, 5);
+  });
+  it("爆裂弹：一轮 3 枚（弹速 400），逼近玩家 140 内爆炸分裂 18 发（弹速 350、伤 22、爆心 20 伤）", () => {
+    const { R } = loadGame();
+    setupTurret(R);
+    R(`game.enemies[0].turretBurstTimer = 0.01; game.enemies[0].turretRapidTimer = 999;`);
+    R(`update(1/60)`);
+    expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(3);
+    expect(
+      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 400) < 1 && p.maxLifetime === 1.4)`)
+    ).toBe(true);
+    expect(R(`game.enemies[0].turretBurstTimer`)).toBeCloseTo(4, 5);
+    // 引爆：把一枚爆裂弹放到玩家 100px 处
+    R(`var s = game.projectiles.find(p => p.burstShell); s.x = game.player.x + 100; s.y = game.player.y; s.vx = 0; s.vy = 0;`);
+    R(`update(1/60)`);
+    expect(R(`game.player.hp`)).toBe(80); // 爆心 20 伤（110 半径内）
+    expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2); // 引爆的弹体消失
+    expect(
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 18 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 350) < 1 && p.damage === 22); })()`)
+    ).toBe(true);
+  });
+});
+
 describe("死神之指手动点击", () => {
   it("屏幕坐标+cam 命中世界坐标", () => {
     const { R } = loadGame();

@@ -340,6 +340,27 @@
                                 sound.play('shoot');
                                 spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 6, '#ffdd88', 60, 0.3, 3);
                             }
+                            // 常驻速射：0.3s 一发直射弹（伤 20、弹速 350）
+                            this.turretRapidTimer = (this.turretRapidTimer === undefined ? 1.2 : this.turretRapidTimer) - dt;
+                            if (this.turretRapidTimer <= 0) {
+                                this.turretRapidTimer = 0.3;
+                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(aim) * 350, Math.sin(aim) * 350, 20, 0, 0, '#ffcc55', 5.5, true));
+                                spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 2, '#ffdd88', 50, 0.2, 2);
+                            }
+                            // 爆裂弹：4s 一轮 3 枚（弹速 400），逼近玩家或射程尽头自动爆炸，分裂 18 发环形子弹（弹速 350、伤 22）
+                            this.turretBurstTimer = (this.turretBurstTimer === undefined ? 3.0 : this.turretBurstTimer) - dt;
+                            if (this.turretBurstTimer <= 0) {
+                                this.turretBurstTimer = 4;
+                                for (let i = -1; i <= 1; i++) {
+                                    const a = aim + i * 0.16;
+                                    const shell = new Projectile(this.x, this.y, Math.cos(a) * 400, Math.sin(a) * 400, 20, 0, 0, '#ff5544', 7.5, true);
+                                    shell.burstShell = true;
+                                    shell.maxLifetime = 1.4; // 射程约 560
+                                    game.projectiles.push(shell);
+                                }
+                                sound.play('shoot');
+                                spawnParticles(this.x, this.y, 8, '#ff9966', 70, 0.3, 3);
+                            }
                             // 扫射激光：锁定(0.7s 预警) → 发射(0.5s，120°/s 扫 60°，线上 35 伤，每束判定一次)，冷却 6s
                             this.turretLaserTimer = (this.turretLaserTimer === undefined ? 5.0 : this.turretLaserTimer) - dt;
                             if (!this.turretLaserState || this.turretLaserState === 'idle') {
