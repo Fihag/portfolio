@@ -252,58 +252,66 @@ describe("天罚炮台技能数值", () => {
   function setupTurret(R) {
     R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.bossOnField=true; game.player.x=500; game.player.y=400; var t=new Enemy(1000,750,'turret',0); game.enemies.push(t);`);
   }
-  it("常驻速射：0.27s 一发直射弹（伤 20、弹速 405）", () => {
+  it("常驻速射：0.27s 一发直射弹（伤 20、基础弹速 395）", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretRapidTimer = 0.01;`);
     R(`update(1/60)`);
     expect(
-      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && p.size === 8 && Math.abs(Math.hypot(p.vx, p.vy) - 405) < 1)`)
+      R(`game.projectiles.some(p => p.isEnemy && !p.burstShell && p.damage === 20 && p.size === 8 && Math.abs(Math.hypot(p.vx, p.vy) - 395) < 1)`)
     ).toBe(true);
     expect(R(`game.enemies[0].turretRapidTimer`)).toBeCloseTo(0.27, 5);
   });
-  it("扇形炮击：2.5s 一轮 9 发 ±10°（弹速 425）连发两次", () => {
+  it("弹速难度系数：简单×0.85 普通×1 困难×1.1 地狱×1.2 不可能×1.3", () => {
+    const { R } = loadGame();
+    const cases = [["easy", 0.85], ["normal", 1], ["hard", 1.1], ["hell", 1.2], ["impossible", 1.3]];
+    for (const [diff, m] of cases) {
+      R(`game.selectedDifficulty = '${diff}'; var t = new Enemy(500, 500, 'turret', 0);`);
+      expect(R(`t.turretSpdMult`)).toBe(m);
+    }
+  });
+  it("扇形炮击：2.5s 一轮 9 发 ±10°（基础弹速 415）连发两次", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretVolleyTimer = 0.01; game.enemies[0].turretRapidTimer = 999; game.enemies[0].turretBurstTimer = 999;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(9);
     expect(
-      R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 425) < 1 && p.damage === 20 && p.size === 9.5)`)
+      R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 415) < 1 && p.damage === 20 && p.size === 9.5)`)
     ).toBe(true);
     R(`for (var i = 0; i < 16; i++) update(1/60)`); // 越过 0.25s 连发间隔
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(18);
   });
-  it("爆裂弹：一轮 3 枚（弹速 425 射程 800），逼近玩家 80 内爆炸——爆心 35 伤 + 分裂 30 发（12° 整圆、弹速 355、伤 22）", () => {
+  it("爆裂弹：一轮 3 枚（基础弹速 415 射程 800），逼近玩家 100 内爆炸——爆心 35 伤 + 分裂 30 发（12° 整圆、基础弹速 345、伤 22）", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretBurstTimer = 0.01; game.enemies[0].turretRapidTimer = 999;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(3);
     expect(
-      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 425) < 1 && Math.abs(p.maxLifetime - 1.88) < 0.001 && p.size === 10)`)
+      R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 415) < 1 && Math.abs(p.maxLifetime - 800 / 415) < 0.001 && p.size === 10)`)
     ).toBe(true);
     expect(R(`game.enemies[0].turretBurstTimer`)).toBeCloseTo(4.5, 5);
-    // 引爆：把一枚爆裂弹放到玩家 60px 处（< 80 引信）
+    // 引爆：把一枚爆裂弹放到玩家 60px 处（< 100 引信）
     R(`var s = game.projectiles.find(p => p.burstShell); s.x = game.player.x + 60; s.y = game.player.y; s.vx = 0; s.vy = 0;`);
     R(`update(1/60)`);
     expect(R(`game.player.hp`)).toBe(65); // 爆心 35 伤（半径 140 内）
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2); // 引爆的弹体消失
     expect(
-      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 355) < 1 && p.damage === 22 && p.size === 7); })()`)
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 345) < 1 && p.damage === 22 && p.size === 7); })()`)
     ).toBe(true);
   });
-  it("爆裂弹射程尽头引爆：分裂弹加速到 475", () => {
+  it("爆裂弹射程尽头引爆：分裂弹加速到 465", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretBurstTimer = 0.01; game.enemies[0].turretRapidTimer = 999;`);
     R(`update(1/60)`);
-    // 一枚放远（距玩家 > 210 不触引信），并把寿命耗尽 → 射程尽头引爆
-    R(`var s = game.projectiles.find(p => p.burstShell); s.x = 100; s.y = 100; s.vx = 0; s.vy = 0; s.lifetime = 1.89;`);
+    // 一枚放远（距玩家 > 80 不触引信），并把寿命耗尽 → 射程尽头引爆
+    R(`var s = game.projectiles.find(p => p.burstShell); s.x = 100; s.y = 100; s.vx = 0; s.vy = 0; s.lifetime = 1.93;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2);
     expect(
-      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 475) < 1 && p.size === 7); })()`)
+      R(`(function(){ var arr = game.projectiles.filter(p => p.isEnemy && !p.burstShell); return arr.length === 30 && arr.every(p => Math.abs(Math.hypot(p.vx, p.vy) - 465) < 1 && p.size === 7); })()`)
     ).toBe(true);
   });
   it("扫射激光：0.7s 预警后发射，长 1200 处命中 30 伤，冷却 5.5s", () => {
