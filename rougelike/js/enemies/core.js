@@ -313,7 +313,7 @@
                         // 爆裂词缀（不可能模式）：死亡时波及玩家
                         if (this.affixBurst && game.player && game.player.hp > 0) {
                             const pd = Math.hypot(game.player.x - this.x, game.player.y - this.y);
-                            if (pd < 70 + game.player.size) game.player.takeDamage(Math.max(6, Math.floor(this.damage * 1.2)));
+                            if (pd < 80 + game.player.size) game.player.takeDamage(Math.max(6, Math.floor(this.damage * 1.3)));
                             sound.play('explosion');
                             spawnParticles(this.x, this.y, 14, '#ff8833', 110, 0.45, 4);
                         }

@@ -874,10 +874,10 @@
                             // 词缀（不可能模式）：灼热=接触附加燃烧 / 嗜血=近战回吸自身
                             if (this.affixBurn) {
                                 player.dotEffects = player.dotEffects.filter(d => d.source !== this);
-                                player.dotEffects.push({ amount: 2, remaining: 2, source: this });
+                                player.dotEffects.push({ amount: 2.5, remaining: 2, source: this });
                             }
                             if (this.affixLeech && this.hp > 0) {
-                                const heal = Math.max(1, Math.floor(this.damage * 0.5));
+                                const heal = Math.max(1, Math.floor(this.damage * 0.55));
                                 if (this.hp < this.maxHp) spawnParticles(this.x, this.y - this.size, 4, '#55cc66', 40, 0.35, 2);
                                 this.hp = Math.min(this.maxHp, this.hp + heal);
                             }

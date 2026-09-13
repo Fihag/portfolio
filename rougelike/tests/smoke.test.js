@@ -151,6 +151,22 @@ describe("新武器与编队", () => {
     R(`var t2 = new Enemy(500, 500, 'turret', 0);`);
     expect(R(`t2.damageReduction`)).toBe(0.75); // 0.65 + 0.10 触顶
   });
+  it("不可能模式词缀表：迅捷×1.40 / 坚韧×1.70 / 爆裂·灼热·嗜血标志位", () => {
+    const { R } = loadGame();
+    R(`var z = new Enemy(500, 500, 'zombie', 0); var spd0 = z.speed;
+       ENEMY_AFFIXES.find(a => a.name === '迅捷').apply(z);`);
+    expect(R(`z.speed / spd0`)).toBeCloseTo(1.40, 10);
+    R(`var z2 = new Enemy(500, 500, 'zombie', 0); var hp0 = z2.hp;
+       ENEMY_AFFIXES.find(a => a.name === '坚韧').apply(z2);`);
+    expect(R(`z2.hp`)).toBe(R(`Math.floor(hp0 * 1.7)`));
+    expect(R(`z2.maxHp`)).toBe(R(`z2.hp`));
+    expect(R(`ENEMY_AFFIXES.length`)).toBe(5);
+    expect(R(`['爆裂', '灼热', '嗜血'].every(n => {
+      var e = new Enemy(500, 500, 'zombie', 0);
+      ENEMY_AFFIXES.find(a => a.name === n).apply(e);
+      return e[n === '爆裂' ? 'affixBurst' : n === '灼热' ? 'affixBurn' : 'affixLeech'] === true;
+    })`)).toBe(true);
+  });
   it("等级溢出：卡池选满后升级不弹面板，全属性 +5%", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing';`);

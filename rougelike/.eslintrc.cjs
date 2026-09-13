@@ -167,6 +167,7 @@ module.exports = {
     WAVE_INTERVAL_AFTER: "readonly",
     WAVE_ELITE_COUNT: "readonly",
     WAVE_NOTICE_TIME: "readonly",
+    ENEMY_AFFIXES: "readonly",
     pickWorldSpot: "readonly",
     startEliteWave: "readonly",
     spawnWaveElites: "readonly",

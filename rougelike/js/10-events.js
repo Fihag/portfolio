@@ -4,6 +4,15 @@
             const WAVE_ELITE_COUNT = 12;
             const WAVE_NOTICE_TIME = 10;
 
+            // ===== 不可能模式词缀表（普通小怪 55% 概率携带一条；Boss 不携带） =====
+            const ENEMY_AFFIXES = [
+                { name: '迅捷', color: '#55ddff', apply: (e) => { e.speed *= 1.40; } },
+                { name: '坚韧', color: '#dddddd', apply: (e) => { e.hp = Math.floor(e.hp * 1.7); e.maxHp = e.hp; } },
+                { name: '爆裂', color: '#ff8833', apply: (e) => { e.affixBurst = true; } },
+                { name: '灼热', color: '#ff4444', apply: (e) => { e.affixBurn = true; } },
+                { name: '嗜血', color: '#55cc66', apply: (e) => { e.affixLeech = true; } }
+            ];
+
             // ===== 世界内环形采样：以玩家为中心、固定距离生成（与屏幕大小无关，大小屏难度一致） =====
             function pickWorldSpot(minR, maxR) {
                 const p = game.player;
@@ -193,18 +202,11 @@
                     ne.hp = Math.floor(ne.hp * 1.05); ne.maxHp = ne.hp;
                     ne.damage = Math.floor(ne.damage * 1.05);
                 }
-                // ===== 词缀系统（默认仅不可能模式，普通小怪 50% 概率携带一条；debug 可覆盖概率/难度限制） =====
+                // ===== 词缀系统（默认仅不可能模式，普通小怪 55% 概率携带一条；debug 可覆盖概率/难度限制） =====
                 const affixAllowed = dbg.affixAnywhere ? true : game.selectedDifficulty === 'impossible';
-                const affixChance = (dbg.affixChance !== undefined && dbg.affixChance !== null) ? dbg.affixChance : 0.5;
+                const affixChance = (dbg.affixChance !== undefined && dbg.affixChance !== null) ? dbg.affixChance : 0.55;
                 if (affixAllowed && !ne.isBoss && Math.random() < affixChance) {
-                    const AFFIXES = [
-                        { name: '迅捷', color: '#55ddff', apply: (e) => { e.speed *= 1.35; } },
-                        { name: '坚韧', color: '#dddddd', apply: (e) => { e.hp = Math.floor(e.hp * 1.6); e.maxHp = e.hp; } },
-                        { name: '爆裂', color: '#ff8833', apply: (e) => { e.affixBurst = true; } },
-                        { name: '灼热', color: '#ff4444', apply: (e) => { e.affixBurn = true; } },
-                        { name: '嗜血', color: '#55cc66', apply: (e) => { e.affixLeech = true; } }
-                    ];
-                    const af = AFFIXES[randInt(0, AFFIXES.length - 1)];
+                    const af = ENEMY_AFFIXES[randInt(0, ENEMY_AFFIXES.length - 1)];
                     af.apply(ne);
                     ne.affixName = af.name;
                     ne.affixColor = af.color;
