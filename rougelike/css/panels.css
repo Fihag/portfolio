@@ -85,6 +85,10 @@
             .menu-row button { padding: 9px 12px; font-size: 14px; min-height: 46px; }
             .menu-row button .w-ico { font-size: 22px; }
             .menu-row button .w-ico svg { width: 24px; height: 24px; }
+            /* 触屏端武器格保持大点击区（覆盖桌面端紧凑化） */
+            #menu-loadout button, #menu-weapons button { padding: 9px 12px; font-size: 14px; min-height: 46px; }
+            #menu-loadout button .w-ico, #menu-weapons button .w-ico { font-size: 22px; margin-bottom: 3px; }
+            #menu-loadout button .w-ico svg, #menu-weapons button .w-ico svg { width: 24px; height: 24px; }
             .menu-start { font-size: 18px; padding: 13px 0; }
             .menu-hint { font-size: 11px; }
             .menu-meta-btn { padding: 9px 12px; }
@@ -162,15 +166,21 @@
         }
         .menu-box {
             background: var(--cream); border: 5px solid var(--orange-deep);
-            border-radius: 26px; padding: 26px 30px; text-align: center;
+            border-radius: 26px; padding: 16px 20px; text-align: center;
             box-shadow: 0 12px 0 rgba(0,0,0,0.25), 0 0 60px rgba(255,140,60,0.5);
-            width: min(480px, 92vw); max-height: 92vh; overflow-y: auto;
+            width: min(480px, 92vw);
+            /* 以游戏区域实际高度为界（PC 端容器最高 600px），而不是 92vh */
+            max-height: 100%; display: flex; flex-direction: column; overflow: hidden;
         }
-        .menu-logo { font-size: 34px; font-weight: bold; color: var(--orange-deep); letter-spacing: 0.06em; text-shadow: 0 2px 0 rgba(255,255,255,0.6); }
-        .menu-sub { font-size: 13px; color: var(--brown-soft); margin-bottom: 14px; }
-        .menu-sec { margin-bottom: 12px; }
-        .menu-label { font-size: 13px; font-weight: bold; color: var(--brown); margin-bottom: 6px; }
-        .menu-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        /* 标题与开始按钮固定，中间设置区滚动 */
+        .menu-scroll { overflow-y: auto; min-height: 0; padding: 0 2px; }
+        .menu-scroll::-webkit-scrollbar { width: 6px; }
+        .menu-scroll::-webkit-scrollbar-thumb { background: rgba(180,90,20,0.35); border-radius: 3px; }
+        .menu-logo { font-size: 28px; font-weight: bold; color: var(--orange-deep); letter-spacing: 0.06em; text-shadow: 0 2px 0 rgba(255,255,255,0.6); }
+        .menu-sub { font-size: 12px; color: var(--brown-soft); margin-bottom: 10px; }
+        .menu-sec { margin-bottom: 9px; }
+        .menu-label { font-size: 12px; font-weight: bold; color: var(--brown); margin-bottom: 5px; }
+        .menu-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .menu-row button {
             background: var(--cream-2); border: 2px solid var(--line); color: var(--brown);
             border-radius: 12px; padding: 7px 14px; font-size: 13px; font-weight: bold;
@@ -183,17 +193,22 @@
         .menu-label-sub { font-weight: normal; color: var(--brown-soft); font-size: 11px; }
         .menu-row button.dim { opacity: 0.38; }
         .menu-row button.dim:hover { transform: none; border-color: var(--line); }
-        .menu-best { color: var(--brown-soft); font-size: 13px; margin: 4px 0 12px; }
+        /* 编队/初始武器格紧凑化：9 把武器也要在游戏区高度内放得下 */
+        #menu-loadout button, #menu-weapons button { padding: 4px 9px; font-size: 12px; border-radius: 10px; box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+        #menu-loadout button .w-ico, #menu-weapons button .w-ico { font-size: 17px; margin-bottom: 2px; }
+        #menu-loadout button .w-ico svg, #menu-weapons button .w-ico svg { width: 18px; height: 18px; }
+        .menu-best { color: var(--brown-soft); font-size: 13px; margin: 2px 0 8px; }
         .menu-start {
-            display: block; width: 100%; padding: 14px 0; font-size: 20px; font-weight: bold;
+            display: block; width: 100%; padding: 11px 0; font-size: 18px; font-weight: bold;
+            margin-top: 8px;
             border: 3px solid var(--brown); border-radius: 18px; cursor: pointer;
             background: linear-gradient(180deg, var(--amber), var(--orange)); color: #fff;
             letter-spacing: 0.08em; box-shadow: 0 6px 0 #a86a10; transition: all 0.15s;
         }
         .menu-start:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #a86a10; }
         .menu-start:active { transform: translateY(3px); box-shadow: 0 1px 0 #a86a10; }
-        .menu-hint { margin-top: 12px; font-size: 12px; color: var(--brown-soft); }
-        .menu-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 8px 0; }
+        .menu-hint { margin-top: 8px; font-size: 12px; color: var(--brown-soft); }
+        .menu-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 6px 0; }
         .menu-shards { color: var(--orange-deep); font-weight: bold; font-size: 14px; }
         .menu-meta-btn {
             padding: 6px 14px; border-radius: 12px; border: 2px solid var(--orange);
@@ -204,14 +219,15 @@
 
         /* ===== 灵魂宝库（与全局奶油橙风格统一） ===== */
         #meta-panel {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            display: none; pointer-events: all; z-index: 100;
+            position: absolute; inset: 0; z-index: 100;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(43,26,18,0.6);
         }
         #meta-panel .meta-box {
             background: var(--cream); border: 4px solid var(--orange-deep);
             border-radius: 22px; padding: 20px 22px;
             box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,140,60,0.45);
-            width: min(440px, 92vw); max-width: 92vw; max-height: 86vh; overflow-y: auto;
+            width: min(440px, 92vw); max-width: 92vw; max-height: 92%; overflow-y: auto;
             text-align: center;
         }
         #meta-panel h2 {
@@ -280,14 +296,15 @@
 
 /* ===== 死神之指购买弹窗（与灵魂宝库风格统一） ===== */
 #dm-buy-modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    display: none; pointer-events: all; z-index: 120;
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center; z-index: 120;
+    background: rgba(43,26,18,0.6);
 }
 .dm-modal-box {
     background: var(--cream); border: 4px solid var(--orange-deep);
     border-radius: 22px; padding: 20px 24px;
     box-shadow: 0 10px 0 rgba(0,0,0,0.22), 0 0 50px rgba(255,60,60,0.4);
-    width: min(440px, 92vw); max-width: 92vw; max-height: 86vh; overflow-y: auto;
+    width: min(440px, 92vw); max-width: 92vw; max-height: 92%; overflow-y: auto;
     text-align: center;
 }
 .dm-modal-title {
