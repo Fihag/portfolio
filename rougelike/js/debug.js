@@ -46,6 +46,19 @@
                 for (const e of [...game.enemies]) if (e.alive) e.takeDamage(9999999, 'debug');
                 game.noBossDrop = false;
             }
+            function dbgSpawnMoonWitch() {
+                // 一键直达幽月魔女：清场常规 Boss 后走完整降临→拽入→领域流程
+                if (!game.player || game.state !== 'playing') return;
+                if (game.enemies.some(e => e.alive && e.typeKey === 'moonwitch')) {
+                    game.warningText = '[DEBUG] 幽月魔女已在场'; game.warningTimer = 1.2;
+                    return;
+                }
+                for (const e of game.enemies) if (e.isBoss) e.alive = false;
+                game.enemies = game.enemies.filter(e => e.alive);
+                game.bossOnField = false;
+                game.moonIntroTimer = 0;
+                spawnMoonWitch(false);
+            }
             function dbgClearField() {
                 if (!game.player) return;
                 for (const e of game.enemies) e.alive = false;
@@ -290,6 +303,7 @@
                     dbgSpawnEnemy($inp('dbg-enemytype').value, Math.max(1, Math.floor(dbgNum('dbg-enemycount', 1))));
                 });
                 $inp('dbg-spawnboss').addEventListener('click', () => { dbgSpawnBoss($inp('dbg-bosstype').value); });
+                $inp('dbg-moonwitch').addEventListener('click', dbgSpawnMoonWitch);
                 $inp('dbg-setinterval').addEventListener('click', () => {
                     game.spawnInterval = Math.max(0.05, dbgNum('dbg-spawninterval', 1.2));
                     $inp('dbg-spawninterval').value = game.spawnInterval;

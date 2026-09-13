@@ -34,6 +34,28 @@
                             grad.addColorStop(0, '#ccffcc'); grad.addColorStop(0.4, this.color); grad.addColorStop(1, 'rgba(120,255,80,0)');
                             ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2.2, 0, Math.PI * 2); ctx.fill();
                             ctx.fillStyle = '#eaffea'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.55, 0, Math.PI * 2); ctx.fill();
+                        } else if (this.moonBlade) {
+                            // 月牙飞刃：细长弯曲的月牙形，凸缘朝速度方向（双圆弧拼合）
+                            const s = this.size * 0.17;
+                            ctx.save();
+                            ctx.translate(this.x, this.y);
+                            ctx.rotate(Math.atan2(this.vy, this.vx));
+                            ctx.fillStyle = this.color;
+                            ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+                            ctx.lineWidth = 1.2;
+                            ctx.beginPath();
+                            ctx.arc(0.3 * s, 0, 12.7 * s, -2.09, 2.09, false); // 外弧（前缘）
+                            ctx.arc(-9.6 * s, 0, 11.6 * s, 1.26, -1.26, true); // 内弧（后缘回扫，形成月牙）
+                            ctx.closePath();
+                            ctx.fill(); ctx.stroke();
+                            // 前缘高光
+                            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                            ctx.beginPath();
+                            ctx.arc(0.3 * s, 0, 12.7 * s, -0.5, 0.5, false);
+                            ctx.arc(-9.6 * s, 0, 11.6 * s, 0.53, -0.53, true);
+                            ctx.closePath();
+                            ctx.fill();
+                            ctx.restore();
                         } else {
                             ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
                             ctx.fillStyle = '#ffaa00'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.6, 0, Math.PI * 2); ctx.fill();

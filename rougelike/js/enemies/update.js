@@ -615,11 +615,11 @@
                                     sound.play('moonPull');
                                 }
                             }
-                            // ---- 技能1：月刃环（360° 弹幕，触领域边界反弹 1/2 次） ----
+                            // ---- 技能1：月刃环（360° 5 发细长月牙弹幕，触领域边界反弹 1/2 次） ----
                             this.moonBladeTimer = (this.moonBladeTimer === undefined ? 2.5 : this.moonBladeTimer) - dt;
                             if (this.moonBladeTimer <= 0) {
                                 this.moonBladeTimer = 4 * this.moonCdMult;
-                                const n = this.moonPhase2 ? 18 : 14;
+                                const n = this.moonPhase2 ? 7 : 5;
                                 const bs = (this.moonPhase2 ? 320 : 280) * spdM;
                                 const off = rand(0, Math.PI * 2);
                                 for (let i = 0; i < n; i++) {
