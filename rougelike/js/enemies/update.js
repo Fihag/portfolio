@@ -925,11 +925,12 @@
                 }
 
             Enemy.prototype.moonApplyBuffs = function(stage) {
-                    // 领域加成：一阶段 伤×1.2 速×1.3 CD-20%；二阶段翻倍（按构造基准重算，避免叠乘污染）
-                    const cfg = stage === 1 ? { dmg: 1.2, spd: 1.3, cd: 0.8 } : { dmg: 1.4, spd: 1.6, cd: 0.6 };
+                    // 领域加成：一阶段 伤×1.2 速×1.3 CD-20%；二阶段翻倍 且额外 +30% 减伤（按构造基准重算，避免叠乘污染）
+                    const cfg = stage === 1 ? { dmg: 1.2, spd: 1.3, cd: 0.8, dr: 0 } : { dmg: 1.4, spd: 1.6, cd: 0.6, dr: 0.30 };
                     this.damage = Math.floor((this.moonBaseDmg || this.damage) * cfg.dmg);
                     this.speed = (this.moonBaseSpd || this.speed) * cfg.spd;
                     this.moonCdMult = cfg.cd;
+                    this.damageReduction = Math.min(0.75, (this.moonBaseDr !== undefined ? this.moonBaseDr : this.damageReduction) + cfg.dr);
                 }
 
             Enemy.prototype.fireAtPlayer = function(player) {

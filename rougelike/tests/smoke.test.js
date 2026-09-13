@@ -511,6 +511,7 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonPhase2`)).toBe(true);
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonShielded`)).toBe(true);
     expect(R(`game.moonDomain.r`)).toBe(460); // 领域半径扩张
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').damageReduction`)).toBeCloseTo(0.55); // 二阶段 +30% 减伤
     // 无敌期免伤
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); var hp0 = mw.hp; mw.takeDamage(100, 'test');`);
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(R(`hp0`));
@@ -595,6 +596,7 @@ describe("幽月魔女与月之领域", () => {
     R(`for (var i = 0; i < 610; i++) update(1/60)`);
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonIntro`)).toBe('revive');
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonStatMult`)).toBe(3);
-    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(6600); // 2200×3
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(7500); // 2500×3
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').damageReduction`)).toBeCloseTo(0.40); // 复活全阶段 +15% 减伤
   });
 });

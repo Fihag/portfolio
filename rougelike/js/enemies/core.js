@@ -182,13 +182,16 @@
                         // 子弹弹速随难度系数（简单×0.85 → 不可能×1.3，单源 DIFFICULTIES.bulletSpd）
                         this.turretSpdMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bulletSpd || 1;
                     }
-                    // ===== 幽月魔女：固定技能伤害（不走出场成长），第二次降临全数值 ×3 =====
+                    // ===== 幽月魔女：固定技能伤害（不走出场成长），第二次降临全数值 ×3 且全阶段 +15% 减伤 =====
                     if (this.typeKey === 'moonwitch') {
                         const mult = game.moonWitchStatMult || 1;
                         this.moonStatMult = mult;
                         this.hp = Math.floor(this.hp * mult); this.maxHp = this.hp;
                         this.damage = Math.floor(this.damage * mult);
                         this.speed = this.speed * mult;
+                        // 第二次（镜中复活）：一阶段也享受 +15% 减伤
+                        if (mult > 1) this.damageReduction = Math.min(0.75, this.damageReduction + 0.15);
+                        this.moonBaseDr = this.damageReduction; // 二阶段在基准上再加 30%
                         this.moonBaseDmg = this.damage; this.moonBaseSpd = this.speed;
                         this.moonBladeDmg = Math.floor(16 * mult);   // 月刃环单发
                         this.moonOrbDmg = Math.floor(22 * mult);     // 追月弹

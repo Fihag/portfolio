@@ -213,7 +213,7 @@
                         }
                         if (!proj.alive) continue;
                         if (proj.isEnemy) {
-                            // 追月弹：限转向率追踪 + 持续加速
+                            // 追月弹：限转向率追踪（转向迟钝，玩家急转即可甩掉）+ 持续加速
                             if (proj.moonHoming) {
                                 const hx = player.x - proj.x, hy = player.y - proj.y;
                                 const hd = Math.hypot(hx, hy) || 1;
@@ -223,7 +223,7 @@
                                 let da2 = ta2 - ca2;
                                 while (da2 > Math.PI) da2 -= Math.PI * 2;
                                 while (da2 < -Math.PI) da2 += Math.PI * 2;
-                                const na2 = ca2 + clamp(da2, -2.6 * cappedDt, 2.6 * cappedDt);
+                                const na2 = ca2 + clamp(da2, -1.4 * cappedDt, 1.4 * cappedDt);
                                 const ns2 = Math.min(300 * (proj.moonSpdM || 1), cur + 90 * cappedDt);
                                 proj.vx = Math.cos(na2) * ns2; proj.vy = Math.sin(na2) * ns2;
                             }
