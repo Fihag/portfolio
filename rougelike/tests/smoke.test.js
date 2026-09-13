@@ -274,7 +274,7 @@ describe("天罚炮台技能数值", () => {
     R(`for (var i = 0; i < 16; i++) update(1/60)`); // 越过 0.25s 连发间隔
     expect(R(`game.projectiles.filter(p => p.isEnemy && !p.burstShell).length`)).toBe(18);
   });
-  it("爆裂弹：一轮 3 枚（弹速 425 射程 800），逼近玩家 210 内爆炸——爆心 35 伤 + 分裂 30 发（12° 整圆、弹速 355、伤 22）", () => {
+  it("爆裂弹：一轮 3 枚（弹速 425 射程 800），逼近玩家 80 内爆炸——爆心 35 伤 + 分裂 30 发（12° 整圆、弹速 355、伤 22）", () => {
     const { R } = loadGame();
     setupTurret(R);
     R(`game.enemies[0].turretBurstTimer = 0.01; game.enemies[0].turretRapidTimer = 999;`);
@@ -284,8 +284,8 @@ describe("天罚炮台技能数值", () => {
       R(`game.projectiles.filter(p => p.burstShell).every(p => Math.abs(Math.hypot(p.vx, p.vy) - 425) < 1 && Math.abs(p.maxLifetime - 1.88) < 0.001 && p.size === 10)`)
     ).toBe(true);
     expect(R(`game.enemies[0].turretBurstTimer`)).toBeCloseTo(4.5, 5);
-    // 引爆：把一枚爆裂弹放到玩家 100px 处（< 210 引信）
-    R(`var s = game.projectiles.find(p => p.burstShell); s.x = game.player.x + 100; s.y = game.player.y; s.vx = 0; s.vy = 0;`);
+    // 引爆：把一枚爆裂弹放到玩家 60px 处（< 80 引信）
+    R(`var s = game.projectiles.find(p => p.burstShell); s.x = game.player.x + 60; s.y = game.player.y; s.vx = 0; s.vy = 0;`);
     R(`update(1/60)`);
     expect(R(`game.player.hp`)).toBe(65); // 爆心 35 伤（半径 140 内）
     expect(R(`game.projectiles.filter(p => p.burstShell).length`)).toBe(2); // 引爆的弹体消失

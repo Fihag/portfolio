@@ -360,7 +360,7 @@
                                 game.projectiles.push(new Projectile(this.x, this.y, Math.cos(aim) * 405, Math.sin(aim) * 405, rapidDmg, 0, 0, '#ffcc55', 8, true));
                                 spawnParticles(this.x + Math.cos(aim) * this.size, this.y + Math.sin(aim) * this.size, 2, '#ffdd88', 50, 0.2, 2);
                             }
-                            // 爆裂弹：4.5s 一轮 3 枚（弹速 425、射程 800），逼近玩家 210 内或射程尽头爆炸——爆心 35 伤 + 分裂 30 发环形弹（12° 整圆，弹速 355；尽头引爆 475）
+                            // 爆裂弹：4.5s 一轮 3 枚（弹速 425、射程 800），逼近玩家 80 内或射程尽头爆炸——爆心 35 伤（半径 140）+ 分裂 30 发环形弹（12° 整圆，弹速 355；尽头引爆 475）
                             this.turretBurstTimer = (this.turretBurstTimer === undefined ? 3.0 : this.turretBurstTimer) - dt;
                             if (this.turretBurstTimer <= 0) {
                                 this.turretBurstTimer = 4.5;

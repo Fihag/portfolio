@@ -213,10 +213,10 @@
                         }
                         if (!proj.alive) continue;
                         if (proj.isEnemy) {
-                            // 爆裂弹逼近玩家（210 内）自动爆炸分裂
+                            // 爆裂弹逼近玩家（80 内）自动爆炸分裂
                             if (proj.burstShell && !proj.burstDone) {
                                 const bdx = player.x - proj.x, bdy = player.y - proj.y;
-                                if (bdx * bdx + bdy * bdy < 210 * 210) {
+                                if (bdx * bdx + bdy * bdy < 80 * 80) {
                                     proj.burstDone = true;
                                     proj.alive = false;
                                     burstShellExplode(proj.x, proj.y, player, { coreDmg: proj.burstCoreDmg, splitDmg: proj.burstSplitDmg, splitSpeed: 355 });
