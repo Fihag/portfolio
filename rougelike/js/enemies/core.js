@@ -41,8 +41,8 @@
                     this.isGhost = def.isGhost || false;
                     this.isBoss = isBoss;
                     this.fireballTimer = this.isRanged ? rand(0, def.fireballCooldown) : 0;
-                    // 侧翼包抄方位角（±26°~60°，个体持久）：近战小怪远距离沿弧线接近，防绕圈聚团；Boss/远程/自爆虫/镜月分身为 0（直冲/距离带）
-                    this.flankAngle = isBoss || def.isRanged || typeKey === 'bomber' || typeKey === 'moonshade' ? 0 : (Math.random() < 0.5 ? -1 : 1) * rand(0.45, 1.05);
+                    // 侧翼包抄方位角（±11°~31°，个体持久）：近战小怪远距离沿弧线轻微偏移接近，防绕圈聚团；Boss/远程/自爆虫/镜月分身为 0（直冲/距离带）
+                    this.flankAngle = isBoss || def.isRanged || typeKey === 'bomber' || typeKey === 'moonshade' ? 0 : (Math.random() < 0.5 ? -1 : 1) * rand(0.2, 0.55);
                     this.fireballCooldown = def.fireballCooldown || 0;
                     this.fireballDamage = def.fireballDamage || 0;
                     this.fireballSpeed = def.fireballSpeed || 0;
