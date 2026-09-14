@@ -295,7 +295,9 @@
                 renderMenu();
             });
             // 兑换码：宝库底部按钮弹出输入框，兑换成功即关闭（无效码在弹窗内红字提示）
+            // 元素缺失时跳过绑定：某个入口 HTML 漏加该弹窗不应中断后续全部 UI 初始化
             function openRedeemModal() {
+                if (!metaRedeemModal || !metaRedeemInp || !metaRedeemMsg) return;
                 metaRedeemInp.value = '';
                 metaRedeemMsg.textContent = '';
                 metaRedeemMsg.className = 'mr-modal-msg';
@@ -303,6 +305,7 @@
                 metaRedeemInp.focus();
             }
             function submitRedeem() {
+                if (!metaRedeemInp || !metaRedeemMsg) return;
                 const n = redeemSoulCode(metaRedeemInp.value);
                 if (n > 0) {
                     sound.play('levelup');
@@ -314,11 +317,11 @@
                     metaRedeemMsg.className = 'mr-modal-msg bad';
                 }
             }
-            metaRedeemOpen.addEventListener('click', openRedeemModal);
-            metaRedeemBtn.addEventListener('click', submitRedeem);
-            metaRedeemClose.addEventListener('click', () => { metaRedeemModal.style.display = 'none'; });
-            metaRedeemModal.addEventListener('click', (e) => { if (e.target === metaRedeemModal) metaRedeemModal.style.display = 'none'; });
-            metaRedeemInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitRedeem(); } });
+            if (metaRedeemOpen) metaRedeemOpen.addEventListener('click', openRedeemModal);
+            if (metaRedeemBtn) metaRedeemBtn.addEventListener('click', submitRedeem);
+            if (metaRedeemClose) metaRedeemClose.addEventListener('click', () => { metaRedeemModal.style.display = 'none'; });
+            if (metaRedeemModal) metaRedeemModal.addEventListener('click', (e) => { if (e.target === metaRedeemModal) metaRedeemModal.style.display = 'none'; });
+            if (metaRedeemInp) metaRedeemInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitRedeem(); } });
             function showMenu() {
                 if (typeof moonAudio !== 'undefined') moonAudio.stop(1.0); // 离开战斗：主题淡出
                 renderMenu();

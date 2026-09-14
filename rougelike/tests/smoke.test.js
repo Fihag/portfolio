@@ -683,6 +683,20 @@ describe("幽月魔女专属音频", () => {
     // 全曲总音量系数很低（此前实测过大已下调）
     expect(R(`moonAudio._musicVol <= 0.25`)).toBe(true);
   });
+  it("加载通道随协议降级：http 可 fetch、file:// 走 XHR/元素（双击直开也能出声）", () => {
+    const { R } = loadGame();
+    // 沙箱无 AudioContext：preload 不得抛错，且 state.mode 初值为 null（尚未加载）
+    expect(R(`(() => { try { moonAudio.preload(); return 'ok'; } catch (e) { return 'throw'; } })()`)).toBe("ok");
+    expect(R(`moonAudio._state().mode`)).toBe(null);
+    // 三种通道在源码中齐备：fetch / XHR / 原生 audio 元素
+    const { readFileSync } = require("node:fs");
+    const { join } = require("node:path");
+    const src = readFileSync(join(process.cwd(), "js", "02b-moon-audio.js"), "utf8");
+    expect(src.includes("XMLHttpRequest")).toBe(true);          // file:// 兜底读取
+    expect(src.includes("new Audio()")).toBe(true);             // 元素通道（本地直开）
+    expect(src.includes("canFetch()")).toBe(true);              // 协议判定
+    expect(src.includes("decodeAudioData")).toBe(true);         // 字节通道解码
+  });
   it("每个魔女音效都有素材候选与合成兜底", () => {
     const { R } = loadGame();
     const names = R(`Object.keys(moonAudio._samples)`);

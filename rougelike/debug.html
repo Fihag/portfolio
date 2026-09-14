@@ -94,10 +94,22 @@
           </div>
           <div class="meta-list" id="meta-list"></div>
           <div class="meta-btns">
+            <button id="meta-redeem-open">兑换码</button>
             <button id="meta-reset" style="background: linear-gradient(180deg, #ff6b6b, #c0392b)">
               清空存档
             </button>
             <button id="meta-close">返回</button>
+          </div>
+        </div>
+      </div>
+      <div id="meta-redeem-modal">
+        <div class="mr-modal-box">
+          <div class="mr-modal-title"><span class="title-ico" data-ico="gift"></span>兑换码</div>
+          <input id="meta-redeem-inp" type="text" maxlength="20" autocomplete="off" />
+          <div id="meta-redeem-msg" class="mr-modal-msg"></div>
+          <div class="mr-modal-btns">
+            <button class="mr-btn-cancel" id="meta-redeem-close">关闭</button>
+            <button class="mr-btn-confirm" id="meta-redeem-btn">兑换</button>
           </div>
         </div>
       </div>
