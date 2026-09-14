@@ -248,8 +248,8 @@
                         const md = Math.hypot(mdx, mdy) || 0.01;
                         const mMax = moonDom.r - this.size;
                         if (md > mMax) { const ms = mMax / md; this.x = moonDom.x + mdx * ms; this.y = moonDom.y + mdy * ms; }
-                        // 领域内血量上限强制锁死 150（升级/宝箱提升在领域内无效，出场恢复）
-                        if (this.maxHp !== 150) this.maxHp = 150;
+                        // 领域内血量上限强制锁死 200（升级/宝箱提升在领域内无效，出场恢复）
+                        if (this.maxHp !== 200) this.maxHp = 200;
                     } else {
                         this.x = clamp(this.x, this.size, WORLD_W - this.size);
                         this.y = clamp(this.y, this.size, WORLD_H - this.size);

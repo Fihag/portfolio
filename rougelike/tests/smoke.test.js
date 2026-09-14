@@ -479,7 +479,7 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.bossAppearedCount`)).toBe(0);
   });
 
-  it("拽入异空间：领域开启、玩家入场，锁血 150 / 圣物失效 / 死神之指禁用 / 回血-70% / 移速-10%", () => {
+  it("拽入异空间：领域开启、玩家入场，锁血 200 / 圣物失效 / 死神之指禁用 / 回血-70% / 移速-10%", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=700; game.player.y=700;
        game.player.relicVamp = 1; game.player.relicTimeStop = 1; game.player.relicChoiceCrown = 1; game.deathMark.enabled = true;`);
@@ -489,16 +489,16 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.moonDomain && game.moonDomain.active`)).toBe(true);
     expect(R(`game.moonWitchCount`)).toBe(1);
     expect(R(`Math.hypot(game.player.x - game.moonDomain.x, game.player.y - game.moonDomain.y) <= game.moonDomain.r`)).toBe(true);
-    expect(R(`game.player.maxHp`)).toBe(150);
+    expect(R(`game.player.maxHp`)).toBe(200);
     expect(R(`game.player.relicVamp`)).toBe(0);
     expect(R(`game.player.relicTimeStop`)).toBe(0);
     expect(R(`game.player.relicChoiceCrown`)).toBe(0);
     expect(R(`game.deathMark.enabled`)).toBe(false);
-    // 回血 -70%：1 秒后 hp = 80 + 0.017×150×0.3 = 80.765（静置无技能干扰）
+    // 回血 -70%：1 秒后 hp = 80 + 0.017×200×0.3 = 81.02（静置无技能干扰）
     quietBoss(R);
     R(`game.player.hp = 80;`);
     R(`for (var i = 0; i < 60; i++) update(1/60)`);
-    expect(R(`game.player.hp`)).toBeCloseTo(80.765, 2);
+    expect(R(`game.player.hp`)).toBeCloseTo(81.02, 2);
     // 移速 ×0.90
     expect(R(`Math.abs(game.player.getEffectiveSpeed() / (game.player.speed * game.player.speedMultiplier) - 0.90) < 0.01`)).toBe(true);
   });
@@ -619,7 +619,7 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.bossKilledCount`)).toBe(2); // 幽月魔女不计击杀数
   });
 
-  it("第二次降临：第 5 个常规 boss 击杀后触发，先复活动画且全数值 ×3", () => {
+  it("第二次降临：第 5 个常规 boss 击杀后触发，先复活动画，血量等 ×3、伤害 ×1.5", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing'; game.enemies.length=0; game.spawnTimer=999; game.player.x=700; game.player.y=700; game.moonWitchCount=1; game.bossKilledCount=4;`);
     R(`var kb = new Enemy(400, 400, 'boss', 0); game.enemies.push(kb); kb.takeDamage(9999999, 'test');`);
@@ -629,6 +629,8 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonIntro`)).toBe('revive');
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonStatMult`)).toBe(3);
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').hp`)).toBe(7500); // 2500×3
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').damage`)).toBe(45); // 接触伤 30×1.5
+    expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').moonBladeDmg`)).toBe(24); // 技能伤 16×1.5
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').damageReduction`)).toBeCloseTo(0.40); // 复活全阶段 +15% 减伤
   });
 });

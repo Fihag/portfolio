@@ -10,7 +10,7 @@
                 shadow_spirit:   () => ({ type: 'shadow_spirit', level: 1, spiritCount: 2, damage: 13, damageMultiplier: 1, attackSpeed: 1.2625, attackSpeedMultiplier: 1, slowChance: 0, slowAmount: 0.3, slowDuration: 1.5, attackTimer: 0, lockReduction: 0 }),
                 holy_beam:       () => ({ type: 'holy_beam', level: 1, cooldown: 0, cooldownTime: 2.4, damage: 29, damageMultiplier: 1, beamCount: 1, width: 36, duration: 0.35 }),
                 plague_cloud:    () => ({ type: 'plague_cloud', level: 1, cooldown: 0, cooldownTime: 4.5, damage: 10, damageMultiplier: 1, cloudCount: 1, radius: 80, duration: 4, tickRate: 0.5, burstChance: 0.30 }),
-                gravity_well:    () => ({ type: 'gravity_well', level: 1, cooldown: 0, cooldownTime: 9.0, damage: 7, damageMultiplier: 1, wellCount: 1, pullRadius: 240, duration: 3.5, tickRate: 0.5, explodeDamage: 60, explodeRadius: 130 })
+                gravity_well:    () => ({ type: 'gravity_well', level: 1, cooldown: 0, cooldownTime: 9.0, damage: 7, damageMultiplier: 1, wellCount: 1, pullRadius: 240, pullPower: 1, duration: 3.5, tickRate: 0.5, explodeDamage: 60, explodeRadius: 130 })
             };
             const START_WEAPON_META = {
                 magic_missile:   { name: '魔法弹', icon: 'flame' },
@@ -95,14 +95,14 @@
                     apply: (p) => { p.maxHp += 45; p.hp = Math.min(p.hp + 45, p.maxHp); }
                 },
                 {
-                    id: 'move_speed', name: '迅捷步伐', icon: 'footprints', desc: '移动速度 +16%', maxLevel: 3, color: '#77dd77',
+                    id: 'move_speed', name: '迅捷步伐', icon: 'footprints', desc: '移动速度 +13%', maxLevel: 3, color: '#77dd77',
                     applies: () => true,
-                    apply: (p) => { p.speedMultiplier = (p.speedMultiplier || 1) + 0.16; }
+                    apply: (p) => { p.speedMultiplier = (p.speedMultiplier || 1) + 0.13; }
                 },
                 {
-                    id: 'hp_regen', name: '生命恢复', icon: 'heart-pulse', desc: '每秒回血 1.5%', maxLevel: 3, color: '#55ee88',
+                    id: 'hp_regen', name: '生命恢复', icon: 'heart-pulse', desc: '每秒回血 1%', maxLevel: 3, color: '#55ee88',
                     applies: () => true,
-                    apply: (p) => { p.hpRegenPercent = (p.hpRegenPercent || 0) + 0.015; }
+                    apply: (p) => { p.hpRegenPercent = (p.hpRegenPercent || 0) + 0.01; }
                 },
                 {
                     id: 'armor', name: '坚韧护甲', icon: 'shield', desc: '减伤 8%，护甲 +2', maxLevel: 3, color: '#cccccc',
@@ -251,9 +251,9 @@
                     apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.wellCount += 1; }
                 },
                 {
-                    id: 'well_gravity', name: '潮汐引力', icon: 'rotate-ccw', desc: '吸附半径 +20%', maxLevel: 3, color: '#9966dd',
+                    id: 'well_gravity', name: '潮汐引力', icon: 'rotate-ccw', desc: '吸附半径 +16%，吸力 +5%', maxLevel: 3, color: '#9966dd',
                     applies: (p) => p.weapons.some(w => w.type === 'gravity_well'),
-                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) w.pullRadius *= 1.2; }
+                    apply: (p) => { const w = p.weapons.find(w => w.type === 'gravity_well'); if (w) { w.pullRadius *= 1.16; w.pullPower = (w.pullPower || 1) * 1.05; } }
                 },
                 {
                     id: 'well_damage', name: '奇点能量', icon: 'trending-up', desc: '黑洞伤害 +25%', maxLevel: 4, color: '#8855cc',

@@ -292,7 +292,7 @@
                                 for (let i = 0; i < w.wellCount; i++) {
                                     const t = pickDenseSpot(alive, w.pullRadius, placed, 120);
                                     placed.push(t);
-                                    game.wells.push({ x: t.x, y: t.y, radius: w.pullRadius, life: w.duration, maxLife: w.duration, tickRate: w.tickRate, tickTimer: 0, dmg, explodeDmg: edmg, explodeRadius: w.explodeRadius, shockwave: !!w.evolved, spin: 0 });
+                                    game.wells.push({ x: t.x, y: t.y, radius: w.pullRadius, pull: w.pullPower || 1, life: w.duration, maxLife: w.duration, tickRate: w.tickRate, tickTimer: 0, dmg, explodeDmg: edmg, explodeRadius: w.explodeRadius, shockwave: !!w.evolved, spin: 0 });
                                 }
                                 sound.play('summon');
                                 w.cooldown = cd;
@@ -369,7 +369,7 @@
                             const d = Math.hypot(e.x - wl.x, e.y - wl.y);
                             if (d < 1 || d > wl.radius) continue;
                             if (!e.isBoss) {
-                                const f = (e.isElite ? 0.5 : 1) * (1 - d / wl.radius) * 176 * dt; // 吸力 176（原 160 +10%）
+                                const f = (e.isElite ? 0.5 : 1) * (1 - d / wl.radius) * 176 * (wl.pull || 1) * dt; // 吸力 176 × 潮汐引力每级 +5%
                                 e.x = clamp(e.x - (e.x - wl.x) / d * f, e.size, WORLD_W - e.size);
                                 e.y = clamp(e.y - (e.y - wl.y) / d * f, e.size, WORLD_H - e.size);
                             }

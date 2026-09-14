@@ -685,7 +685,7 @@
                                     const ang = rand(0, Math.PI * 2);
                                     const c = new Enemy(this.x + Math.cos(ang) * rand(120, 200), this.y + Math.sin(ang) * rand(120, 200), 'moonshade', game.difficultyLevel - 1);
                                     if ((this.moonStatMult || 1) > 1) {
-                                        c.damage = Math.floor(c.damage * this.moonStatMult);
+                                        c.damage = Math.floor(c.damage * (this.moonDmgMult || 1));
                                         c.hp = Math.floor(c.hp * this.moonStatMult); c.maxHp = c.hp;
                                     }
                                     c.bossMinion = this;
