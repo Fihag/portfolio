@@ -320,6 +320,7 @@
             metaRedeemModal.addEventListener('click', (e) => { if (e.target === metaRedeemModal) metaRedeemModal.style.display = 'none'; });
             metaRedeemInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitRedeem(); } });
             function showMenu() {
+                if (typeof moonAudio !== 'undefined') moonAudio.stop(1.0); // 离开战斗：主题淡出
                 renderMenu();
                 dbg.pauseGame = false;
                 btnPause.innerHTML = ICONS.pause;

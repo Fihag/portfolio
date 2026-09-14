@@ -149,6 +149,7 @@ export function loadGame() {
     "00-const.js",
     "01-input.js",
     "02-utils.js",
+    "02b-moon-audio.js",
     "config.js",
     "03-skills.js",
     "04-meta.js",

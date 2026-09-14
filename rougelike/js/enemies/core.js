@@ -281,7 +281,7 @@
                                 game.moonIntroTimer = 10;
                                 game.warningText = '月亮在凝视你……';
                                 game.warningTimer = 3;
-                                sound.play('moonRumble');
+                                moonAudio.play('moonRumble');
                             }
                         }
                         // 灵魂碎片改为结算时按整体击杀数计算（见死亡结算处），此处不再累加
@@ -353,6 +353,8 @@
                                     triggerShake(6, 0.3);
                                     game.warningText = '月之领域已崩塌！';
                                     game.warningTimer = 2;
+                                    moonAudio.stop(2.5);        // 主题淡出
+                                    moonAudio.play('moonToll');  // 落幕大钟
                                 }
                                 for (const e of game.enemies) {
                                     if (e.alive && e.typeKey === 'moonshade') {

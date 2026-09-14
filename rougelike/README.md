@@ -54,6 +54,7 @@ web/rougelike/
     ├── 00-const.js         DOM/ICONS/game/cam
     ├── 01-input.js         键盘/鼠标/摇杆（死神手动已转世界坐标）
     ├── 02-utils.js         工具/音效/粒子
+    ├── 02b-moon-audio.js   幽月魔女专属音频（采样音乐/音效 + 合成兜底）
     ├── config.js           平衡单源 DIFFICULTIES（P2 抽离）
     ├── 03-skills.js        武器/进化（e.g. evo_orbit +3）
     ├── 04-meta.js          宝库/圣物（影侍守卫）/成就
@@ -75,6 +76,7 @@ web/rougelike/
     │   ├── render.js       draw / drawOffscreenArrows
     │   └── ui.js           updateHud / gameLoop / renderMenu/Meta
     └── debug.js            调试面板（P1 合并，仅 debug.html 加载）
+audio/moon/                 幽月魔女音频素材（音乐 2 首 + 采样音效，授权见下节）
 vite.config.js              Vite 双轨（P4，dev:vite 热更新；经典脚本不可打包，勿部署 dist）
 tests/                      vitest 15 用例（helpers.js 按新顺序加载）
 ```
@@ -87,3 +89,23 @@ tests/                      vitest 15 用例（helpers.js 按新顺序加载）
 - 顶层共享作用域，按 `index.html` 顺序加载，新增文件保持依赖顺序（`00` → `game/ui`）
 - 快捷键：`P/Esc` 暂停，`M` 静音，`T` 时停领域（穿戴圣物后），`F1` 调试面板
 - 存档签名 `META_SALT`，篡改自动清除
+
+### 幽月魔女专属音频
+
+音乐与音效为真实采样，仅在魔女相关阶段播放（其他 Boss、菜单完全不受影响），音量刻意压低以免压过战斗音效与紧张感。音乐分四个阶段渐变推进：凝视倒计时（远处圣咏，低通 1400Hz）→ 降临·拽入（圣咏放开）→ 异空间 1v1（合唱+管风琴主题循环）→ 二阶段/二周目（同曲抬增益，不变调、不叠加低八度）；魔女被击败、领域崩塌后主题 2.5s 淡出并响落幕大钟。玩家阵亡、返回菜单、重开新局同样终止主题。`M` 静音键与暂停面板共用总静音，音乐随之静默。
+
+音乐总音量由 `js/02b-moon-audio.js` 的 `MUSIC_VOL` 单点控制，音效音量在各 `VOLS` 项；觉得响度不合适时改这两个常量即可。
+
+素材缺失或解码失败（如旧版 Safari 不解 ogg）时自动回退到 `02-utils.js` 内的合成音效，不会报错或静音；每个音效名都有合成兜底。替换素材只需覆盖 `audio/moon/` 下同名文件，代码零改动。
+
+### 音频素材与授权
+
+| 文件 | 用途 | 来源 / 作者 | 授权 |
+|---|---|---|---|
+| `prelude.ogg` | 凝视→降临序奏（僧侣素歌圣咏，1:28） | Wendale Abbey — Yubatake（opengameart.org/content/wendale-abbey） | CC-BY 4.0 |
+| `theme.mp3` | 异空间战斗主题（合唱 + 管风琴） | Dark Solemn Choral with Organ — ISAo / airyluvs（opengameart.org/content/dark-solemn-choral-with-organ） | OGA-BY 3.0 |
+| `bell-toll.mp3` | 降临大钟、洗礼、落幕 | Bell Sounds — Marcelo Fernandez（opengameart.org/content/bell-sounds） | CC-BY 3.0 |
+| `glass-1/2/3.wav` | 镜碎、护盾、追月弹、分身 | Glass Bell Sounds — Hansjörg Malthaner / Varkalandar（opengameart.org/content/glass-bell-sounds） | CC-BY 3.0 |
+| `rumble.ogg`、`impact-1/2.ogg`、`whoosh.ogg`、`shard.ogg` | 闷雷、砸落、划空、碎镜 | 100 CC0 SFX — OwlishMedia（opengameart.org/content/100-cc0-sfx） | CC0（无需署名） |
+
+以上素材除 CC0 项外均要求在作品中标明作者与来源（OGA-BY 3.0 另需注明取自 OpenGameArt 并遵循其 FAQ 条款）。

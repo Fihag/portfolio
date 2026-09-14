@@ -32,7 +32,7 @@
                                 spawnParticles(this.x + rand(-16, 16), this.y + rand(-16, 16), 12, '#d8e4ff', 150, 0.6, 4);
                                 spawnFx(this.x, this.y, 8, '#ffffff', { shape: 'square', glow: true, speed: 170, life: 0.6, size: 5, rotSpeed: 6 });
                                 triggerShake(5, 0.2);
-                                sound.play('moonBreak');
+                                moonAudio.play('moonBreak');
                             }
                         }
                         if (this.deathTimer <= 0) {
@@ -456,7 +456,7 @@
                                 if (this.moonIntro === 'descend') {
                                     if (this.moonIntroT <= 0) {
                                         this.moonIntro = 'pull'; this.moonIntroT = 0.9; this.moonIntroState = 'gather';
-                                        sound.play('moonDescend');
+                                        moonAudio.play('moonDescend');
                                         game.rings.push({ x: this.x, y: this.y, r: 10, maxR: 320, life: 0.55, maxLife: 0.55, color: '#b090ff', width: 8 });
                                         game.rings.push({ x: this.x, y: this.y, r: 6, maxR: 220, life: 0.4, maxLife: 0.4, color: '#ffffff', width: 3 });
                                         triggerShake(9, 0.5); game.flashWhite = 0.28;
@@ -469,7 +469,7 @@
                                     if (this.moonIntroState === 'gather') {
                                         game.moonPullDim = Math.min(0.5, (game.moonPullDim || 0) + dt * 0.6);
                                         if (Math.random() < 0.5) spawnParticles(this.x + rand(-90, 90), this.y + rand(-90, 90), 1, '#c8b4ff', 60, 0.4, 3);
-                                        if (this.moonIntroT <= 0) { this.moonIntroState = 'chain'; this.moonIntroT = 0.7; sound.play('moonPull'); }
+                                        if (this.moonIntroT <= 0) { this.moonIntroState = 'chain'; this.moonIntroT = 0.7; moonAudio.play('moonPull'); }
                                     } else if (this.moonIntroState === 'chain') {
                                         game.moonPullDim = Math.min(0.7, (game.moonPullDim || 0) + dt * 0.4);
                                         p0.slowTimer = 0.1; p0.slowAmount = 0.5; // 锁链缠身：重减速
@@ -499,7 +499,8 @@
                                             game.moonPullDim = 0;
                                             this.moonIntro = null; this.moonShielded = false;
                                             game.flashWhite = 0.32; triggerShake(8, 0.4);
-                                            sound.play('moonShield');
+                                            moonAudio.setLayer(this.moonSecond ? 'verdict' : 'domain'); // 异空间战斗主题（二周目更高强度）
+                                            moonAudio.play('moonShield');
                                             game.rings.push({ x: p0.x, y: p0.y, r: 10, maxR: 300, life: 0.5, maxLife: 0.5, color: '#b090ff', width: 6 });
                                             this.moonApplyBuffs(1); // 领域一阶段加成
                                         }
@@ -515,7 +516,8 @@
                                 if (game.moonDomain) game.moonDomain.r = MOON_DOMAIN.r2;
                                 game.warningText = '领域翻转！幽月魔女二阶段！';
                                 game.warningTimer = 2;
-                                sound.play('moonShield');
+                                moonAudio.boost(this.moonSecond ? 'verdict' : 'domainP2'); // 二阶段：同曲抬升强度
+                                moonAudio.play('moonShield');
                                 game.rings.push({ x: this.x, y: this.y, r: 12, maxR: 380, life: 0.6, maxLife: 0.6, color: '#ff70d0', width: 8 });
                                 triggerShake(7, 0.4);
                                 spawnParticles(this.x, this.y, 26, '#ff9ade', 140, 0.7, 5);
@@ -526,7 +528,7 @@
                                 this.moonTransformT -= dt;
                                 if (this.moonTransformT <= 0) {
                                     this.moonCycleShielded = true; this.moonCycleT = 5;
-                                    sound.play('moonShield');
+                                    moonAudio.play('moonShield');
                                 }
                                 return; // 变身期间定身
                             }
@@ -536,7 +538,7 @@
                                 if (this.moonCycleT <= 0) {
                                     this.moonCycleShielded = !this.moonCycleShielded;
                                     this.moonCycleT = this.moonCycleShielded ? 5 : 8;
-                                    sound.play(this.moonCycleShielded ? 'moonShield' : 'moonBreak');
+                                    moonAudio.play(this.moonCycleShielded ? 'moonShield' : 'moonBreak');
                                     spawnParticles(this.x, this.y, this.moonCycleShielded ? 14 : 20, this.moonCycleShielded ? '#cfe0ff' : '#ffffff', 110, 0.5, 4);
                                 }
                             }
@@ -570,7 +572,7 @@
                                         const ra = aimA + rand(-0.7, 0.7);
                                         game.projectiles.push(new Projectile(this.x, this.y, Math.cos(ra) * 300 * spdM, Math.sin(ra) * 300 * spdM, this.moonRainDmg, 0, 0, '#d8ccff', 7, true));
                                     }
-                                    sound.play('shoot');
+                                    moonAudio.play('moonRain');
                                 }
                                 if (this.moonAscendT >= this.moonAscendDur && this.moonLaserState !== 'firing') {
                                     this.moonAirborne = false;
@@ -588,7 +590,7 @@
                                     game.rings.push({ x: this.x, y: this.y, r: 10, maxR: 150, life: 0.45, maxLife: 0.45, color: '#c9b0ff', width: 7 });
                                     spawnParticles(this.x, this.y, 24, '#c9b0ff', 150, 0.6, 5);
                                     triggerShake(10, 0.4);
-                                    sound.play('moonDescend');
+                                    moonAudio.play('moonSlam');
                                     this.moonStunT = 0.8;
                                     this.moonSlamWarn = undefined;
                                     this.moonAscendTimer = 14 * (this.moonCdMult || 1);
@@ -612,7 +614,7 @@
                                     game.rings.push({ x: this.x, y: this.y, r: 8, maxR: 90, life: 0.35, maxLife: 0.35, color: '#cfe0ff', width: 5 });
                                     spawnParticles(fx0, fy0, 14, '#cfe0ff', 110, 0.45, 4);
                                     spawnParticles(this.x, this.y, 14, '#cfe0ff', 110, 0.45, 4);
-                                    sound.play('moonPull');
+                                    moonAudio.play('moonPull');
                                 }
                             }
                             // ---- 技能1：月刃环（360° 6/8 发细长月牙弹幕，触领域边界反弹 1 次） ----
@@ -629,7 +631,7 @@
                                     pj.moonBounce = 1;
                                     game.projectiles.push(pj);
                                 }
-                                sound.play('shoot');
+                                moonAudio.play('moonBlade');
                             }
                             // ---- 技能2：追月弹（限转向追踪弹） ----
                             this.moonOrbTimer = (this.moonOrbTimer === undefined ? 3.5 : this.moonOrbTimer) - dt;
@@ -644,7 +646,7 @@
                                     pj.maxLifetime = 4.5;
                                     game.projectiles.push(pj);
                                 }
-                                sound.play('spirit');
+                                moonAudio.play('moonOrb');
                             }
                             // ---- 技能3：月光洗礼（预警圈 → 落地伤害） ----
                             this.moonBaptTimer = (this.moonBaptTimer === undefined ? 5 : this.moonBaptTimer) - dt;
@@ -656,7 +658,7 @@
                                     const ox = i === 0 ? 0 : Math.cos(i * 2.4) * 120, oy = i === 0 ? 0 : Math.sin(i * 2.4) * 120;
                                     this.moonStrikes.push({ x: player.x + ox, y: player.y + oy, warn: this.moonPhase2 ? 0.7 : 0.9, r: 90, dmg: this.moonBaptDmg, done: false });
                                 }
-                                sound.play('bossWarn');
+                                moonAudio.play('moonBapt');
                             }
                             if (this.moonStrikes) {
                                 let anyAlive = false;
@@ -670,7 +672,7 @@
                                         game.rings.push({ x: st.x, y: st.y, r: 8, maxR: st.r, life: 0.35, maxLife: 0.35, color: '#c9a6ff', width: 5 });
                                         spawnParticles(st.x, st.y, 14, '#c9a6ff', 120, 0.5, 4);
                                         triggerShake(2, 0.1);
-                                        sound.play('meteor');
+                                        moonAudio.play('moonBaptHit');
                                     }
                                 }
                                 if (!anyAlive) this.moonStrikes = null;
@@ -692,7 +694,7 @@
                                     game.enemies.push(c);
                                     spawnParticles(c.x, c.y, 8, '#b9a6ff', 70, 0.4, 3);
                                 }
-                                sound.play('summon');
+                                moonAudio.play('moonClone');
                             }
                             // ---- 技能5：满月收缩（边界光环留缺口向圆心碾压） ----
                             this.moonWaveTimer = (this.moonWaveTimer === undefined ? 6 : this.moonWaveTimer) - dt;
@@ -705,7 +707,7 @@
                                     speed: this.moonPhase2 ? 210 : 170,
                                     dmg: this.moonWaveDmg, hit: false, warn: 1.0
                                 });
-                                sound.play('bossWarn');
+                                moonAudio.play('moonWave');
                             }
                             // ---- 技能6：升月轰炸（升空不可选中 → 激光+弹幕雨 → 砸落冲击波+硬直） ----
                             this.moonAscendTimer = (this.moonAscendTimer === undefined ? 8 : this.moonAscendTimer) - dt;
@@ -717,7 +719,7 @@
                                 this.moonRainWaves = this.moonPhase2 ? 3 : 2;
                                 this.moonRainTimer = 1.0;
                                 this.moonLaserState = 'charging'; this.moonLaserT = 0.6;
-                                sound.play('bossWarn');
+                                moonAudio.play('moonAir');
                                 spawnParticles(this.x, this.y, 16, '#c9b0ff', 90, 0.5, 4);
                             }
                             this.moonRefreshShield(); // 升空/穿梭触发当帧即免伤
@@ -912,7 +914,7 @@
                     this.moonSlamWarn = undefined;
                     game.warningText = '幽月魔女 镜面碎裂！';
                     game.warningTimer = 1.4;
-                    sound.play('moonShatter');
+                    moonAudio.play('moonShatter'); // 镜面碎裂：玻璃铃采样
                     triggerShake(9, 0.5);
                     game.flashWhite = 0.3;
                     spawnParticles(this.x, this.y, 22, '#d8e4ff', 160, 0.8, 5);

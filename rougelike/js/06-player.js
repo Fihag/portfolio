@@ -141,6 +141,7 @@
                             return;
                         }
                         this.hp = 0; game.state = 'gameover';
+                        if (typeof moonAudio !== 'undefined') moonAudio.stop(1.5); // 阵亡：主题淡出
                         gameoverOverlay.style.display = 'flex';
                         goTime.textContent = Math.floor(game.time);
                         goKills.textContent = game.kills;

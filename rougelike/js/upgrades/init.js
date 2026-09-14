@@ -73,6 +73,7 @@
                 // 幽月魔女状态复位
                 game.moonIntroTimer = 0; game.moonWitchCount = 0; game.moonDomain = null; game.moonReturnPos = null;
                 game.moonWaves = []; game.moonPullDim = 0; game.moonWitchStatMult = 0;
+                if (typeof moonAudio !== 'undefined') moonAudio.stop(0.8); // 新一局：终止残留主题
                 game.deathMark.targets = [];
                 if (typeof syncDeathMarkUI === 'function') syncDeathMarkUI();
                 dbg.pauseGame = false;

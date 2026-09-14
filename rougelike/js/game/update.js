@@ -442,6 +442,8 @@
                     // ===== 幽月魔女降临倒计时：第 5 秒起屏幕缓慢震动渐强，归零触发降临 =====
                     if (game.moonIntroTimer > 0) {
                         game.moonIntroTimer -= cappedDt;
+                        moonAudio.preload();          // 提前 10 秒预载素材，不阻塞
+                        moonAudio.setLayer('gaze');   // 远处圣咏铺垫，直到降临
                         if (game.moonIntroTimer <= 5 && game.moonIntroTimer + cappedDt > 5) {
                             game.warningText = '幽月魔女 即将降临！';
                             game.warningTimer = 2.5;
@@ -449,7 +451,7 @@
                         if (game.moonIntroTimer <= 5) {
                             const ramp = clamp((5 - game.moonIntroTimer) / 5, 0, 1);
                             triggerShake(0.4 + ramp * 2.1, 0.1);
-                            if (Math.random() < 0.05) sound.play('moonRumble');
+                            if (Math.random() < 0.05) moonAudio.play('moonRumble');
                         }
                         if (game.moonIntroTimer <= 0) {
                             game.moonIntroTimer = 0;

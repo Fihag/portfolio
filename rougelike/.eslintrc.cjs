@@ -96,6 +96,7 @@ module.exports = {
     $inp: "readonly",
     updateBuffTimers: "readonly",
     sound: "readonly",
+    moonAudio: "readonly",
     spawnParticles: "readonly",
     spawnFx: "readonly",
     spawnDamageNumber: "readonly",

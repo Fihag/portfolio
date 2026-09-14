@@ -83,7 +83,17 @@
                     moonPull:    { min: 300, fn: () => { tone(1400, 0.3, 'sine', 0.14, 300); tone(700, 0.35, 'triangle', 0.16, 160, 0.05); noise(0.2, 0.12, 1800); } },
                     moonShield:  { min: 200, fn: () => { tone(520, 0.2, 'sine', 0.20, 900); tone(1040, 0.3, 'sine', 0.14, 1400, 0.08); } },
                     moonBreak:   { min: 200, fn: () => { noise(0.25, 0.30, 2600); tone(1200, 0.2, 'square', 0.14, 300); } },
-                    moonShatter: { min: 0,   fn: () => { noise(0.6, 0.42, 3000); tone(1800, 0.4, 'triangle', 0.20, 400); tone(900, 0.5, 'sine', 0.18, 200, 0.1); tone(60, 0.7, 'sine', 0.24, 30); } }
+                    moonShatter: { min: 0,   fn: () => { noise(0.6, 0.42, 3000); tone(1800, 0.4, 'triangle', 0.20, 400); tone(900, 0.5, 'sine', 0.18, 200, 0.1); tone(60, 0.7, 'sine', 0.24, 30); } },
+                    // 六技能专属（合成兜底；素材加载成功后由 moonAudio 播真实采样）
+                    moonBlade:   { min: 70,  fn: () => { noise(0.12, 0.22, 3200); tone(1600, 0.14, 'sine', 0.12, 500); } },
+                    moonOrb:     { min: 80,  fn: () => { tone(900, 0.18, 'sine', 0.14, 1500); tone(1350, 0.22, 'triangle', 0.10, 2100, 0.06); } },
+                    moonBapt:    { min: 250, fn: () => { tone(330, 0.5, 'sine', 0.16, 262); tone(494, 0.45, 'triangle', 0.10, 392, 0.12); } },
+                    moonBaptHit: { min: 120, fn: () => { noise(0.3, 0.34, 900); tone(140, 0.32, 'sine', 0.24, 55); } },
+                    moonClone:   { min: 200, fn: () => { tone(1240, 0.25, 'sine', 0.16); tone(1860, 0.2, 'sine', 0.10, null, 0.07); tone(620, 0.3, 'triangle', 0.10, 300, 0.12); } },
+                    moonWave:    { min: 300, fn: () => { tone(70, 0.6, 'sine', 0.24, 44); tone(140, 0.5, 'triangle', 0.12, 88); } },
+                    moonAir:     { min: 300, fn: () => { tone(180, 0.7, 'sine', 0.18, 420); noise(0.5, 0.16, 1400); } },
+                    moonRain:    { min: 90,  fn: () => { noise(0.1, 0.18, 4200); tone(1100, 0.08, 'sine', 0.08, 700); } },
+                    moonSlam:    { min: 200, fn: () => { noise(0.45, 0.4, 500); tone(85, 0.5, 'sine', 0.3, 38); tone(300, 0.3, 'triangle', 0.12, 90); } }
                 };
 
                 function play(name) {
@@ -98,6 +108,7 @@
                 function toggleMute() {
                     muted = !muted;
                     try { localStorage.setItem('rogue_muted', muted ? '1' : '0'); } catch(e) {}
+                    for (const fn of muteListeners) { try { fn(muted); } catch(e) {} }
                     return muted;
                 }
 
@@ -105,7 +116,18 @@
                 window.addEventListener('keydown', ensureCtx, { once: true });
                 window.addEventListener('touchstart', ensureCtx, { once: true });
 
-                return { play, toggleMute };
+                // 内部桥：供幽月魔女音频模块复用同一个 AudioContext 与静音状态
+                const muteListeners = [];
+                return {
+                    play, toggleMute,
+                    _engine: {
+                        ensureCtx,
+                        getCtx: () => ctx,
+                        getGain: () => masterGain,
+                        isMuted: () => muted,
+                        onMute: (fn) => muteListeners.push(fn)
+                    }
+                };
             })();
 
             // ==================== 粒子系统 ====================

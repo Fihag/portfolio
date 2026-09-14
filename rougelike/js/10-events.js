@@ -312,7 +312,8 @@
                 game.moonWitchCount++;
                 game.warningText = isSecond ? '镜中倒影重组——幽月魔女 再临！' : '幽月魔女 降临！';
                 game.warningTimer = 2.5;
-                sound.play('bossWarn');
+                moonAudio.setLayer(isSecond ? 'verdict' : 'descend'); // 第二周目直接高强度
+                moonAudio.play('moonToll'); // 降临大钟
                 triggerShake(5, 0.3);
                 game.rings.push({ x: x, y: y, r: 10, maxR: 260, life: 0.6, maxLife: 0.6, color: '#b090ff', width: 6 });
                 spawnParticles(x, y, 20, '#b090ff', 100, 0.7, 5);

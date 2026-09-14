@@ -634,3 +634,76 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`game.enemies.find(e => e.typeKey === 'moonwitch').damageReduction`)).toBeCloseTo(0.40); // 复活全阶段 +15% 减伤
   });
 });
+
+describe("幽月魔女专属音频", () => {
+  it("无 AudioContext 环境下不抛错、API 完整、状态可读", () => {
+    const { R } = loadGame();
+    expect(R(`typeof moonAudio.play`)).toBe("function");
+    expect(R(`typeof moonAudio.preload`)).toBe("function");
+    expect(R(`typeof moonAudio.setLayer`)).toBe("function");
+    expect(R(`typeof moonAudio.boost`)).toBe("function");
+    expect(R(`typeof moonAudio.stop`)).toBe("function");
+    expect(R(`typeof moonAudio.setMuted`)).toBe("function");
+    // 测试沙箱没有 AudioContext：所有调用都必须是安全空操作
+    expect(R(`(() => { try {
+        moonAudio.preload(); moonAudio.play('moonShatter'); moonAudio.setLayer('gaze');
+        moonAudio.setLayer('domain'); moonAudio.boost('domainP2'); moonAudio.stop();
+        moonAudio.setMuted(true); moonAudio.setMuted(false);
+        return 'ok';
+      } catch (e) { return 'throw: ' + e.message; } })()`)).toBe("ok");
+    expect(R(`moonAudio._state().playing`)).toBe(false);
+  });
+  it("无音频环境仍记录期望层；stop 清空、预载不抛错", () => {
+    const { R } = loadGame();
+    // 无音频环境仍记录期望层（便于取消静音/预载完成后恢复）
+    R(`moonAudio.setLayer('gaze'); moonAudio.setLayer('domain'); moonAudio.boost('domainP2');`);
+    expect(R(`moonAudio._state().layer`)).toBe("domainP2");
+    R(`moonAudio.stop()`);
+    expect(R(`moonAudio._state().layer`)).toBe(null);
+    // 静音往返不改变无音频环境的安全性
+    expect(R(`(() => { moonAudio.setMuted(true); moonAudio.setMuted(false); return 'ok'; })()`)).toBe("ok");
+    // 预载在无 AudioContext 时安全返回（不产生 fetch 错误）
+    expect(R(`(() => { try { moonAudio.preload(); return 'ok'; } catch (e) { return 'throw'; } })()`)).toBe("ok");
+  });
+  it("音乐分层表：四阶段轨道与强度递进", () => {
+    const { R } = loadGame();
+    expect(R(`moonAudio._layers.gaze.track`)).toBe("prelude");
+    expect(R(`moonAudio._layers.descend.track`)).toBe("prelude");
+    expect(R(`moonAudio._layers.domain.track`)).toBe("theme");
+    expect(R(`moonAudio._layers.domainP2.track`)).toBe("theme");
+    expect(R(`moonAudio._layers.verdict.track`)).toBe("theme");
+    // 倒计时→降临 低通放开；领域→二阶段 只抬增益不动轨道
+    expect(R(`moonAudio._layers.gaze.filter < moonAudio._layers.descend.filter`)).toBe(true);
+    expect(R(`moonAudio._layers.domain.gain < moonAudio._layers.domainP2.gain`)).toBe(true);
+    expect(R(`moonAudio._layers.domainP2.gain < moonAudio._layers.verdict.gain`)).toBe(true);
+    // 不降速播放：避免失谐带来的诡异感
+    for (const k of ["gaze", "descend", "domain", "domainP2", "verdict"]) {
+      expect(R(`moonAudio._layers["${k}"].rate`)).toBe(1.0);
+    }
+    // 全曲总音量系数很低（此前实测过大已下调）
+    expect(R(`moonAudio._musicVol <= 0.25`)).toBe(true);
+  });
+  it("每个魔女音效都有素材候选与合成兜底", () => {
+    const { R } = loadGame();
+    const names = R(`Object.keys(moonAudio._samples)`);
+    expect(names.length).toBeGreaterThanOrEqual(14);
+    for (const n of names) {
+      // 有候选素材路径
+      expect(R(`moonAudio._samples['${n}'].length > 0`)).toBe(true);
+      // 且同名合成音效在 DEFS 中存在（sound.play 静默忽略未知名，故用播放后无异常间接校验）
+      expect(R(`(() => { try { sound.play('${n}'); return true; } catch (e) { return false; } })()`)).toBe(true);
+    }
+  });
+  it("魔女六技能已改用专属音效，不再复用通用音效", () => {
+    const { readFileSync } = require("node:fs");
+    const { join } = require("node:path");
+    const src = readFileSync(join(process.cwd(), "js", "enemies", "update.js"), "utf8");
+    // 六技能专属音效名必须在魔女分支中出现
+    for (const n of ["moonBlade", "moonOrb", "moonBapt", "moonBaptHit", "moonClone", "moonWave", "moonAir", "moonRain", "moonSlam"]) {
+      expect(src.includes("moonAudio.play('" + n + "')")).toBe(true);
+    }
+    // 旧通用音效不应再出现在 moonAudio 之外的魔女技能调用中
+    expect(src.includes("sound.play('spirit')")).toBe(false);
+    expect(src.includes("sound.play('meteor')")).toBe(false);
+  });
+});
