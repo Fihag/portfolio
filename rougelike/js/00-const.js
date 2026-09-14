@@ -58,6 +58,12 @@
             const metaReset = document.getElementById('meta-reset');
             const metaTabTalent = document.getElementById('meta-tab-talent');
             const metaTabRelic = document.getElementById('meta-tab-relic');
+            const metaRedeemModal = document.getElementById('meta-redeem-modal');
+            const metaRedeemOpen = document.getElementById('meta-redeem-open');
+            const metaRedeemInp = document.getElementById('meta-redeem-inp');
+            const metaRedeemBtn = document.getElementById('meta-redeem-btn');
+            const metaRedeemClose = document.getElementById('meta-redeem-close');
+            const metaRedeemMsg = document.getElementById('meta-redeem-msg');
             const menuStart = document.getElementById('menu-start');
             const menuBtn = document.getElementById('menu-btn');
             const hudTop = document.getElementById('hud-top');

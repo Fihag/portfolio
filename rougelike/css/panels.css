@@ -284,6 +284,42 @@
         }
         .meta-btns button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #a86a10; }
         .meta-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 #a86a10; }
+        /* ===== 兑换码弹窗（宝库底部按钮唤起，压在宝库之上） ===== */
+        #meta-redeem-modal {
+            position: absolute; inset: 0; z-index: 130;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(43,26,18,0.6);
+        }
+        .mr-modal-box {
+            background: var(--cream); border: 4px solid var(--orange-deep);
+            border-radius: 22px; padding: 20px 24px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.22);
+            width: min(380px, 92vw); max-width: 92vw;
+            text-align: center;
+        }
+        .mr-modal-title {
+            color: var(--orange-deep); font-size: 1.3em; margin: 0 0 12px; font-weight: bold;
+            letter-spacing: 0.05em; text-shadow: 0 2px 0 rgba(255,255,255,0.55);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .mr-modal-box input {
+            width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 10px 12px;
+            font-size: 15px; font-weight: bold; color: var(--brown);
+            border: 3px solid var(--brown); border-radius: 14px; background: var(--cream-2);
+        }
+        .mr-modal-msg { min-height: 18px; font-size: 12px; font-weight: bold; margin-bottom: 10px; color: var(--brown-soft); }
+        .mr-modal-msg.ok { color: #2e7d32; }
+        .mr-modal-msg.bad { color: #c0392b; }
+        .mr-modal-btns { display: flex; justify-content: center; gap: 10px; }
+        .mr-modal-btns button {
+            padding: 10px 22px; font-size: 14px; border: 3px solid var(--brown);
+            border-radius: 22px; cursor: pointer; font-weight: bold; transition: all 0.15s;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.25);
+        }
+        .mr-btn-cancel { background: linear-gradient(180deg, #e8e0d8, #c8bdb2); color: var(--brown); }
+        .mr-btn-confirm { background: linear-gradient(180deg, var(--amber), var(--orange)); color: #fff; }
+        .mr-modal-btns button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 rgba(0,0,0,0.25); }
+        .mr-modal-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
         /* ===== 开源图标 (Lucide, ISC License) ===== */
         .title-ico { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
         .title-ico svg { width: 20px; height: 20px; }

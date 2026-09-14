@@ -199,6 +199,17 @@
                 saveMeta();
                 return true;
             }
+            // 兑换码：Fihag+数字 → 获得该数量的灵魂碎片（计入累计，与成就奖励同账）
+            function redeemSoulCode(code) {
+                const m = String(code || '').trim().match(/^fihag(\d+)$/i);
+                if (!m) return 0;
+                const n = parseInt(m[1], 10);
+                if (!Number.isFinite(n) || n <= 0) return 0;
+                metaData.shards = (metaData.shards || 0) + n;
+                metaData.earned = (metaData.earned || 0) + n;
+                saveMeta();
+                return n;
+            }
 
             // ==================== 时停领域（主动技能） ====================
             // 穿戴时停圣物后主动触发：冻结全场敌人（含 Boss）2 秒，冷却随圣物等级缩短

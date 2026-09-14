@@ -294,6 +294,31 @@
                 renderMetaPanel();
                 renderMenu();
             });
+            // 兑换码：宝库底部按钮弹出输入框，兑换成功即关闭（无效码在弹窗内红字提示）
+            function openRedeemModal() {
+                metaRedeemInp.value = '';
+                metaRedeemMsg.textContent = '';
+                metaRedeemMsg.className = 'mr-modal-msg';
+                metaRedeemModal.style.display = 'flex';
+                metaRedeemInp.focus();
+            }
+            function submitRedeem() {
+                const n = redeemSoulCode(metaRedeemInp.value);
+                if (n > 0) {
+                    sound.play('levelup');
+                    metaShardsShow.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                    menuShards.textContent = `灵魂碎片：${metaData.shards || 0}`;
+                    metaRedeemModal.style.display = 'none';
+                } else {
+                    metaRedeemMsg.textContent = '兑换码无效';
+                    metaRedeemMsg.className = 'mr-modal-msg bad';
+                }
+            }
+            metaRedeemOpen.addEventListener('click', openRedeemModal);
+            metaRedeemBtn.addEventListener('click', submitRedeem);
+            metaRedeemClose.addEventListener('click', () => { metaRedeemModal.style.display = 'none'; });
+            metaRedeemModal.addEventListener('click', (e) => { if (e.target === metaRedeemModal) metaRedeemModal.style.display = 'none'; });
+            metaRedeemInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitRedeem(); } });
             function showMenu() {
                 renderMenu();
                 dbg.pauseGame = false;

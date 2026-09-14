@@ -167,6 +167,21 @@ describe("新武器与编队", () => {
       return e[n === '爆裂' ? 'affixBurst' : n === '灼热' ? 'affixBurn' : 'affixLeech'] === true;
     })`)).toBe(true);
   });
+  it("兑换码 redeemSoulCode：Fihag+数字入账（含 earned），非法码零副作用", () => {
+    const { R } = loadGame();
+    R(`metaData.shards = 10; metaData.earned = 10;`);
+    expect(R(`redeemSoulCode('Fihag1')`)).toBe(1);
+    expect(R(`redeemSoulCode('  fihag49 ')`)).toBe(49);
+    expect(R(`metaData.shards`)).toBe(60);
+    expect(R(`metaData.earned`)).toBe(60);
+    expect(R(`redeemSoulCode('Fihag')`)).toBe(0);
+    expect(R(`redeemSoulCode('Fihag0')`)).toBe(0);
+    expect(R(`redeemSoulCode('Fihag12a')`)).toBe(0);
+    expect(R(`redeemSoulCode('hello')`)).toBe(0);
+    expect(R(`redeemSoulCode('')`)).toBe(0);
+    expect(R(`redeemSoulCode(null)`)).toBe(0);
+    expect(R(`metaData.shards`)).toBe(60);
+  });
   it("等级溢出：卡池选满后升级不弹面板，全属性 +5%", () => {
     const { R } = loadGame();
     R(`initGame(); game.state='playing';`);
