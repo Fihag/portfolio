@@ -193,13 +193,13 @@
                         if (mult > 1) this.damageReduction = Math.min(0.75, this.damageReduction + 0.15);
                         this.moonBaseDr = this.damageReduction; // 二阶段在基准上再加 30%
                         this.moonBaseDmg = this.damage; this.moonBaseSpd = this.speed;
-                        this.moonBladeDmg = Math.floor(14 * mult);   // 月刃环单发
-                        this.moonOrbDmg = Math.floor(20 * mult);     // 追月弹
-                        this.moonBaptDmg = Math.floor(25 * mult);    // 月光洗礼
-                        this.moonLaserDmg = Math.floor(18 * mult);   // 升空扫射激光
-                        this.moonRainDmg = Math.floor(13 * mult);    // 弹幕雨单发
-                        this.moonWaveDmg = Math.floor(22 * mult);    // 满月收缩环
-                        this.moonSlamDmg = Math.floor(27 * mult);    // 砸落冲击
+                        this.moonBladeDmg = Math.floor(16 * mult);   // 月刃环单发
+                        this.moonOrbDmg = Math.floor(22 * mult);     // 追月弹
+                        this.moonBaptDmg = Math.floor(28 * mult);    // 月光洗礼
+                        this.moonLaserDmg = Math.floor(20 * mult);   // 升空扫射激光
+                        this.moonRainDmg = Math.floor(14 * mult);    // 弹幕雨单发
+                        this.moonWaveDmg = Math.floor(24 * mult);    // 满月收缩环
+                        this.moonSlamDmg = Math.floor(30 * mult);    // 砸落冲击
                         this.moonSpdMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bulletSpd || 1;
                         this.moonPhase2 = false; this.moonCycleShielded = false;
                         this.moonTransformT = 0; this.moonCycleT = 0;

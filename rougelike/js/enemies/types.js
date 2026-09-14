@@ -15,7 +15,7 @@
                 lavabeast: { name: '熔岩巨兽', hp: 3200, speed: 145, size: 34, color: '#8a2b08', xpValue: 240, damage: 34, shape: 'circle', isBoss: true, shieldBase: 1300, slashDamage: 26, slashSpeed: 280, slashCooldown: 5.5, chargeTime: 0.9, summonType: 'lavaling', summonInterval: 8, summonCount: 3, auraColor: 'rgba(255,90,20,0.65)', scale: { hpRate: 0.32, shieldRate: 0.28, contactRate: 0.06, slashRate: 0.22, speedRate: 0.35, speedCap: 3 } },
                 lavaling:  { name: '熔岩幼体', hp: 23, speed: 95, size: 9, color: '#ff6622', xpValue: 10, damage: 6, shape: 'circle', isGhost: true, slowAmount: 0.35, slowDuration: 1.5, dotDamage: 2, dotDuration: 2 },
                 // 幽月魔女：特殊领域 boss（不进常规轮换池、不计出场次数；scale 全 0 取消常规 boss 成长，强度由第二次 ×3 与领域加成提供）
-                moonwitch: { name: '幽月魔女', hp: 2500, speed: 60, size: 26, color: '#3a2a6e', xpValue: 200, damage: 27, shape: 'circle', isBoss: true, auraColor: 'rgba(100,70,220,0.6)', scale: { hpRate: 0, contactRate: 0, speedRate: 0, speedCap: 0 } },
+                moonwitch: { name: '幽月魔女', hp: 2500, speed: 60, size: 26, color: '#3a2a6e', xpValue: 200, damage: 30, shape: 'circle', isBoss: true, auraColor: 'rgba(100,70,220,0.6)', scale: { hpRate: 0, contactRate: 0, speedRate: 0, speedCap: 0 } },
                 moonshade: { name: '镜月分身', hp: 8, speed: 150, size: 20, color: '#8a7ad0', xpValue: 3, damage: 18, shape: 'circle' }
             };
 

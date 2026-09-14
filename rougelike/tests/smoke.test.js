@@ -517,7 +517,7 @@ describe("幽月魔女与月之领域", () => {
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonBladeTimer = 0.01;`);
     R(`update(1/60)`);
     expect(R(`game.projectiles.filter(p => p.moonBlade).length`)).toBe(6);
-    expect(R(`game.projectiles.filter(p => p.moonBlade).every(p => p.moonBounce === 1 && p.damage === 14 && Math.abs(Math.hypot(p.vx, p.vy) - 280) < 1)`)).toBe(true);
+    expect(R(`game.projectiles.filter(p => p.moonBlade).every(p => p.moonBounce === 1 && p.damage === 16 && Math.abs(Math.hypot(p.vx, p.vy) - 280) < 1)`)).toBe(true);
     // 二阶段 8 发（先清掉第一轮弹体再发射），反弹 1 次
     R(`var mw = game.enemies.find(e => e.typeKey === 'moonwitch'); mw.moonPhase2 = true; mw.moonApplyBuffs(2); game.projectiles = []; mw.moonBladeTimer = 0.01;`);
     R(`update(1/60)`);
