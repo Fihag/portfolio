@@ -304,16 +304,21 @@
           </div>
           <div id="trade-craft">
             <div style="font-size: 11px; color: var(--faint); margin-bottom: 8px">
-              同厂商×3合高一档 · 同模型×5升星 · 禁止跨vendor · 星级上限3收益+5%/星
+              同厂商×3合高一档 · 任意SSR×5跨厂商特批合UR · 同模型×5升星 · 星级上限3收益+5%/星
             </div>
             <div class="craft-recipes" id="craft-recipes"></div>
           </div>
           <div id="trade-market" hidden>
+            <div style="font-size: 11px; color: var(--faint); margin-bottom: 8px">
+              🏦 求购：黑市按溢价收你的卡 · 🛒 挂单：黑市出货，用余额直接买卡
+            </div>
             <div class="market-list" id="market-list"></div>
+            <div style="font-size: 11px; color: var(--faint); margin: 10px 0 6px">🛒 庄家挂单（买入）</div>
+            <div class="market-list" id="market-listings"></div>
             <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center">
               <button class="mini-btn" id="btn-market-refresh">🔄 刷新 (每小时自动)</button
               ><span class="note" style="margin-left: auto"
-                >溢价 1.10–1.50×（在估值之上，已含限定×2/星级）· 一键卖卡</span
+                >求购溢价 1.10–1.50×（在估值之上，已含限定×2/星级）· 挂单价随行就市</span
               >
             </div>
           </div>
@@ -374,10 +379,18 @@
             <div id="wrap-chart-vendor"><canvas id="chart-vendor"></canvas></div>
           </div>
           <div class="panel panel-pad" style="grid-column: 1/-1">
+            <div class="panel-title">🔧 交易工坊统计</div>
+            <div id="craft-stats" style="display: flex; gap: 10px; flex-wrap: wrap; padding: 4px 2px"></div>
+          </div>
+          <div class="panel panel-pad" style="grid-column: 1/-1">
             <div class="panel-title">🎲 出货记录（最近 100 次）</div>
             <div id="gacha-hist"></div>
           </div>
         </div>
+        <div
+          id="validate-status"
+          style="font-size: 10.5px; color: var(--faint); text-align: right; padding: 6px 4px 0"
+        ></div>
       </div>
     </main>
 
@@ -435,40 +448,24 @@
       <div class="modal" id="modal-box" role="document"></div>
     </div>
 
-    <script src="js/config.js?v=2"></script>
-    <script src="js/validate.js?v=2"></script>
-    <script src="js/fx.js?v=2"></script>
-    <script src="js/state.js?v=2"></script>
-    <script src="js/economy.js?v=2"></script>
-    <script src="js/core.js?v=2"></script>
-    <script src="js/craft.js?v=2"></script>
-    <script src="js/market.js?v=2"></script>
-    <script src="js/ui/router.js?v=2"></script>
-    <script src="js/ui/render.js?v=2"></script>
-    <script src="js/ui/gacha.js?v=2"></script>
-    <script src="js/ui/work.js?v=2"></script>
-    <script src="js/ui/modals.js?v=2"></script>
-    <script src="js/ui/share.js?v=2"></script>
-    <script src="js/ui/boot.js?v=2"></script>
-    <script src="js/banner.js?v=2"></script>
-    <script src="js/daily.js?v=2"></script>
-    <script src="js/skins.js?v=2"></script>
-    <script src="js/analytics.js?v=2"></script>
+    <script type="module" src="js/main.js"></script>
+    <script>
+      // file:// 直开时 ES Module 受 CORS 限制无法运行, 引导到单文件离线版
+      if (location.protocol === "file:") {
+        document.addEventListener("DOMContentLoaded", () => {
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            '<div style="position:fixed;inset:0;z-index:999;background:var(--bg,#0d1121);color:var(--txt,#e8ecff);display:flex;align-items:center;justify-content:center;padding:24px"><div style="max-width:420px;background:var(--panel,#171c33);border:1px solid var(--line,#2a3158);border-radius:16px;padding:22px;line-height:1.7"><h3 style="margin:0 0 8px">🚫 这里打不开 ES Module 版</h3><p style="font-size:13px;color:var(--dim,#9aa3cf);margin:0 0 14px">浏览器禁止 file:// 页面加载 ES Module。两个办法：</p><p style="font-size:13px;margin:0 0 6px">1️⃣ 双击同目录的 <b>standalone.html</b>（单文件离线版, 直接能玩）</p><p style="font-size:13px;margin:0">2️⃣ 或在项目目录运行 <code>npx serve .</code> 后访问 localhost</p></div></div>'
+          );
+        });
+      }
+    </script>
     <script>
       // PWA
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
       }
-      // 极简埋点（控制台可见，预留 Cloudflare GA）
-      window.tgTrack = function (evt, data) {
-        try {
-          console.debug("[TG]", evt, data || "");
-        } catch (e) {}
-      };
-      document.addEventListener("DOMContentLoaded", () =>
-        window.tgTrack("page_view", { hash: location.hash || "#buy" })
-      );
-      window.addEventListener("hashchange", () => window.tgTrack("nav", { hash: location.hash }));
+      // 埋点在 js/track.js 内定义（控制台可见, 配置 TG_CF_TOKEN 后转发 Cloudflare Web Analytics）
     </script>
   </body>
 </html>

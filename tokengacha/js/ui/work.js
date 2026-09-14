@@ -1,13 +1,21 @@
-"use strict";
 /* ================================================================
    TokenGacha · 工作流 (拆自 ui.js)
    ================================================================ */
+import { TUNING, BATCH_TASKS, CLIENT_REQS, MEME_LINES, MID_REQS, OK_LINES, EVT_TXT } from "../config.js";
+import { S, $, save, fmt2, addLedger, totalTasks, pick } from "../state.js";
+import { consumeTasks } from "../core.js";
+import { SFX, bigMoneyPop, coinShower, burst, shake, toast } from "../fx.js";
+import { showModal, claudeBanHTML, checkEnd, minPoolPrice } from "./modals.js";
+import { renderWork, renderAll, addWorkLog, tweenMoney } from "./render.js";
+import { dailyResetIfNeeded } from "../daily.js";
+
 /* ---------- 工作流（批量 + 自动） ---------- */
-let working=false, skipFlag=false;
-const ACCEL_START=(typeof TUNING!=='undefined'?TUNING.ACCEL_START:260), ACCEL_BLOCK=(typeof TUNING!=='undefined'?TUNING.ACCEL_BLOCK:32), ACCEL_DECAY=(typeof TUNING!=='undefined'?TUNING.ACCEL_DECAY:0.68), MIN_INTERVAL=(typeof TUNING!=='undefined'?TUNING.MIN_INTERVAL:1);
-const SFX_GAP_MIN=(typeof TUNING!=='undefined'?TUNING.SFX_GAP_MIN:20), SFX_GAP_RATIO=(typeof TUNING!=='undefined'?TUNING.SFX_GAP_RATIO:4);
-const TERM_MAX_NODES=(typeof TUNING!=='undefined'?TUNING.TERM_MAX_NODES:600);
-function termPrint(){
+export let working=false, skipFlag=false;
+export function setSkipFlag(v){ skipFlag=!!v; }
+const ACCEL_START=TUNING.ACCEL_START, ACCEL_BLOCK=TUNING.ACCEL_BLOCK, ACCEL_DECAY=TUNING.ACCEL_DECAY, MIN_INTERVAL=TUNING.MIN_INTERVAL;
+const SFX_GAP_MIN=TUNING.SFX_GAP_MIN, SFX_GAP_RATIO=TUNING.SFX_GAP_RATIO;
+const TERM_MAX_NODES=TUNING.TERM_MAX_NODES;
+export function termPrint(){
   const term=$('term-body');
   const trim=()=>{ while(term.childNodes.length>TERM_MAX_NODES) term.firstChild.remove(); };
   return {
@@ -22,12 +30,12 @@ function termPrint(){
     done(text){ term.querySelector('.cursor')?.remove(); term.insertAdjacentHTML('beforeend', escapeHtml(text)); trim(); term.scrollTop=term.scrollHeight; }
   };
 }
-function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+export function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // 原子结算: 动画开始前一次性入账, 刷新页面也不会丢统计
 // 返回 {total: 名义合计, applied: 实际到账(余额被 clamp 到 0 后的真实变化量)}
-function settleItems(items){
-  if(typeof dailyResetIfNeeded==='function') dailyResetIfNeeded(); // 跨天先重置今日计数
+export function settleItems(items){
+  dailyResetIfNeeded(); // 跨天先重置今日计数
   const before=S.money;
   let total=0;
   for(const it of items){
@@ -47,7 +55,7 @@ function settleItems(items){
 // lines: [{text, amt?, evt?}]，纯视觉回放（入账已在 settleItems 完成）
 // 加速度动画: 前 ACCEL_START 行原速, 之后每 ACCEL_BLOCK 行 interval×ACCEL_DECAY, 下限 MIN_INTERVAL
 // 音效节流: 事件行按 gap=max(SFX_GAP_MIN, 当前间隔×SFX_GAP_RATIO) 节流, 加速度越高越密但不过快
-function runLines(lines, interval, onDone){
+export function runLines(lines, interval, onDone){
   const tp=termPrint(); tp.reset();
   const tprog=$('tprog'), tbar=$('tprog-bar'), ttxt=$('tprog-txt');
   if(tprog){ tprog.hidden=false; if(tbar) tbar.style.width='0%'; if(ttxt) ttxt.textContent=`0/${lines.length}`; }
@@ -77,12 +85,14 @@ function runLines(lines, interval, onDone){
       fastFwd('> ⏳ 后台静默完成 · 全部订单已结算');
       return;
     }
+    const L=lines[i];
     let next=interval;
+    // 模型出字速度影响该行停留时长 (spd tok/s: 快模型间隔短, 慢模型间隔长, 120 为基准)
+    if(L.spd) next=Math.max(MIN_INTERVAL, next*Math.min(1.8, Math.max(0.55, 120/L.spd)));
     if(i>=ACCEL_START){
       if(!boosted){ boosted=true; SFX.boost(); } // 进入加速段: 播加速音效
       next=Math.max(MIN_INTERVAL, interval*Math.pow(ACCEL_DECAY, Math.floor((i-ACCEL_START)/ACCEL_BLOCK)));
     }
-    const L=lines[i];
     tp.line(L.text);
     if(tprog && tbar && ttxt){ tbar.style.width=(i/lines.length*100).toFixed(1)+'%'; ttxt.textContent=`${i+1}/${lines.length}`; }
     const now=performance.now();
@@ -99,7 +109,7 @@ function runLines(lines, interval, onDone){
   document.addEventListener('visibilitychange', onVis);
   timer=setTimeout(step, interval);
 }
-function composeLines(items, {rich=true, maxDetail=Infinity}={}){
+export function composeLines(items, {rich=true, maxDetail=Infinity}={}){
   const L=[];
   const n=items.length;
   items.forEach((it,i)=>{
@@ -116,7 +126,8 @@ function composeLines(items, {rich=true, maxDetail=Infinity}={}){
       L.push({text:`> …其余 ${n-i} 单全速交付中…`});
     }
     const tag=(it.res.boosted?'🚀 限定×2 ':'')+({great:'🤩 大成功', ok:'✅ 交付', rework:'🔧 返工', disaster:'💥 删库'}[it.res.evt]);
-    L.push({text:`  → [${i+1}/${n}] ${it.m.name} 结算 ${it.res.amt>=0?'+':''}${fmt2(it.res.amt)} ｜ ${tag}`, amt:it.res.amt, evt:it.res.evt});
+    L.push({text:`  → [${i+1}/${n}] ${it.m.name} 结算 ${it.res.amt>=0?'+':''}${fmt2(it.res.amt)} ｜ ${tag}`, amt:it.res.amt, evt:it.res.evt, spd:it.m.spd});
+    if(rich){ const evts=EVT_TXT[it.res.evt]; if(evts) L.push({text:pick(evts), spd:it.m.spd}); }
   });
   return L;
 }
@@ -137,8 +148,8 @@ function finishWork(tp, items, modeLabel, applied){
   if(totalTasks()<=0 && S.money<minPoolPrice()) return;
   if(totalTasks()<=0) toast('⚡ Token 已全部耗尽 → 去「购买Token」抽下一波');
 }
-function skipWork(){ skipFlag=true; } // 跳过按钮: 下一拍直接快进结算
-function doWork(){
+export function skipWork(){ skipFlag=true; } // 跳过按钮: 下一拍直接快进结算
+export function doWork(){
   if(working) return;
   const n=Math.min(BATCH_TASKS,totalTasks());
   if(n<=0){ toast('没有可用 token，先去抽卡！'); SFX.bad(); return; }
@@ -149,7 +160,7 @@ function doWork(){
   const lines=composeLines(items,{rich:true});
   runLines(lines, 42, tp=>finishWork(tp, items, '批量工作', settled.applied));
 }
-function doAuto(){
+export function doAuto(){
   if(working) return;
   const n=totalTasks();
   if(n<=0){ toast('没有可用 token，先去抽卡！'); SFX.bad(); return; }

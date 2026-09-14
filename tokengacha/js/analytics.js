@@ -1,28 +1,52 @@
-"use strict";
 /* ================================================================
    TokenGacha · 数据分析页 (analytics.js)
    canvas 手绘图表: 抽卡分布 / 收支曲线 / 稀有度占比 / 图鉴进度 / 厂商分布
    ================================================================ */
+import { MMAP, RARITY, RORDER, POOLS, BANNER_SEASONS, START_MONEY, MODELS } from "./config.js";
+import { S, $, fmt } from "./state.js";
+import { toast, SFX } from "./fx.js";
+import { validateResult } from "./validate.js";
 
-function renderData(){
-  const page=$('page-data');
-  if(!page || !page.classList.contains('active')) {
-    // 仍渲染 canvas(即使不活动也刷新, 避免切页空白)
-  }
+export function renderData(){
   drawBarChart();
   drawLineChart();
   drawDonutChart();
   drawDexChart();
   drawVendorChart();
   renderHist();
+  renderCraftStats();
+  renderValidateStatus();
   // 绑定导出按钮（仅一次）
   const bl=$('btn-export-ledger');
-  if(bl && !bl.dataset.bound){ bl.dataset.bound='1'; bl.onclick=()=>{ if(typeof SFX!=='undefined'&&SFX.click) SFX.click(); exportLedgerCSV(); }; }
+  if(bl && !bl.dataset.bound){ bl.dataset.bound='1'; bl.onclick=()=>{ SFX.click(); exportLedgerCSV(); }; }
   const bh=$('btn-export-hist');
-  if(bh && !bh.dataset.bound){ bh.dataset.bound='1'; bh.onclick=()=>{ if(typeof SFX!=='undefined'&&SFX.click) SFX.click(); exportHistCSV(); }; }
+  if(bh && !bh.dataset.bound){ bh.dataset.bound='1'; bh.onclick=()=>{ SFX.click(); exportHistCSV(); }; }
 }
 
-function renderHist(){
+// 交易工坊统计: 累计合成/升星/最近产出/黑市买卖（消费 S.crafts 与 S.stats.markets/buys）
+function renderCraftStats(){
+  const box=$('craft-stats');
+  if(!box) return;
+  const last=S.crafts && S.crafts.last ? (MMAP[S.crafts.last]?.name||S.crafts.last) : '—';
+  const cells=[
+    ['🔧 累计合成', S.crafts?.count||0],
+    ['⭐ 累计升星', S.crafts?.stars||0],
+    ['🧪 最近产出', last],
+    ['🏦 黑市卖出', `${S.stats.markets||0} 单`],
+    ['🛒 黑市买入', `${S.stats.buys||0} 单`],
+  ];
+  box.innerHTML=cells.map(([l,v])=>`<div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:110px"><div style="font-size:10.5px;color:var(--faint)">${l}</div><div style="font-size:14px;font-weight:800;margin-top:2px">${v}</div></div>`).join('');
+}
+
+// 配置自检结果（validate.js 启动时导出）
+function renderValidateStatus(){
+  const el=$('validate-status');
+  if(!el) return;
+  if(!validateResult.ok) el.textContent=`⚠️ 配置自检异常 ${validateResult.errors.length} 项（详见控制台）`;
+  else el.textContent='配置自检 ✓';
+}
+
+export function renderHist(){
   const box=$('gacha-hist');
   if(!box) return;
   const hist=S.hist||[];
@@ -55,7 +79,7 @@ function chartCanvas(id, h=180){
   const dpr=window.devicePixelRatio||1;
   const w=cv.parentElement.clientWidth||400;
   cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px';
-  const g=cv.getContext('2d'); g.scale(dpr,dpr); g.clearRect(0,0,w,h);
+  const g=cv.getContext('2d'); if(!g) return null; g.scale(dpr,dpr); g.clearRect(0,0,w,h);
   return {g,w,h};
 }
 
@@ -274,8 +298,8 @@ function drawDexChart(){
   const c=chartCanvas('dex', 120); if(!c) return;
   const {g,w,h}=c;
   const owned=Object.keys(S.dex).length;
-    const hasNB=(S.dex.fihagv1||0)>0;
-    const total=MODELS.filter(m=>m.id!=='fihagv1'||hasNB).length;
+  const hasNB=(S.dex.fihagv1||0)>0;
+  const total=MODELS.filter(m=>m.id!=='fihagv1'||hasNB).length;
   const pct=total?owned/total*100:0;
   const pad=36;
   g.fillStyle='#eef1f8';
@@ -338,7 +362,7 @@ function _downloadCSV(rows, filename){
   a.href=url; a.download=filename; a.click();
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
-function exportLedgerCSV(){
+export function exportLedgerCSV(){
   const rows=[['时间','收支','金额','余额']];
   // ledger 是倒序（新在前），导出按时间正序并重算余额更直观
   let bal=START_MONEY;
@@ -352,10 +376,10 @@ function exportLedgerCSV(){
   _downloadCSV(rows, `tokengacha-ledger-${new Date().toISOString().slice(0,10)}.csv`);
   toast('📥 收支明细已导出 CSV');
 }
-function exportHistCSV(){
+export function exportHistCSV(){
   const rows=[['时间','卡池','模型','稀有度','智能指数','厂商']];
   const hist=[...(S.hist||[])].slice().reverse();
-  if(!hist.length) { toast('暂无出货记录'); if(typeof SFX!=='undefined'&&SFX.bad) SFX.bad(); return; }
+  if(!hist.length) { toast('暂无出货记录'); SFX.bad(); return; }
   for(const h of hist){
     const m=MMAP[h.m];
     const t=new Date(h.t);
@@ -367,7 +391,3 @@ function exportHistCSV(){
   _downloadCSV(rows, `tokengacha-hist-${new Date().toISOString().slice(0,10)}.csv`);
   toast('📥 出货记录已导出 CSV');
 }
-
-/* ---------- 启动 ---------- */
-applySkin(S.skin||'classic');
-boot();

@@ -1,6 +1,6 @@
 {
   "name": "tokengacha",
-  "version": "4.1.1",
+  "version": "4.2.1",
   "description": "TokenGacha · LLM API 抽卡模拟器 - 纯前端无构建版",
   "type": "module",
   "scripts": {
@@ -12,7 +12,9 @@
     "format:check": "prettier --check \"**/*.{js,json,css,html,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "sync:sw": "node tools/sync-sw.mjs",
+    "build:standalone": "node tools/build-standalone.mjs"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

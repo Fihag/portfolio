@@ -47,7 +47,8 @@ describe("P3-2 SEO/运营", () => {
   it("og meta 与 analytics 钩子", () => {
     expect(html).toContain('property="og:image"');
     expect(html).toContain("og.png");
-    expect(html).toContain("tgTrack");
+    const mainSrc = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    expect(mainSrc).toContain("track.js");
     expect(html).toContain("serviceWorker");
   });
 });
@@ -69,7 +70,7 @@ describe("P3-3 可访问性", () => {
 });
 
 describe("拆分与校验", () => {
-  it("ui.js 已拆为 7 模块且 index 按序引入", () => {
+  it("ui.js 已拆为 7 模块且经 main.js 入口引入", () => {
     for (const f of [
       "js/ui/router.js",
       "js/ui/render.js",
@@ -80,16 +81,34 @@ describe("拆分与校验", () => {
       "js/ui/boot.js",
     ])
       expect(fs.existsSync(path.resolve(f))).toBe(true);
-    expect(html).toContain("ui/router.js");
-    expect(html).toContain("ui/boot.js");
+    const main = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    expect(main).toContain("ui/router.js");
+    expect(main).toContain("ui/boot.js");
+    expect(html).toContain('type="module"');
+    expect(html).toContain("js/main.js");
+    expect(sw).toContain("js/main.js");
     expect(sw).toContain("ui/router.js");
     expect(sw).toContain("ui/boot.js");
   });
-  it("validate.js 与 economy.js 存在且被 index/sw 引入", () => {
+  it("sw.js 资产清单与 js 模块一致（sync:sw 产物防漂移）", () => {
+    const list = [];
+    (function walk(dir) {
+      for (const f of fs.readdirSync(dir)) {
+        const full = path.join(dir, f);
+        if (fs.statSync(full).isDirectory()) walk(full);
+        else if (f.endsWith(".js")) list.push(full.split(path.sep).join("/"));
+      }
+    })("js");
+    expect(list.length).toBeGreaterThanOrEqual(20);
+    for (const f of list) expect(sw).toContain(f);
+  });
+  it("validate.js 与 economy.js 存在且经 main/模块图引入并被 sw 缓存", () => {
     expect(fs.existsSync(path.resolve("js/validate.js"))).toBe(true);
     expect(fs.existsSync(path.resolve("js/economy.js"))).toBe(true);
-    expect(html).toContain("validate.js");
-    expect(html).toContain("economy.js");
+    const main = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    expect(main).toContain("validate.js");
+    const render = fs.readFileSync(path.resolve("js/ui/render.js"), "utf8");
+    expect(render).toContain("economy.js");
     expect(sw).toContain("validate.js");
     expect(sw).toContain("economy.js");
   });

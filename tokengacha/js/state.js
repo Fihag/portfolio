@@ -1,23 +1,25 @@
-"use strict";
 /* ================================================================
    TokenGacha · 状态层 (state.js)
    存档 (ver 4) / 工具函数 / 期望计算
    ================================================================ */
+import { START_MONEY, TASK_TOKENS } from "./config.js";
 
 /* ---------- 状态 ---------- */
-let S = null;
-function defaultState(){
+export let S = null;
+export function defaultState(){
   return { ver:4, money:START_MONEY, inv:[], uid:1, freeTen:1,
     pity:{newbie:0,standard:0,flagship:0,banner:0}, ledger:[],
-    stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
+    stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,markets:0,buys:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false,autoSkip:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,crafts:0,markets:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[],
-    crafts:{count:0,stars:0,last:null}, market:{orders:[],next:0} };
+    crafts:{count:0,stars:0,last:null}, market:{orders:[],listings:[],next:0} };
 }
-function save(){ try{ const j=JSON.stringify(S); localStorage.setItem('tokengacha_v2', j); try{ localStorage.setItem('tokengacha_v4', j);}catch(e){} }catch(e){} }
-function load(){
+// 换档唯一入口 (东山再起/重置)：保证 S 的 live binding 同步到所有 import 方
+export function setState(next){ S = next; }
+export function save(){ try{ const j=JSON.stringify(S); localStorage.setItem('tokengacha_v2', j); try{ localStorage.setItem('tokengacha_v4', j);}catch(e){} }catch(e){} }
+export function load(){
   try{
     const raw = localStorage.getItem('tokengacha_v4') || localStorage.getItem('tokengacha_v2');
     const s=JSON.parse(raw);
@@ -25,6 +27,8 @@ function load(){
       if(!Array.isArray(s.ledger)) s.ledger=[];
       if(!s.stats.byR) s.stats.byR={N:0,R:0,SR:0,SSR:0,UR:0};
       if(s.stats.greats==null) s.stats.greats=0;
+      if(s.stats.markets==null) s.stats.markets=0;
+      if(s.stats.buys==null) s.stats.buys=0;
       delete s.sel;
       // 迁移: GPT-4o → GPT-4
       if(Array.isArray(s.inv)) for(const c of s.inv) if(c.m==='gpt4o') c.m='gpt4';
@@ -78,8 +82,9 @@ function load(){
       if(!s.crafts || typeof s.crafts!=='object') s.crafts={count:0,stars:0,last:null};
       if(s.crafts.count==null) s.crafts.count=0;
       if(s.crafts.stars==null) s.crafts.stars=0;
-      if(!s.market || typeof s.market!=='object') s.market={orders:[],next:0};
+      if(!s.market || typeof s.market!=='object') s.market={orders:[],listings:[],next:0};
       if(!Array.isArray(s.market.orders)) s.market.orders=[];
+      if(!Array.isArray(s.market.listings)) s.market.listings=[];
       if(s.market.next==null) s.market.next=0;
       // 清理远征残留字段
       if(s.expedition) delete s.expedition;
@@ -92,20 +97,19 @@ function load(){
   return null;
 }
 S = load() || defaultState();
-muted = !!S.flags.muted;
 
-const $ = id => document.getElementById(id);
-const fmt = n => '¥' + Math.round(n).toLocaleString('zh-CN');
-const fmt2 = n => '¥' + n.toLocaleString('zh-CN',{maximumFractionDigits:1});
-const fmtK = n => n>=10000 ? (n/10000).toLocaleString('zh-CN',{maximumFractionDigits:1})+'万' : n>=1000 ? (n/1000).toLocaleString('zh-CN',{maximumFractionDigits:1})+'K' : Math.round(n);
-const fmtTok = n => n>=100000000 ? (n/100000000).toLocaleString('zh-CN',{maximumFractionDigits:2})+'亿' : fmtK(n); // 1 亿级 token 显示为「1亿」
-const totalTokens = () => S.inv.reduce((s,c)=>s+c.tokens,0);
-const totalTasks = () => Math.floor(totalTokens()/TASK_TOKENS);
-const usableTokens = () => S.inv.filter(c=>!c.locked).reduce((s,c)=>s+c.tokens,0);
-const usableTasks = () => Math.floor(usableTokens()/TASK_TOKENS);
-const lockedTokens = () => S.inv.filter(c=>c.locked).reduce((s,c)=>s+c.tokens,0);
-const pick = arr => arr[Math.floor(Math.random()*arr.length)];
-function addLedger(label, amt){
+export const $ = id => document.getElementById(id);
+export const fmt = n => '¥' + Math.round(n).toLocaleString('zh-CN');
+export const fmt2 = n => '¥' + n.toLocaleString('zh-CN',{maximumFractionDigits:1});
+export const fmtK = n => n>=10000 ? (n/10000).toLocaleString('zh-CN',{maximumFractionDigits:1})+'万' : n>=1000 ? (n/1000).toLocaleString('zh-CN',{maximumFractionDigits:1})+'K' : Math.round(n);
+export const fmtTok = n => n>=100000000 ? (n/100000000).toLocaleString('zh-CN',{maximumFractionDigits:2})+'亿' : fmtK(n); // 1 亿级 token 显示为「1亿」
+export const totalTokens = () => S.inv.reduce((s,c)=>s+c.tokens,0);
+export const totalTasks = () => Math.floor(totalTokens()/TASK_TOKENS);
+export const usableTokens = () => S.inv.filter(c=>!c.locked).reduce((s,c)=>s+c.tokens,0);
+export const usableTasks = () => Math.floor(usableTokens()/TASK_TOKENS);
+export const lockedTokens = () => S.inv.filter(c=>c.locked).reduce((s,c)=>s+c.tokens,0);
+export const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+export function addLedger(label, amt){
   const t=new Date();
   const ts=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
   S.ledger.unshift({ts,label,amt});
