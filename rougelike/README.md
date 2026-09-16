@@ -4,9 +4,9 @@
 
 ## 在线游玩
 
-🌐 **[立即开始游戏](https://rougelike-13h.pages.dev)** （`web/rougelike` 正式版，`debug.html` 仅本地 `?debug`）
+🌐 **[立即开始游戏](https://rougelike-13h.pages.dev)** （`web/rougelike` 正式版入口；`debug.html` 为调试版，线上直访会跳回正式版，需要时用 `?dbg=1` 进入）
 
-手机端建议右下角全屏；桌面端方向键 + 数字键 + 空格暂停。
+手机端建议横屏 + 右下角全屏（iOS 可「添加到主屏幕」获得无地址栏的全屏）；桌面端方向键 + 数字键 + 空格暂停。
 
 ## 快速开始
 
@@ -17,7 +17,7 @@ npx serve web/rougelike -l 8123   # http
 npx vite --open                   # ESM 热更新（可选，经典脚本直加载）
 # 开发校验
 npm install
-npm test        # vitest 15 用例（冒烟 + 运行时帧模拟）
+npm test        # vitest 88 用例（冒烟 + 帧模拟 + Boss/武器/宝库回归）
 npm run lint    # eslint
 ```
 
@@ -42,8 +42,8 @@ npm run lint    # eslint
 
 ```
 web/rougelike/
-├── index.html              正式版入口（19 脚本按序，file:// 可双击）
-├── debug.html              调试版入口（+ debug.js/panel，仅本地）
+├── index.html              正式版入口（21 脚本按序，file:// 可双击）
+├── debug.html              调试版入口（22 脚本 = 正式版 + debug.js；带来源门控，见「开发说明」）
 ├── css/
 │   ├── tokens.css        设计 token（P4）
 │   ├── base.css
@@ -78,17 +78,19 @@ web/rougelike/
     └── debug.js            调试面板（P1 合并，仅 debug.html 加载）
 audio/moon/                 幽月魔女音频素材（音乐 2 首 + 采样音效，授权见下节）
 vite.config.js              Vite 双轨（P4，dev:vite 热更新；经典脚本不可打包，勿部署 dist）
-tests/                      vitest 15 用例（helpers.js 按新顺序加载）
+tests/                      vitest 88 用例 / 4 文件（smoke 数值 · frames 帧模拟 · bosses 常规 Boss 与武器 · meta 宝库与存档）
 ```
 
 - **单仓**：`Pigeon` 已归档为 `debug.html`，`Pages` 部署 `web/rougelike` 根即为正式版（`npx wrangler pages deploy web/rougelike --project-name rougelike-13h`）
-- **双轨**：`file://` 11 脚本直开 + `npx serve` http + `npm test/lint` ESM 工具链
+- **双轨**：`file://` 21 脚本直开 + `npx serve` http + `npm test/lint` ESM 工具链
 
 ## 开发说明
 
 - 顶层共享作用域，按 `index.html` 顺序加载，新增文件保持依赖顺序（`00` → `game/ui`）
-- 快捷键：`P/Esc` 暂停，`M` 静音，`T` 时停领域（穿戴圣物后），`F1` 调试面板
-- 存档签名 `META_SALT`，篡改自动清除
+- 快捷键：`P/Esc/空格` 暂停，`M` 静音，`T` 时停领域（穿戴圣物后）；`F1` 调试面板**仅 `debug.html` 有效**（正式版不加载 `js/debug.js`）
+- 调试页来源门控：`debug.html` 仅在本地（`file://`、`localhost`、`192.168.*` / `10.*` / `172.16-31.*` / `*.local`）直开；公网来源自动跳回正式版，需要时加 `?dbg=1` 进入；页面已加 `noindex` 避免被搜索引擎收录
+- 移动端：触屏设备横竖屏都满屏（`pointer: coarse`）；进入全屏时尝试锁定横屏（Android 生效，iOS 不支持则静默忽略，竖屏照常可玩）；竖屏进局时 HUD 提示「横屏视野更佳」
+- 存档签名 `META_SALT`，篡改自动清除；无签名的旧档一次性补签并回填 `earned`（迁移结果会写回存档，避免下次读档误判篡改）
 
 ### 幽月魔女专属音频
 

@@ -124,6 +124,8 @@
                             // 旧版存档：一次性补签名（此后篡改即失效）
                             if (!d.relics) d.relics = {};
                             if (d.earned === undefined) d.earned = d.shards || 0;
+                            // 必须把迁移结果写回：否则签名覆盖的是内存对象、存档里却缺 earned，下次读档会误判篡改而清档
+                            localStorage.setItem('rogue_meta', JSON.stringify(d));
                             localStorage.setItem('rogue_meta_sig', metaSign(d));
                             return d;
                         }

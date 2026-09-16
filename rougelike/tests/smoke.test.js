@@ -697,16 +697,19 @@ describe("幽月魔女专属音频", () => {
     expect(src.includes("canFetch()")).toBe(true);              // 协议判定
     expect(src.includes("decodeAudioData")).toBe(true);         // 字节通道解码
   });
-  it("每个魔女音效都有素材候选与合成兜底", () => {
+  it("每个魔女音效都有素材候选与同名的合成兜底", () => {
     const { R } = loadGame();
     const names = R(`Object.keys(moonAudio._samples)`);
     expect(names.length).toBeGreaterThanOrEqual(14);
+    // 严格校验：素材名必须逐个命中 DEFS（sound.play 会静默忽略未知名，不能靠"播了不报错"判断）
+    const defs = R(`sound._names`);
     for (const n of names) {
-      // 有候选素材路径
       expect(R(`moonAudio._samples['${n}'].length > 0`)).toBe(true);
-      // 且同名合成音效在 DEFS 中存在（sound.play 静默忽略未知名，故用播放后无异常间接校验）
-      expect(R(`(() => { try { sound.play('${n}'); return true; } catch (e) { return false; } })()`)).toBe(true);
+      expect(defs).toContain(n);
     }
+    // 降临/落幕大钟此前缺兜底，素材解码失败时会完全无声
+    expect(defs).toContain("moonToll");
+    expect(names).toContain("moonToll");
   });
   it("魔女六技能已改用专属音效，不再复用通用音效", () => {
     const { readFileSync } = require("node:fs");

@@ -6,7 +6,25 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
     />
-    <title>魔法幸存者</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#2b1a12" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="魔法幸存者" />
+    <script>
+      // 调试页仅本地/局域网可用：公网直访（未带 ?dbg=1）跳回正式版，避免线上被误用与收录。
+      // 本机 file:// 双击、localhost、局域网（手机连本机服务）调试均直接放行。
+      (function () {
+        var h = location.hostname;
+        var local =
+          location.protocol === 'file:' || h === '' || h === 'localhost' ||
+          h === '127.0.0.1' || h === '::1' || h === '[::1]' ||
+          /^192\.168\./.test(h) || /^10\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h) || /\.local$/.test(h);
+        if (!local && !/[?&]dbg=1(&|#|$)/.test(location.search)) location.replace('./');
+      })();
+    </script>
+    <title>魔法幸存者（调试版）</title>
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27><text y=%2720%27 font-size=%2720%27>💀</text></svg>"

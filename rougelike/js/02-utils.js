@@ -93,7 +93,9 @@
                     moonWave:    { min: 300, fn: () => { tone(70, 0.6, 'sine', 0.24, 44); tone(140, 0.5, 'triangle', 0.12, 88); } },
                     moonAir:     { min: 300, fn: () => { tone(180, 0.7, 'sine', 0.18, 420); noise(0.5, 0.16, 1400); } },
                     moonRain:    { min: 90,  fn: () => { noise(0.1, 0.18, 4200); tone(1100, 0.08, 'sine', 0.08, 700); } },
-                    moonSlam:    { min: 200, fn: () => { noise(0.45, 0.4, 500); tone(85, 0.5, 'sine', 0.3, 38); tone(300, 0.3, 'triangle', 0.12, 90); } }
+                    moonSlam:    { min: 200, fn: () => { noise(0.45, 0.4, 500); tone(85, 0.5, 'sine', 0.3, 38); tone(300, 0.3, 'triangle', 0.12, 90); } },
+                    // 降临/落幕大钟（素材解码失败时的兜底：低音钟体 + 三度泛音）
+                    moonToll:    { min: 0,   fn: () => { tone(98, 1.8, 'sine', 0.22, 92); tone(196, 1.4, 'sine', 0.16); tone(233, 1.0, 'triangle', 0.08, null, 0.03); } }
                 };
 
                 function play(name) {
@@ -120,6 +122,7 @@
                 const muteListeners = [];
                 return {
                     play, toggleMute,
+                    _names: Object.keys(DEFS), // 已有合成音效名（供测试断言兜底完备）
                     _engine: {
                         ensureCtx,
                         getCtx: () => ctx,

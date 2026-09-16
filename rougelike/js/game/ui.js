@@ -59,7 +59,8 @@
                 }
                 if (game.time < 4 && game.state === 'playing') {
                     if (useTouchControl) {
-                        hudHint.textContent = game.deathMark.enabled && game.deathMark.mode === 'manual' ? '按住任意位置拖动控制 · 点击敌人标记' : '按住任意位置拖动控制';
+                        const base = game.deathMark.enabled && game.deathMark.mode === 'manual' ? '按住任意位置拖动控制 · 点击敌人标记' : '按住任意位置拖动控制';
+                        hudHint.textContent = isPortraitScreen() ? base + ' · 横屏视野更佳' : base;
                     } else {
                         hudHint.textContent = '键鼠 / 触屏均可操作';
                     }
@@ -390,6 +391,19 @@
                 btnFs.innerHTML = fs ? ICONS.compress : ICONS.expand;
                 btnFs.title = fs ? '退出全屏' : '全屏';
                 document.body.classList.toggle('in-fullscreen', fs);
+                if (fs) lockLandscape();
+            }
+            // ===== 移动端：竖屏判定 + 全屏后尝试锁定横屏 =====
+            // iOS Safari 不支持 screen.orientation.lock，reject/异常一律吞掉，竖屏保持可玩
+            function isPortraitScreen() {
+                try { return typeof matchMedia === 'function' && matchMedia('(orientation: portrait)').matches; } catch (e) { return false; }
+            }
+            function lockLandscape() {
+                try {
+                    if (typeof screen === 'undefined' || !screen || !screen.orientation || !screen.orientation.lock) return;
+                    const p = screen.orientation.lock('landscape');
+                    if (p && p.catch) p.catch(() => {});
+                } catch (e) {}
             }
             document.addEventListener('fullscreenchange', syncFsIcon);
             document.addEventListener('webkitfullscreenchange', syncFsIcon);

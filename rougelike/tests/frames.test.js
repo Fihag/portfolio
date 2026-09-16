@@ -144,14 +144,16 @@ describe("魔法幸存者 · 运行时帧模拟（重构回归）", () => {
 
   it("存档签名：篡改后自动清除", () => {
     const { R } = loadGame();
+    // 先正常存档（带签名），再只改数据不动签名 → 视为篡改
     R(`
-      loadMeta();
-      const meta = JSON.parse(localStorage.getItem('rogue_meta') || '{}');
-      meta.shards = 12345;
-      localStorage.setItem('rogue_meta', JSON.stringify(meta));
-      loadMeta();
+      metaData = { shards: 10, upgrades: {}, relics: {}, earned: 10 };
+      saveMeta();
+      const tampered = JSON.parse(localStorage.getItem('rogue_meta'));
+      tampered.shards = 12345;
+      localStorage.setItem('rogue_meta', JSON.stringify(tampered));
     `);
     expect(R(`(loadMeta().shards || 0)`)).toBe(0);
+    expect(R(`localStorage.getItem('rogue_meta')`)).toBe(null);
   });
 
   it("三新武器：光束贯穿 / 毒云诅咒与死亡爆发 / 黑洞吸附与到期爆炸", () => {
