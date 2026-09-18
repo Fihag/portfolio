@@ -3,7 +3,7 @@
    伙伴招募 / 重复折好感 / 好感等级 / 随行槽加成汇总
    效果类型由厂商决定（config.VENDOR_EFFECTS），强度由稀有度决定
    ================================================================ */
-import { MMAP, RBOOST, VENDOR_EFFECTS, DEFAULT_EFFECT, FAVOR_LEVELS, FAVOR_MULT, DUPE_FAVOR, SLOT_COUNT, RORDER, STAR_UP_AT, STAR_MAX, DUO_STAR_PCT, houseOf } from "./config.js";
+import { MMAP, RBOOST, VENDOR_EFFECTS, DEFAULT_EFFECT, FAVOR_LEVELS, FAVOR_MULT, DUPE_FAVOR, SLOT_COUNT, RORDER, STAR_UP_AT, STAR_MAX, DUO_STAR_PCT, houseOf, LIFE } from "./config.js";
 import { S } from "./state.js";
 
 /** 模型的效果类型 */
@@ -40,7 +40,9 @@ export function activePartners(){
  * 编队/好感变化即时生效）。所有体力钳制必须用本函数而非裸读状态。
  */
 export function staminaCeiling(){
-  return S.life.staminaMax + slotBoosts().staminaMax + houseOf(S).sta;
+  const base = S.life.staminaMax + slotBoosts().staminaMax + houseOf(S).sta;
+  // 健康透支时上限打折：加班冲业绩的隐性账单
+  return S.life.attrs.health < LIFE.HEALTH_LOW ? Math.round(base * LIFE.HEALTH_LOW_MUL) : base;
 }
 
 /**

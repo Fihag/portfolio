@@ -5,11 +5,11 @@
    ================================================================ */
 import { S, save, fmt } from "../state.js";
 import { SFX, burst, bigMoneyPop, toast } from "../fx.js";
-import { doAction, endDay, anyActionAvailable, restart, chapterIndex, CHAPTER_TOTAL, actionOf, choiceEvent, resolveChoice } from "../life.js";
+import { doAction, endDay, anyActionAvailable, restart, chapterIndex, CHAPTER_TOTAL, actionOf, choiceEvent, resolveChoice, daySlots } from "../life.js";
 import { LIFE, CAREERS } from "../config.js";
 import { meetsReq, reqText, tryPromote, stayPut } from "../careers.js";
 import { useItem } from "../items.js";
-import { setSlot } from "../partners.js";
+import { setSlot, staminaCeiling } from "../partners.js";
 import { setActionHandler, renderAll } from "./render.js";
 import { showEnding, showModal, closeModal } from "./modals.js";
 
@@ -169,10 +169,13 @@ function newDayHTML(lines){
       }).join('')
     : '<p style="color:var(--faint)">风平浪静的一天。</p>';
   return `<h3>🌅 第 ${ch + 1}/${CHAPTER_TOTAL} 章 · 第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天（星期${(S.life.day - 1) % LIFE.WEEK_DAYS + 1}）<button class="x" data-act="close-modal">×</button></h3>
+  ${S.life.sick ? '<div class="sick-banner">🤒 病假半休：今天只有 ' + daySlots() + ' 格时间，别再熬夜了</div>' : ''}
   ${body}
   <div class="end-stats">
-    <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${S.life.staminaMax}</b></div>
+    <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${staminaCeiling()}</b></div>
     <div class="cell"><span class="lb">心情</span><b>${Math.round(a.mood)}</b></div>
+    <div class="cell"><span class="lb">饱食</span><b>${Math.round(a.satiety)}</b></div>
+    <div class="cell"><span class="lb">健康</span><b>${Math.round(a.health)}</b></div>
     <div class="cell"><span class="lb">余额</span><b>${fmt(S.money)}</b></div>
     <div class="cell"><span class="lb">年龄</span><b>${S.life.age} 岁</b></div>
   </div>

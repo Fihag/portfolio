@@ -467,8 +467,9 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 /* ================= LLMLife 专属 ================= */
 
 /* ---------- 生活页: 属性面板 ---------- */
-.attr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-@media(max-width:760px){.attr-grid{grid-template-columns:1fr 1fr}}
+.attr-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media(max-width:900px){.attr-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.attr-grid{grid-template-columns:1fr 1fr}}
 .attr-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px 13px;box-shadow:var(--shadow)}
 .attr-card .lb{font-size:11px;color:var(--faint);display:flex;justify-content:space-between;align-items:center}
 .attr-card .lb .ic{font-size:15px}
@@ -480,6 +481,8 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .attr-mood i{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
 .attr-skill i{background:linear-gradient(90deg,#2f6bff,#41d9ff)}
 .attr-charm i{background:linear-gradient(90deg,#ec4899,#f472b6)}
+.attr-satiety i{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.attr-health i{background:linear-gradient(90deg,#dc2626,#f87171)}
 .attr-card.low .vl{color:var(--red)}
 
 /* ---------- 生活页: 行动区 ---------- */
@@ -601,3 +604,4 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .slot-track i{flex:1;height:9px;border-radius:3px;background:var(--line);display:block;transition:.15s}
 .slot-track i.on{background:linear-gradient(135deg,var(--blue),#7c3aed)}
 .slot-tx{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;min-width:54px;text-align:right}
+.sick-banner{background:#fff1f0;border:1px solid #ffc9c4;color:#b91c1c;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:8px}

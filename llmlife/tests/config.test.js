@@ -139,16 +139,22 @@ describe("职业与周目标数据（阶段 2）", () => {
     });
     expect(CAREERS.length).toBe(5);
   });
-  it("行动卡按职级分布：实习 6 张、后续每级 2 张", () => {
-    expect(ACTIONS.length).toBe(14);
+  it("行动卡按职级分布：实习 8 张（含吃饭/下馆子）、后续每级 2 张", () => {
+    expect(ACTIONS.length).toBe(16);
     for (let t = 0; t < CAREERS.length; t++) {
-      expect(ACTIONS.filter(a => (a.tier || 0) === t).length).toBe(t === 0 ? 6 : 2);
+      expect(ACTIONS.filter(a => (a.tier || 0) === t).length).toBe(t === 0 ? 8 : 2);
     }
     for (const a of ACTIONS) expect(a.tier || 0).toBeLessThan(CAREERS.length);
+    // 每张卡都要吃到时间格预算，且有一条需求/体力成本，否则就是白送的点击
+    for (const a of ACTIONS) expect(a.slots).toBeGreaterThan(0);
     // 工作类卡必须带倍率语义
     expect(ACTIONS.find(a => a.id === "overtime").workMult).toBeGreaterThan(1);
     expect(ACTIONS.find(a => a.id === "overtime").riskMul).toBeGreaterThan(1);
+    expect(ACTIONS.find(a => a.id === "overtime").health).toBeLessThan(0); // 高压行动的代价
     expect(ACTIONS.find(a => a.id === "lecture").fee[1]).toBeGreaterThan(ACTIONS.find(a => a.id === "lecture").fee[0]);
+    // 吃饭两条线：便宜的补饱食、贵的补心情
+    expect(ACTIONS.find(a => a.id === "eat").satiety).toBeGreaterThan(0);
+    expect(ACTIONS.find(a => a.id === "dine").mood).toBeGreaterThan(0);
   });
   it("周目标模板 stat 全部登记在 WEEK_STAT_KEYS，minTier 不越职级上限", () => {
     expect(new Set(GOAL_POOL.map(g => g.id)).size).toBe(GOAL_POOL.length);

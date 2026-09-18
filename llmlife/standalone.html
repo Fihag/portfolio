@@ -492,8 +492,9 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 /* ================= LLMLife 专属 ================= */
 
 /* ---------- 生活页: 属性面板 ---------- */
-.attr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-@media(max-width:760px){.attr-grid{grid-template-columns:1fr 1fr}}
+.attr-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media(max-width:900px){.attr-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.attr-grid{grid-template-columns:1fr 1fr}}
 .attr-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px 13px;box-shadow:var(--shadow)}
 .attr-card .lb{font-size:11px;color:var(--faint);display:flex;justify-content:space-between;align-items:center}
 .attr-card .lb .ic{font-size:15px}
@@ -505,6 +506,8 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .attr-mood i{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
 .attr-skill i{background:linear-gradient(90deg,#2f6bff,#41d9ff)}
 .attr-charm i{background:linear-gradient(90deg,#ec4899,#f472b6)}
+.attr-satiety i{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.attr-health i{background:linear-gradient(90deg,#dc2626,#f87171)}
 .attr-card.low .vl{color:var(--red)}
 
 /* ---------- 生活页: 行动区 ---------- */
@@ -626,6 +629,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .slot-track i{flex:1;height:9px;border-radius:3px;background:var(--line);display:block;transition:.15s}
 .slot-track i.on{background:linear-gradient(135deg,var(--blue),#7c3aed)}
 .slot-tx{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;min-width:54px;text-align:right}
+.sick-banner{background:#fff1f0;border:1px solid #ffc9c4;color:#b91c1c;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:8px}
 
 </style>
   </head>
@@ -689,6 +693,16 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
             <div class="lb"><span class="ic">✨</span><span>魅力</span></div>
             <div class="vl" id="a-charm">10</div>
             <div class="attr-bar attr-charm"><i id="bar-charm" style="width:10%"></i></div>
+          </div>
+          <div class="attr-card" id="attr-satiety-card">
+            <div class="lb"><span class="ic">🍚</span><span>饱食</span></div>
+            <div class="vl" id="a-satiety">80</div>
+            <div class="attr-bar attr-satiety"><i id="bar-satiety" style="width:80%"></i></div>
+          </div>
+          <div class="attr-card" id="attr-health-card">
+            <div class="lb"><span class="ic">❤️</span><span>健康</span></div>
+            <div class="vl" id="a-health">100</div>
+            <div class="attr-bar attr-health"><i id="bar-health" style="width:100%"></i></div>
           </div>
         </div>
 
@@ -1011,6 +1025,20 @@ const LIFE = {
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
   SLOTS_PER_DAY: 12,       // 一天 12 个时间格（1 格 ≈ 2 小时 = 24h）；行动吃格 + 体力
   SLOT_HOURS: 2,           // 单格小时数（展示用）
+  /* 饱食：每天饿肚子会掉效率，回家吃饭是必修课 */
+  SATIETY_MAX: 100,
+  SATIETY_DECAY: 30,       // 日切饱食衰减
+  SATIETY_LOW: 30,         // 低于此值：学习/打工效率 ×0.75、睡眠恢复 ×0.8
+  SATIETY_HUNGRY_HP: 3,    // 饱食归零时每天额外扣的健康
+  /* 健康：高压行动透支健康，病倒了要花钱躺半天 */
+  HEALTH_MAX: 100,
+  HEALTH_REGEN: 2,         // 日切自然恢复
+  HEALTH_LOW: 40,          // 低于此值：体力上限 ×0.85、生病事件更易触发
+  HEALTH_LOW_MUL: 0.85,
+  SICK_AT: 20,             // 低于此值：次日病倒
+  SICK_COST: 200,          // 病倒医药费
+  SICK_SLOT_MUL: 0.5,      // 病倒次日时间格打折
+  SICK_REFILL_MUL: 0.7,    // 病倒次日体力回满打折
   LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
@@ -1046,21 +1074,23 @@ const ACTIONS = [
   {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
   {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, health:2, desc:'最累的一档，但上限成长是真金白银（顺带养健康）'},
   {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
   {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, slots:1, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
-  /* 职级解锁 */
-  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
+  {id:'eat',    name:'回家吃饭', icon:'🍚', tier:0, slots:1, stamina:0,  money:40, satiety:50, recover:8, desc:'填饱肚子才有力气：饱食回满一半以上，顺便回点体力'},
+  {id:'dine',   name:'下馆子',  icon:'🍜', tier:0, slots:1, stamina:0,  money:150, satiety:70, mood:8, desc:'花钱买舒服：饱食补给更多，心情也顺带治好'},
+  /* 职级解锁（health 为健康消耗：高压换钱的真实代价） */
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, health:-8, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，代价是健康 -8 与更高事故率'},
   {id:'training', name:'公司内训', icon:'🏫', tier:1, slots:2, stamina:14, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
-  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, health:-5, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠（健康 -5）'},
   {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, slots:2, stamina:12, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
-  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, health:-7, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情与健康都掉'},
   {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, slots:1, stamina:10, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
-  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, health:-6, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费（健康 -6）'},
   {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
-const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
+const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
 
 /* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
 const GOAL_POOL = [
@@ -1083,7 +1113,9 @@ const GOAL_POOL = [
 /* ---------- 日切随机事件表（weight 加权抽取; effect 为固定数值增减） ---------- */
 const EVENTS = [
   {id:'hotfix',    name:'线上事故',   weight:8, money:-200, mood:-10, skill:2,  text:'凌晨两点告警炸响，热修复上线——头发保住了，心情没了'},
-  {id:'sick',      name:'生病看病',   weight:5, stamina:-15, money:-300, mood:-8, cond:s=>s.life.attrs.stamina<50, text:'身体亮红灯，挂号输液一条龙'},
+  {id:'sick',      name:'生病看病',   weight:5, stamina:-15, money:-300, mood:-8, cond:s=>s.life.attrs.stamina<50 || s.life.attrs.health<LIFE.HEALTH_LOW, text:'身体亮红灯，挂号输液一条龙'},
+  {id:'gastritis', name:'胃病犯了',   weight:4, health:-5, mood:-6, money:-100, cond:s=>s.life.attrs.satiety<LIFE.SATIETY_LOW, text:'长期不好好吃饭，胃先抗议了'},
+  {id:'checkup',   name:'体检报告',   weight:3, health:8, money:-150, cond:s=>s.life.attrs.health<LIFE.HEALTH_LOW, text:'报告上几行箭头看得心里发毛，医生只说了四个字：规律作息'},
   {id:'aiver',     name:'AI 大版本',  weight:6, skill:3, mood:5, text:'常用模型深夜更新，白嫖到新能力'},
   {id:'found',     name:'捡到钱',     weight:4, money:150, text:'路边捡到红包，法律上不算拾金……算了花吧'},
   {id:'oldclient', name:'老客户返场', weight:5, money:400, cond:s=>s.life.attrs.skill>20, text:'老客户带着新需求回来了，信任无价'},
@@ -1580,8 +1612,8 @@ function defaultState(){
     ng:0, endingsSeen:{},
     /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
     chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY,
-      attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY, sick:false,
+      attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10, satiety:80, health:LIFE.HEALTH_MAX},
       staminaMax:LIFE.STAMINA_MAX,
       weekStats:freshWeekStats(), goals:null,
       pendingChoice:null, chains:[], duoUsed:{} },
@@ -1621,9 +1653,13 @@ function load(){
 function normalizeV2(s){
   // 字段级兜底（v2 起步；未来 ver 升级在此追加迁移段）
   if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
-  if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
+  if(!s.life.attrs) s.life.attrs = {...defaultState().life.attrs};
+  // 逐键回填：新增需求条（饱食/健康）在老档里是 undefined，直接加减会变 NaN
+  for(const k of ['stamina','mood','skill','charm','satiety','health'])
+    if(s.life.attrs[k]==null) s.life.attrs[k] = defaultState().life.attrs[k];
   for(const k of ['day','age','staminaMax','tier','house','timeLeft']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
   if(s.life.restUsed==null) s.life.restUsed = 0;
+  if(s.life.sick==null) s.life.sick = false;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
   if(s.life.goals != null && (typeof s.life.goals!=='object' || !Array.isArray(s.life.goals.items))) s.life.goals = null;
   if(s.life.pendingChoice != null && (typeof s.life.pendingChoice!=='object' || !s.life.pendingChoice.id)) s.life.pendingChoice = null;
@@ -1953,7 +1989,9 @@ function activePartners(){
  * 编队/好感变化即时生效）。所有体力钳制必须用本函数而非裸读状态。
  */
 function staminaCeiling(){
-  return S.life.staminaMax + slotBoosts().staminaMax + houseOf(S).sta;
+  const base = S.life.staminaMax + slotBoosts().staminaMax + houseOf(S).sta;
+  // 健康透支时上限打折：加班冲业绩的隐性账单
+  return S.life.attrs.health < LIFE.HEALTH_LOW ? Math.round(base * LIFE.HEALTH_LOW_MUL) : base;
 }
 
 /**
@@ -2062,8 +2100,10 @@ function clampAttrs(){
   a.stamina = Math.min(staminaCeiling(), Math.max(0, a.stamina));
   a.skill = Math.min(100, Math.max(0, a.skill));
   a.charm = Math.min(100, Math.max(0, a.charm));
+  a.satiety = Math.min(LIFE.SATIETY_MAX, Math.max(0, a.satiety));
+  a.health = Math.min(LIFE.HEALTH_MAX, Math.max(0, a.health));
 }
-function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0}){
+function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0, satiety=0, health=0}){
   // 体力上限成长吃软帽（健身与道具同一规则）
   if(staminaMax > 0) staminaMax = Math.max(0, Math.min(staminaMax, LIFE.STAMINA_CAP - S.life.staminaMax));
   S.life.staminaMax += staminaMax;
@@ -2071,6 +2111,8 @@ function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0}){
   S.life.attrs.mood += mood;
   S.life.attrs.skill += skill;
   S.life.attrs.charm += charm;
+  S.life.attrs.satiety += satiety;
+  S.life.attrs.health += health;
   clampAttrs();
 }
 
@@ -2369,6 +2411,11 @@ function chapterIndex(day = S.life.day){ return Math.floor((day - 1) / LIFE.CHAP
 /** 本局总章数 */
 const CHAPTER_TOTAL = LIFE.RETIRE_AGE - LIFE.START_AGE;
 
+/** 今天的时间格预算（病倒半休，其他情况满格；UI 与日切共用同一单源） */
+function daySlots(){
+  return S.life.sick ? Math.round(LIFE.SLOTS_PER_DAY * LIFE.SICK_SLOT_MUL) : LIFE.SLOTS_PER_DAY;
+}
+
 /**
  * 满好感同行卡：随行槽中好感 ≥ DUO_EFFECT_MIN 的伙伴各一张动态行动卡，
  * 效果按厂商通道基础值 ×（1 + 星级×8%），每人每日一次。
@@ -2480,6 +2527,13 @@ function doAction(actionId){
 
   if(a.stamina) attr.stamina -= a.stamina;
   if(a.slots) S.life.timeLeft -= a.slots;
+  // 需求条与健康：吃饭/下馆子回饱食，高压行动扣健康（效果行统一在 fxNotes 里展示）
+  const fxNotes = [];
+  if(a.health){ attr.health += a.health; fxNotes.push(`健康${a.health > 0 ? '+' : ''}${trimNum(a.health)}`); }
+  if(a.satiety){ attr.satiety += a.satiety; fxNotes.push(`饱食+${trimNum(a.satiety)}`); }
+  if(fxNotes.length) clampAttrs();
+  const hungry = attr.satiety < LIFE.SATIETY_LOW;
+  const satMul = hungry ? .75 : 1;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
   if(actionId === 'rest') S.life.restUsed++;
   bumpWeekStat(actionId);
@@ -2488,7 +2542,7 @@ function doAction(actionId){
   if(actionId === 'work' || a.workMult){
     // 工作类：职级倍率 × 行动倍率走同一 payout 事件流（期望与抽样同源）
     const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work,
-      { mult: tierMult() * (a.workMult || 1), riskMul: a.riskMul || 1 });
+      { mult: tierMult() * (a.workMult || 1) * satMul, riskMul: a.riskMul || 1 });
     S.money += pay.amt;
     addLedger(a.name || '打工收入', pay.amt);
     S.stats.workDays++;
@@ -2496,14 +2550,14 @@ function doAction(actionId){
     if(pay.evt === 'great') S.stats.greats++;
     if(pay.evt === 'disaster') S.stats.disasters++;
     if(a.mood) attr.mood = Math.max(0, Math.min(100, attr.mood + a.mood));
-    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}`;
+    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}${fxNotes.length ? '，' + fxNotes.join('，') : ''}${hungry ? '，饿着肚子效率打折' : ''}`;
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
       // 保留小数：伙伴加成在低基础收益上也要真实体现（渲染时四舍五入）
-      const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1));
+      const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1) * satMul);
       attr.skill = Math.min(100, attr.skill + gain);
-      applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}`);
+      applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}${hungry ? '（饿着肚子，效率打折）' : ''}`);
     }
     if(a.fee){
       // 出场费类：随魅力水涨船高
@@ -2534,6 +2588,7 @@ function doAction(actionId){
       applied.push(add > 0 ? `体力上限+${trimNum(add)}` : `身体到极限了（${LIFE.STAMINA_CAP}），这次只涨了魅力`);
     }
     if(a.favor){ favorAll(a.favor); applied.push(`随行好感+${a.favor}`); }
+    applied.push(...fxNotes);
     line = `${a.icon} ${a.name}${applied.length ? '：' + applied.join('，') : ''}`;
   }
 
@@ -2576,12 +2631,16 @@ function applyFx(fx, label = '事件'){
     stamina: fx.stamina ? fxVal(fx.stamina) : 0,
     skill: fx.skill ? fxVal(fx.skill) : 0,
     charm: fx.charm ? fxVal(fx.charm) : 0,
+    satiety: fx.satiety ? fxVal(fx.satiety) : 0,
+    health: fx.health ? fxVal(fx.health) : 0,
   };
   addAttrs(delta);
   if(delta.mood) nums.push(`心情${delta.mood > 0 ? '+' : ''}${delta.mood}`);
   if(delta.stamina) nums.push(`体力${delta.stamina > 0 ? '+' : ''}${delta.stamina}`);
   if(delta.skill) nums.push(`技术+${delta.skill}`);
   if(delta.charm) nums.push(`魅力${delta.charm > 0 ? '+' : ''}${delta.charm}`);
+  if(delta.satiety) nums.push(`饱食${delta.satiety > 0 ? '+' : ''}${Math.round(delta.satiety)}`);
+  if(delta.health) nums.push(`健康${delta.health > 0 ? '+' : ''}${Math.round(delta.health)}`);
   if(fx.favor){ favorAll(fx.favor); nums.push(`随行好感+${fx.favor}`); }
   if(fx.market){
     const mul = fxVal(fx.market.mul);
@@ -2705,11 +2764,26 @@ function endDay(){
   }
   S.life.day++;
   S.life.restUsed = 0;
-  S.life.timeLeft = LIFE.SLOTS_PER_DAY; // 新的一天满格
   tickMarket(); // 行情逐日随机游走
   dueChains(lines); // 旧决定的下文：到期注入（负面效果也照常结算）
   const attr = S.life.attrs;
-  attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴与住房上限加成）
+  // 需求结算：饱食衰减 → 健康自然恢复 / 饿肚子扣健康 → 病倒判定
+  attr.satiety = Math.max(0, attr.satiety - LIFE.SATIETY_DECAY);
+  if(!S.life.sick) attr.health = Math.min(LIFE.HEALTH_MAX, attr.health + LIFE.HEALTH_REGEN);
+  else attr.health = Math.min(LIFE.HEALTH_MAX, attr.health + 12); // 病倒强制躺一天，恢复一些
+  if(attr.satiety <= 0) attr.health = Math.max(0, attr.health - LIFE.SATIETY_HUNGRY_HP);
+  S.life.sick = attr.health < LIFE.SICK_AT;
+  if(S.life.sick){
+    S.money -= LIFE.SICK_COST;
+    addLedger('病倒·医药费', -LIFE.SICK_COST);
+    S.stats.spent += LIFE.SICK_COST;
+    lines.push(`🤒 病倒了：医药费 -¥${LIFE.SICK_COST}，明天只有 ${daySlots()} 格可用（强制半休）`);
+  }
+  // 新的一天：格数（病倒打折）+ 体力回满（饿肚子/病倒打折，含随行伙伴与住房上限加成）
+  S.life.timeLeft = daySlots();
+  const refillMul = (attr.satiety < LIFE.SATIETY_LOW ? .8 : 1) * (S.life.sick ? LIFE.SICK_REFILL_MUL : 1);
+  attr.stamina = Math.round(staminaCeiling() * refillMul);
+  if(refillMul < 1 && !S.life.sick) lines.push('🍚 饿着肚子睡觉，没睡踏实（体力只回了八成）');
   attr.mood = Math.max(0, Math.min(100, attr.mood - LIFE.MOOD_DECAY + houseOf(S).mood)); // 好房子睡得更香
   const talk = partnerTalk(); // 在场伙伴小剧场（收益落在回满/衰减之后，不被睡眠吞）
   if(talk) lines.push(talk);
@@ -2897,20 +2971,26 @@ function renderLife(){
   const set = (id, v) => { const el = $(id); if(el) el.textContent = v; };
   set('a-stamina', Math.round(a.stamina)); set('a-staminamax', Math.round(ceil));
   set('a-mood', Math.round(a.mood)); set('a-skill', Math.round(a.skill)); set('a-charm', Math.round(a.charm));
+  set('a-satiety', Math.round(a.satiety)); set('a-health', Math.round(a.health));
   const bar = (id, pct) => { const el = $(id); if(el) el.style.width = Math.max(0, Math.min(100, pct)) + '%'; };
   bar('bar-stamina', a.stamina / ceil * 100);
   bar('bar-mood', a.mood);
   bar('bar-skill', a.skill);
   bar('bar-charm', a.charm);
+  bar('bar-satiety', a.satiety);
+  bar('bar-health', a.health);
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
+  const satCard = $('attr-satiety-card'); if(satCard) satCard.classList.toggle('low', a.satiety < LIFE.SATIETY_LOW);
+  const hpCard = $('attr-health-card'); if(hpCard) hpCard.classList.toggle('low', a.health < LIFE.HEALTH_LOW);
   // 时间格点阵（今日剩余）：格尽即自动收工，玩家一眼看到还剩多少事能做
   const track = $('slot-track');
   if(track){
-    const left = Math.max(0, S.life.timeLeft || 0);
-    track.innerHTML = Array.from({length: LIFE.SLOTS_PER_DAY}, (_, i) =>
+    const total = daySlots();
+    const left = Math.max(0, Math.min(total, S.life.timeLeft || 0));
+    track.innerHTML = Array.from({length: total}, (_, i) =>
       `<i class="${i < left ? 'on' : ''}"></i>`).join('');
-    const stxt = $('slot-txt'); if(stxt) stxt.textContent = `${left}/${LIFE.SLOTS_PER_DAY} 格`;
+    const stxt = $('slot-txt'); if(stxt) stxt.textContent = `${left}/${total} 格${S.life.sick ? '（病假半休）' : ''}`;
   }
 
   // 行动按钮：按职级 + 满好感同行卡重建（此后只刷禁用态）
@@ -3031,6 +3111,8 @@ function costText(x){
   if(x.fee) parts.push(`💰${x.fee[0]}~${x.fee[1]}`);
   if(x.mood && x.mood > 0) parts.push(`🌤+${x.mood}`);
   if(x.charm) parts.push(`✨+${x.charm}`);
+  if(x.satiety) parts.push(`🍚+${x.satiety}`);
+  if(x.health) parts.push(`❤️${x.health > 0 ? '+' : ''}${x.health}`);
   return parts.join(' ') || '免费';
 }
 
@@ -3675,10 +3757,13 @@ function newDayHTML(lines){
       }).join('')
     : '<p style="color:var(--faint)">风平浪静的一天。</p>';
   return `<h3>🌅 第 ${ch + 1}/${CHAPTER_TOTAL} 章 · 第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天（星期${(S.life.day - 1) % LIFE.WEEK_DAYS + 1}）<button class="x" data-act="close-modal">×</button></h3>
+  ${S.life.sick ? '<div class="sick-banner">🤒 病假半休：今天只有 ' + daySlots() + ' 格时间，别再熬夜了</div>' : ''}
   ${body}
   <div class="end-stats">
-    <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${S.life.staminaMax}</b></div>
+    <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${staminaCeiling()}</b></div>
     <div class="cell"><span class="lb">心情</span><b>${Math.round(a.mood)}</b></div>
+    <div class="cell"><span class="lb">饱食</span><b>${Math.round(a.satiety)}</b></div>
+    <div class="cell"><span class="lb">健康</span><b>${Math.round(a.health)}</b></div>
     <div class="cell"><span class="lb">余额</span><b>${fmt(S.money)}</b></div>
     <div class="cell"><span class="lb">年龄</span><b>${S.life.age} 岁</b></div>
   </div>

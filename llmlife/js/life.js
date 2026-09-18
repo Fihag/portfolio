@@ -8,7 +8,7 @@ import { tickMarket, shockMarket } from "./market.js";
 import { S, save, addLedger, fmt, setState, defaultState, logToday, pick, bumpWeekStat } from "./state.js";
 import { slotBoosts, favorAll, staminaCeiling, activePartners, effectOf } from "./partners.js";
 import { sampleWorkPay } from "./economy.js";
-import { addAttrs } from "./items.js";
+import { addAttrs, clampAttrs } from "./items.js";
 import { tierMult } from "./careers.js";
 import { ensureWeek, checkGoals, goalOf } from "./goals.js";
 
@@ -27,6 +27,11 @@ export const actionOf = id => ACTION_MAP[id];
 export function chapterIndex(day = S.life.day){ return Math.floor((day - 1) / LIFE.CHAPTER_DAYS); }
 /** 本局总章数 */
 export const CHAPTER_TOTAL = LIFE.RETIRE_AGE - LIFE.START_AGE;
+
+/** 今天的时间格预算（病倒半休，其他情况满格；UI 与日切共用同一单源） */
+export function daySlots(){
+  return S.life.sick ? Math.round(LIFE.SLOTS_PER_DAY * LIFE.SICK_SLOT_MUL) : LIFE.SLOTS_PER_DAY;
+}
 
 /**
  * 满好感同行卡：随行槽中好感 ≥ DUO_EFFECT_MIN 的伙伴各一张动态行动卡，
@@ -139,6 +144,13 @@ export function doAction(actionId){
 
   if(a.stamina) attr.stamina -= a.stamina;
   if(a.slots) S.life.timeLeft -= a.slots;
+  // 需求条与健康：吃饭/下馆子回饱食，高压行动扣健康（效果行统一在 fxNotes 里展示）
+  const fxNotes = [];
+  if(a.health){ attr.health += a.health; fxNotes.push(`健康${a.health > 0 ? '+' : ''}${trimNum(a.health)}`); }
+  if(a.satiety){ attr.satiety += a.satiety; fxNotes.push(`饱食+${trimNum(a.satiety)}`); }
+  if(fxNotes.length) clampAttrs();
+  const hungry = attr.satiety < LIFE.SATIETY_LOW;
+  const satMul = hungry ? .75 : 1;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
   if(actionId === 'rest') S.life.restUsed++;
   bumpWeekStat(actionId);
@@ -147,7 +159,7 @@ export function doAction(actionId){
   if(actionId === 'work' || a.workMult){
     // 工作类：职级倍率 × 行动倍率走同一 payout 事件流（期望与抽样同源）
     const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work,
-      { mult: tierMult() * (a.workMult || 1), riskMul: a.riskMul || 1 });
+      { mult: tierMult() * (a.workMult || 1) * satMul, riskMul: a.riskMul || 1 });
     S.money += pay.amt;
     addLedger(a.name || '打工收入', pay.amt);
     S.stats.workDays++;
@@ -155,14 +167,14 @@ export function doAction(actionId){
     if(pay.evt === 'great') S.stats.greats++;
     if(pay.evt === 'disaster') S.stats.disasters++;
     if(a.mood) attr.mood = Math.max(0, Math.min(100, attr.mood + a.mood));
-    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}`;
+    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}${fxNotes.length ? '，' + fxNotes.join('，') : ''}${hungry ? '，饿着肚子效率打折' : ''}`;
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
       // 保留小数：伙伴加成在低基础收益上也要真实体现（渲染时四舍五入）
-      const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1));
+      const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1) * satMul);
       attr.skill = Math.min(100, attr.skill + gain);
-      applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}`);
+      applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}${hungry ? '（饿着肚子，效率打折）' : ''}`);
     }
     if(a.fee){
       // 出场费类：随魅力水涨船高
@@ -193,6 +205,7 @@ export function doAction(actionId){
       applied.push(add > 0 ? `体力上限+${trimNum(add)}` : `身体到极限了（${LIFE.STAMINA_CAP}），这次只涨了魅力`);
     }
     if(a.favor){ favorAll(a.favor); applied.push(`随行好感+${a.favor}`); }
+    applied.push(...fxNotes);
     line = `${a.icon} ${a.name}${applied.length ? '：' + applied.join('，') : ''}`;
   }
 
@@ -235,12 +248,16 @@ function applyFx(fx, label = '事件'){
     stamina: fx.stamina ? fxVal(fx.stamina) : 0,
     skill: fx.skill ? fxVal(fx.skill) : 0,
     charm: fx.charm ? fxVal(fx.charm) : 0,
+    satiety: fx.satiety ? fxVal(fx.satiety) : 0,
+    health: fx.health ? fxVal(fx.health) : 0,
   };
   addAttrs(delta);
   if(delta.mood) nums.push(`心情${delta.mood > 0 ? '+' : ''}${delta.mood}`);
   if(delta.stamina) nums.push(`体力${delta.stamina > 0 ? '+' : ''}${delta.stamina}`);
   if(delta.skill) nums.push(`技术+${delta.skill}`);
   if(delta.charm) nums.push(`魅力${delta.charm > 0 ? '+' : ''}${delta.charm}`);
+  if(delta.satiety) nums.push(`饱食${delta.satiety > 0 ? '+' : ''}${Math.round(delta.satiety)}`);
+  if(delta.health) nums.push(`健康${delta.health > 0 ? '+' : ''}${Math.round(delta.health)}`);
   if(fx.favor){ favorAll(fx.favor); nums.push(`随行好感+${fx.favor}`); }
   if(fx.market){
     const mul = fxVal(fx.market.mul);
@@ -364,11 +381,26 @@ export function endDay(){
   }
   S.life.day++;
   S.life.restUsed = 0;
-  S.life.timeLeft = LIFE.SLOTS_PER_DAY; // 新的一天满格
   tickMarket(); // 行情逐日随机游走
   dueChains(lines); // 旧决定的下文：到期注入（负面效果也照常结算）
   const attr = S.life.attrs;
-  attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴与住房上限加成）
+  // 需求结算：饱食衰减 → 健康自然恢复 / 饿肚子扣健康 → 病倒判定
+  attr.satiety = Math.max(0, attr.satiety - LIFE.SATIETY_DECAY);
+  if(!S.life.sick) attr.health = Math.min(LIFE.HEALTH_MAX, attr.health + LIFE.HEALTH_REGEN);
+  else attr.health = Math.min(LIFE.HEALTH_MAX, attr.health + 12); // 病倒强制躺一天，恢复一些
+  if(attr.satiety <= 0) attr.health = Math.max(0, attr.health - LIFE.SATIETY_HUNGRY_HP);
+  S.life.sick = attr.health < LIFE.SICK_AT;
+  if(S.life.sick){
+    S.money -= LIFE.SICK_COST;
+    addLedger('病倒·医药费', -LIFE.SICK_COST);
+    S.stats.spent += LIFE.SICK_COST;
+    lines.push(`🤒 病倒了：医药费 -¥${LIFE.SICK_COST}，明天只有 ${daySlots()} 格可用（强制半休）`);
+  }
+  // 新的一天：格数（病倒打折）+ 体力回满（饿肚子/病倒打折，含随行伙伴与住房上限加成）
+  S.life.timeLeft = daySlots();
+  const refillMul = (attr.satiety < LIFE.SATIETY_LOW ? .8 : 1) * (S.life.sick ? LIFE.SICK_REFILL_MUL : 1);
+  attr.stamina = Math.round(staminaCeiling() * refillMul);
+  if(refillMul < 1 && !S.life.sick) lines.push('🍚 饿着肚子睡觉，没睡踏实（体力只回了八成）');
   attr.mood = Math.max(0, Math.min(100, attr.mood - LIFE.MOOD_DECAY + houseOf(S).mood)); // 好房子睡得更香
   const talk = partnerTalk(); // 在场伙伴小剧场（收益落在回满/衰减之后，不被睡眠吞）
   if(talk) lines.push(talk);

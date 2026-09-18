@@ -32,8 +32,10 @@ export function clampAttrs(){
   a.stamina = Math.min(staminaCeiling(), Math.max(0, a.stamina));
   a.skill = Math.min(100, Math.max(0, a.skill));
   a.charm = Math.min(100, Math.max(0, a.charm));
+  a.satiety = Math.min(LIFE.SATIETY_MAX, Math.max(0, a.satiety));
+  a.health = Math.min(LIFE.HEALTH_MAX, Math.max(0, a.health));
 }
-export function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0}){
+export function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0, satiety=0, health=0}){
   // 体力上限成长吃软帽（健身与道具同一规则）
   if(staminaMax > 0) staminaMax = Math.max(0, Math.min(staminaMax, LIFE.STAMINA_CAP - S.life.staminaMax));
   S.life.staminaMax += staminaMax;
@@ -41,6 +43,8 @@ export function addAttrs({stamina=0, staminaMax=0, mood=0, skill=0, charm=0}){
   S.life.attrs.mood += mood;
   S.life.attrs.skill += skill;
   S.life.attrs.charm += charm;
+  S.life.attrs.satiety += satiety;
+  S.life.attrs.health += health;
   clampAttrs();
 }
 

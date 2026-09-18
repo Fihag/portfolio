@@ -9,7 +9,7 @@ import { iconImg } from "../fx.js";
 import { validateResult } from "../validate.js";
 import { slotBoosts, favorNext, effectOf, bestPartner, staminaCeiling } from "../partners.js";
 import { itemOf } from "../items.js";
-import { canDo, chapterIndex, CHAPTER_TOTAL, duoCards } from "../life.js";
+import { canDo, chapterIndex, CHAPTER_TOTAL, duoCards, daySlots } from "../life.js";
 import { careerOf, reqText } from "../careers.js";
 import { goalOf, goalProg, rewardText } from "../goals.js";
 import { bannerCountdownText } from "../banner.js";
@@ -42,20 +42,26 @@ function renderLife(){
   const set = (id, v) => { const el = $(id); if(el) el.textContent = v; };
   set('a-stamina', Math.round(a.stamina)); set('a-staminamax', Math.round(ceil));
   set('a-mood', Math.round(a.mood)); set('a-skill', Math.round(a.skill)); set('a-charm', Math.round(a.charm));
+  set('a-satiety', Math.round(a.satiety)); set('a-health', Math.round(a.health));
   const bar = (id, pct) => { const el = $(id); if(el) el.style.width = Math.max(0, Math.min(100, pct)) + '%'; };
   bar('bar-stamina', a.stamina / ceil * 100);
   bar('bar-mood', a.mood);
   bar('bar-skill', a.skill);
   bar('bar-charm', a.charm);
+  bar('bar-satiety', a.satiety);
+  bar('bar-health', a.health);
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
+  const satCard = $('attr-satiety-card'); if(satCard) satCard.classList.toggle('low', a.satiety < LIFE.SATIETY_LOW);
+  const hpCard = $('attr-health-card'); if(hpCard) hpCard.classList.toggle('low', a.health < LIFE.HEALTH_LOW);
   // 时间格点阵（今日剩余）：格尽即自动收工，玩家一眼看到还剩多少事能做
   const track = $('slot-track');
   if(track){
-    const left = Math.max(0, S.life.timeLeft || 0);
-    track.innerHTML = Array.from({length: LIFE.SLOTS_PER_DAY}, (_, i) =>
+    const total = daySlots();
+    const left = Math.max(0, Math.min(total, S.life.timeLeft || 0));
+    track.innerHTML = Array.from({length: total}, (_, i) =>
       `<i class="${i < left ? 'on' : ''}"></i>`).join('');
-    const stxt = $('slot-txt'); if(stxt) stxt.textContent = `${left}/${LIFE.SLOTS_PER_DAY} 格`;
+    const stxt = $('slot-txt'); if(stxt) stxt.textContent = `${left}/${total} 格${S.life.sick ? '（病假半休）' : ''}`;
   }
 
   // 行动按钮：按职级 + 满好感同行卡重建（此后只刷禁用态）
@@ -176,6 +182,8 @@ function costText(x){
   if(x.fee) parts.push(`💰${x.fee[0]}~${x.fee[1]}`);
   if(x.mood && x.mood > 0) parts.push(`🌤+${x.mood}`);
   if(x.charm) parts.push(`✨+${x.charm}`);
+  if(x.satiety) parts.push(`🍚+${x.satiety}`);
+  if(x.health) parts.push(`❤️${x.health > 0 ? '+' : ''}${x.health}`);
   return parts.join(' ') || '免费';
 }
 

@@ -160,6 +160,20 @@ export const LIFE = {
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
   SLOTS_PER_DAY: 12,       // 一天 12 个时间格（1 格 ≈ 2 小时 = 24h）；行动吃格 + 体力
   SLOT_HOURS: 2,           // 单格小时数（展示用）
+  /* 饱食：每天饿肚子会掉效率，回家吃饭是必修课 */
+  SATIETY_MAX: 100,
+  SATIETY_DECAY: 30,       // 日切饱食衰减
+  SATIETY_LOW: 30,         // 低于此值：学习/打工效率 ×0.75、睡眠恢复 ×0.8
+  SATIETY_HUNGRY_HP: 3,    // 饱食归零时每天额外扣的健康
+  /* 健康：高压行动透支健康，病倒了要花钱躺半天 */
+  HEALTH_MAX: 100,
+  HEALTH_REGEN: 2,         // 日切自然恢复
+  HEALTH_LOW: 40,          // 低于此值：体力上限 ×0.85、生病事件更易触发
+  HEALTH_LOW_MUL: 0.85,
+  SICK_AT: 20,             // 低于此值：次日病倒
+  SICK_COST: 200,          // 病倒医药费
+  SICK_SLOT_MUL: 0.5,      // 病倒次日时间格打折
+  SICK_REFILL_MUL: 0.7,    // 病倒次日体力回满打折
   LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
@@ -195,21 +209,23 @@ export const ACTIONS = [
   {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
   {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, health:2, desc:'最累的一档，但上限成长是真金白银（顺带养健康）'},
   {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
   {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, slots:1, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
-  /* 职级解锁 */
-  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
+  {id:'eat',    name:'回家吃饭', icon:'🍚', tier:0, slots:1, stamina:0,  money:40, satiety:50, recover:8, desc:'填饱肚子才有力气：饱食回满一半以上，顺便回点体力'},
+  {id:'dine',   name:'下馆子',  icon:'🍜', tier:0, slots:1, stamina:0,  money:150, satiety:70, mood:8, desc:'花钱买舒服：饱食补给更多，心情也顺带治好'},
+  /* 职级解锁（health 为健康消耗：高压换钱的真实代价） */
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, health:-8, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，代价是健康 -8 与更高事故率'},
   {id:'training', name:'公司内训', icon:'🏫', tier:1, slots:2, stamina:14, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
-  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, health:-5, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠（健康 -5）'},
   {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, slots:2, stamina:12, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
-  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, health:-7, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情与健康都掉'},
   {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, slots:1, stamina:10, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
-  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, health:-6, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费（健康 -6）'},
   {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
-export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
+export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
 
 /* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
 export const GOAL_POOL = [
@@ -232,7 +248,9 @@ export const GOAL_POOL = [
 /* ---------- 日切随机事件表（weight 加权抽取; effect 为固定数值增减） ---------- */
 export const EVENTS = [
   {id:'hotfix',    name:'线上事故',   weight:8, money:-200, mood:-10, skill:2,  text:'凌晨两点告警炸响，热修复上线——头发保住了，心情没了'},
-  {id:'sick',      name:'生病看病',   weight:5, stamina:-15, money:-300, mood:-8, cond:s=>s.life.attrs.stamina<50, text:'身体亮红灯，挂号输液一条龙'},
+  {id:'sick',      name:'生病看病',   weight:5, stamina:-15, money:-300, mood:-8, cond:s=>s.life.attrs.stamina<50 || s.life.attrs.health<LIFE.HEALTH_LOW, text:'身体亮红灯，挂号输液一条龙'},
+  {id:'gastritis', name:'胃病犯了',   weight:4, health:-5, mood:-6, money:-100, cond:s=>s.life.attrs.satiety<LIFE.SATIETY_LOW, text:'长期不好好吃饭，胃先抗议了'},
+  {id:'checkup',   name:'体检报告',   weight:3, health:8, money:-150, cond:s=>s.life.attrs.health<LIFE.HEALTH_LOW, text:'报告上几行箭头看得心里发毛，医生只说了四个字：规律作息'},
   {id:'aiver',     name:'AI 大版本',  weight:6, skill:3, mood:5, text:'常用模型深夜更新，白嫖到新能力'},
   {id:'found',     name:'捡到钱',     weight:4, money:150, text:'路边捡到红包，法律上不算拾金……算了花吧'},
   {id:'oldclient', name:'老客户返场', weight:5, money:400, cond:s=>s.life.attrs.skill>20, text:'老客户带着新需求回来了，信任无价'},
