@@ -7,7 +7,7 @@ import { S, $, save, pick } from "../state.js";
 import { SFX, toast, setMuted, toggleMute } from "../fx.js";
 import { applySkin } from "../skins.js";
 import { go } from "./router.js";
-import { initLiving, handleUseItem, handleSlotAction, handleEndDay, handleConfirmEndDay, handleRestartAsk, handleConfirmReset, handlePromote, handleStay } from "./living.js";
+import { initLiving, handleUseItem, handleSlotAction, handleEndDay, handleConfirmEndDay, handleRestartAsk, handleConfirmReset, handlePromote, handleStay, handleEventChoice, handleSettleNext, showPendingChoice } from "./living.js";
 import { showModal, closeModal, welcomeHTML, helpHTML, ratesHTML, dexHTML, skinPickerHTML, handleModalAction, showEnding } from "./modals.js";
 import { tryPull, acceptHalluc } from "./gacha.js";
 import { ensureWeek } from "../goals.js";
@@ -34,6 +34,8 @@ export function bindUI(){
       if(el.dataset.act === 'confirm-reset'){ handleConfirmReset(); return; }
       if(el.dataset.act === 'promote'){ handlePromote(); return; }
       if(el.dataset.act === 'stay'){ handleStay(); return; }
+      if(el.dataset.act === 'event-choice'){ SFX.click(); handleEventChoice(Number(el.dataset.i)); return; }
+      if(el.dataset.act === 'settle-next'){ SFX.click(); handleSettleNext(); return; }
       if(el.dataset.act === 'slot'){ handleSlotAction(el.dataset.slot, el.dataset.uid); return; }
       if(el.dataset.act === 'use-item'){ SFX.click(); handleUseItem(el.dataset.item); return; }
       if(handleModalAction(el)) return;
@@ -75,4 +77,5 @@ export function boot(){
   go(location.hash.slice(1) || 'life');
   if(!S.flags.welcomed){ showModal(welcomeHTML(), true); }
   else if(S.ending){ setTimeout(()=>showEnding(S.ending), 300); }
+  else if(S.life.pendingChoice){ showPendingChoice(); } // 刷页续上未做的抉择
 }

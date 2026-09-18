@@ -110,6 +110,8 @@ export const PROBS = {
   SKIN_DROP: 0.015,  // 皮肤掉落
   EVENT: 1,          // 日切必发 1 个随机事件
   EVENT_EXTRA: 0.3,  // 30% 概率追加第 2 个
+  CHOICE: 0.35,      // 事件抽取中 35% 换成分支选择事件（选完才翻页）
+  PARTNER_TALK: 0.18,// 日切在场伙伴小剧场概率
 };
 export const PITY_MAX = 60;        // 伙伴池保底
 export const ITEM_PITY_MAX = 30;   // 道具池保底
@@ -206,7 +208,7 @@ export const ACTIONS = [
   {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, stamina:20, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
-export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item'];
+export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
 
 /* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
 export const GOAL_POOL = [
@@ -248,7 +250,102 @@ export const EVENTS = [
   {id:'headhunt',  name:'猎头挖角',   weight:2, money:800, charm:2, cond:s=>s.life.attrs.skill>60, text:'聊了聊，拿 offer 当备胎'},
   {id:'winter',    name:'行业寒冬',   weight:3, mood:-10, money:-200, cond:s=>s.life.day>300, text:'朋友圈又见毕业帖，焦虑 +1'},
   {id:'giftfan',   name:'粉丝投喂',   weight:3, mood:8, money:120, cond:s=>s.life.attrs.charm>30, text:'有人给你寄了感谢信和小零食'},
+  /* ---- 后果链专属事件：weight 0、不进随机池，由 choices.after 按 id 到期注入 ---- */
+  {id:'ch_bet_result',  name:'创业对赌结算', weight:0, chainOnly:true, money:[0, 9000],  text:'前同事的项目见了分晓：{amt}打到你的卡上'},
+  {id:'ch_client_gone', name:'甲方风向',     weight:0, chainOnly:true, money:[-200, 500], mood:[-6, 8], text:'当初怼过的甲方回音：{amt}——关系这玩意儿，玄学'},
+  {id:'ch_hype_crash',  name:'热度退潮',     weight:0, chainOnly:true, mood:-8, skill:2, text:'你梭哈的新模型翻车上热搜，还好你连夜把它下了线'},
+  {id:'ch_market_rent', name:'租房市场',     weight:0, chainOnly:true, money:-150, text:'中介来电：那片区行情又涨了，当初没搬走是运气'},
+  {id:'ch_fans_ask',    name:'粉丝求带',     weight:0, chainOnly:true, mood:6, charm:2, text:'博客涨的粉在评论区求教程，你熬夜写了三千字，居然挺开心'},
+  {id:'ch_loan_back',   name:'老友还款',     weight:0, chainOnly:true, money:[0, 2200], mood:[-4, 6], text:'借钱的老友消息来了：{amt}到账。人心账本，今日结算'},
+  {id:'ch_conf_result', name:'论文放榜',     weight:0, chainOnly:true, skill:3, mood:[-10, 18], money:[0, 1500], text:'审稿意见出炉：{amt}的奖学金/差旅补贴顺带有了着落'},
+  {id:'ch_crypto_crash',name:'币圈惊魂',     weight:0, chainOnly:true, money:[0, 400], mood:-12, text:'亲戚推销的币腰斩再脚踝斩：{amt}是他“帮你操作”后的残值'},
+  {id:'ch_offer_result',name:'大厂放榜',     weight:0, chainOnly:true, money:[0, 3000], skill:2, mood:[-5, 15], text:'三个月面试流程走完：{amt}的签字费和一句“欢迎加入”'},
 ];
+
+/* ---------- 分支选择事件（日切时以 PROBS.CHOICE 概率替代普通事件；after → 后果链到期注入） ---------- */
+/* choices[].fx 支持数字或 [min,max] 随机区间；after:{days, ev} 的 ev 在 EVENTS/CHOICE_EVENTS 全表按 id 解析 */
+export const CHOICE_EVENTS = [
+  {id:'ch_joinstart', name:'深夜的入伙邀约', cond:s=>s.money>=3000, text:'凌晨一点，前同事发来一份商业计划书：投 ¥3000 占小股，明年分红。', choices:[
+    {label:'投 ¥3000，赌一把', fx:{money:-3000}, text:'你转了账。他说「亏了我陪你扛」，你他说「别亏」。', after:{days:8, ev:'ch_bet_result'}},
+    {label:'婉拒，睡觉', fx:{mood:-2}, text:'你说明年一定。他回了个👌，从此没再找你。'},
+  ]},
+  {id:'ch_addreq', name:'甲方深夜加需求', text:'甲方：「在吗？这个需求很简单，就改个小地方（附 20 页文档）」。', choices:[
+    {label:'忍了，加钱', fx:{money:600, mood:-10}, text:'你回了「好的收到」。心情和钱包，总得涨一个。'},
+    {label:'怼回去', fx:{charm:4, mood:8}, text:'你逐条批了回去，甲方沉默十分钟：「……按你说的来」。', after:{days:6, ev:'ch_client_gone'}},
+  ]},
+  {id:'ch_newmodel', name:'新模型发布夜', text:'热门新模型上线，文档吹上天，评论区一半神一半鬼。', choices:[
+    {label:'通宵调参尝鲜', fx:{stamina:-25, skill:[2,5]}, text:'你把它喂了整晚，摸清了脾气，也摸秃了一点头发。', after:{days:4, ev:'ch_hype_crash'}},
+    {label:'让子弹飞几天', fx:{mood:3}, text:'你关掉页面继续刷剧。第二天它降智上热搜，你庆幸手快。'},
+  ]},
+  {id:'ch_sideproj', name:'私活邀约', cond:s=>s.life.attrs.skill>=20, text:'朋友介绍一单私活：三天交付，现款 ¥800，但会吃掉你的周末。', choices:[
+    {label:'接了', fx:{money:800, stamina:-20, mood:-5}, text:'周六周日无了，但到账短信挺好听。'},
+    {label:'这次不了', fx:{mood:4}, text:'你睡了个久违的懒觉，窗外阳光不错。'},
+  ]},
+  {id:'ch_rentup', name:'房东的微信', text:'房东：「小 X 啊，明年行情好，房租想涨 ¥300/周，你看……」', choices:[
+    {label:'硬气砍价', fx:{charm:3, mood:-3}, text:'你摆数据讲行情，最后只涨了 ¥150，心累但胜利。', after:{days:7, ev:'ch_market_rent'}},
+    {label:'认了', fx:{money:-300}, text:'你回了「好的房东」。下个月开始勒紧裤腰带。'},
+  ]},
+  {id:'ch_gymoffer', name:'健身房年卡', cond:s=>s.money>=1500, text:'前台小姐姐微笑着递来年卡报价单：¥1200，「现在办最划算哦」。', choices:[
+    {label:'办！', fx:{money:-1200, mood:6}, text:'你发誓每周去三次。第一个月你去了两次，但镜子前 selfie 很开心。'},
+    {label:'跑！', fx:{stamina:5}, text:'你以百米冲刺的速度离开了商场，算是今天唯一的锻炼。'},
+  ]},
+  {id:'ch_viral', name:'博客爆了', cond:s=>s.life.attrs.skill>=30, text:'你随手写的技术博客冲上热榜，后台私信塞满了广告和合作。', choices:[
+    {label:'恰饭：接广告', fx:{money:700, charm:-2}, text:'广告费到账。评论区：「恰饭了」，你耸耸肩，饭真香。'},
+    {label:'保持纯净', fx:{charm:5, mood:5}, text:'你婉拒了所有广告，涨粉反而更多了。', after:{days:6, ev:'ch_fans_ask'}},
+  ]},
+  {id:'ch_oldfriend', name:'老友借钱', cond:s=>s.money>=2000, text:'十年没联系的老友突然来电，声音哽咽：「遇到点事，能借我 ¥2000 吗？」', choices:[
+    {label:'借', fx:{money:-2000}, text:'你转了账，他连说了三个谢谢。你赌的是人心。', after:{days:9, ev:'ch_loan_back'}},
+    {label:'委婉拒绝', fx:{mood:-8}, text:'你说最近手头也紧。挂断后你盯着天花板想了很久。'},
+  ]},
+  {id:'ch_conf', name:'顶会截稿倒计时', cond:s=>s.life.attrs.skill>=40, text:'邮件提醒：你挂名的论文还有 48 小时截稿，实验还差最后一组。', choices:[
+    {label:'肝它！', fx:{stamina:-30, skill:6, mood:-5}, text:'两杯冰美式下去，赶在截止前三分钟点了 Submit。', after:{days:10, ev:'ch_conf_result'}},
+    {label:'弃了', fx:{mood:-4}, text:'你关上电脑，告诉自己重在参与。骗谁呢。'},
+  ]},
+  {id:'ch_date', name:'相亲 vs 加班', text:'同一晚：老妈安排的相亲局，和甲方明抢的加急单。只能选一个。', choices:[
+    {label:'去相亲', fx:{charm:4, money:-200, mood:5}, text:'对方也是被安排来的，两人相视一笑，聊了聊模型和猫。'},
+    {label:'去加班', fx:{money:400, stamina:-15}, text:'你赚了 ¥400，也成功让老妈把你拉进了「没救了」名单。'},
+  ]},
+  {id:'ch_crypto', name:'亲戚的「稳赚」项目', text:'二姨发来一个「内部币」APP：「稳赚不赔，年轻人要有格局！」', choices:[
+    {label:'投 ¥1000 看看', fx:{money:-1000}, text:'你抱着学习的心态进了场。K 线像心跳，还偏弱。', after:{days:7, ev:'ch_crypto_crash'}},
+    {label:'拉黑并举报', fx:{mood:2, charm:1}, text:'反诈 APP 弹出了提示，你反手一个举报，深藏功与名。'},
+  ]},
+  {id:'ch_offer', name:'大厂意向书', cond:s=>s.life.attrs.skill>=50, text:'大厂 HR 来电：意向书已发，但后面还有三轮面试，备战要耗三个月。', choices:[
+    {label:'备战面试', fx:{stamina:-20, money:-300, skill:5}, text:'你刷了三个月算法题，发量略有代价，手感逐渐滚烫。', after:{days:9, ev:'ch_offer_result'}},
+    {label:'现在挺好', fx:{mood:3}, text:'你说谢谢不了，转头继续写自己的小项目。自由也是薪。'},
+  ]},
+];
+
+/* ---------- 在场伙伴小剧场（日切 PROBS.PARTNER_TALK 概率，按随行伙伴效果通道选台本） ---------- */
+export const PARTNER_EVENTS = [
+  {id:'pt_work1', via:'work', favor:2, mood:3,  text:'{p} 深夜帮你审了合同条款，把隐藏坑全标红了'},
+  {id:'pt_work2', via:'work', favor:2, mood:4,  text:'{p} 把你报价单里的水分挤干：「实话实说，客户更信」'},
+  {id:'pt_learn1', via:'learn', favor:2, skill:2, text:'{p} 给你开了本《进阶指南》，扉页写着：别通宵'},
+  {id:'pt_learn2', via:'learn', favor:2, skill:2, text:'{p} 陪你逐行 review 到凌晨，抓到一条隐藏空指针'},
+  {id:'pt_mood1', via:'mood', favor:3, mood:8,  text:'{p} 突然拉你去天台看晚霞：「代码会报错，晚霞不会」'},
+  {id:'pt_mood2', via:'mood', favor:3, mood:7,  text:'{p} 讲了个冷笑话，冷场三秒后你笑出了声'},
+  {id:'pt_stamina1', via:'stamina', favor:2, stamina:10, text:'{p} 监督你早睡，还给你倒了杯温水'},
+  {id:'pt_stamina2', via:'stamina', favor:2, stamina:8, mood:3, text:'{p} 拖你出门走了两万步，说这是「充电」'},
+  {id:'pt_charm1', via:'charm', favor:3, charm:2, text:'{p} 教你两句场面话，沙龙上果然好使'},
+  {id:'pt_dual1', via:'dual', favor:3, skill:1, charm:1, text:'{p} 一边讲原理一边帮你回消息，效率人格分裂式拉满'},
+  {id:'pt_dual2', via:'dual', favor:2, mood:4, skill:1, text:'{p} 给你点了外卖，附言：「吃饱才卷得动」'},
+  {id:'pt_any1', via:'any', favor:2, mood:5, text:'{p} 分享了一个沙雕视频，你笑到邻居敲墙'},
+];
+
+/* ---------- 满好感专属同行卡（随行且好感 ≥90 的伙伴解锁，每人每日一次） ---------- */
+export const DUO_STAMINA = 10;                      // 同行卡体力成本
+export const DUO_EFFECT_MIN = 90;                    // 解锁好感线（FAVOR_LEVELS 顶档）
+export const DUO_FX = {                              // 各效果通道的基础回报
+  work:    {money:150},
+  learn:   {skill:6},
+  mood:    {mood:20},
+  stamina: {stamina:35},
+  charm:   {charm:5},
+  dual:    {skill:3, charm:3},
+};
+export const DUO_STAR_PCT = .08;                     // 每星效果 +8%（3 连/6 连各 +1 星，上限 2）
+export const STAR_UP_AT = [3, 6];                    // 第 N 次获得同名卡 → +1 星
+export const STAR_MAX = 2;
+
 
 /* ---------- 道具（一次性使用; favor 生效于全部随行伙伴） ---------- */
 export const ITEMS = [

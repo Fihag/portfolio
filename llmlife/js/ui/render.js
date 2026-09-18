@@ -2,13 +2,13 @@
    LLMLife · 渲染层 (ui/render.js)
    状态变化后全量重渲：头部芯片 / 生活页 / 伙伴页 / 背包页 / 数据页
    ================================================================ */
-import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS } from "../config.js";
+import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
 import { iconImg } from "../fx.js";
 import { validateResult } from "../validate.js";
 import { slotBoosts, favorNext, effectOf, bestPartner, staminaCeiling } from "../partners.js";
 import { itemOf } from "../items.js";
-import { canDo, chapterIndex, CHAPTER_TOTAL } from "../life.js";
+import { canDo, chapterIndex, CHAPTER_TOTAL, duoCards } from "../life.js";
 import { careerOf, reqText } from "../careers.js";
 import { goalOf, goalProg, rewardText } from "../goals.js";
 import { bannerCountdownText } from "../banner.js";
@@ -49,10 +49,12 @@ function renderLife(){
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
 
-  // 行动按钮：按职级重建（已解锁 + 下一职级锁定预告），此后只刷禁用态
+  // 行动按钮：按职级 + 满好感同行卡重建（此后只刷禁用态）
   const barEl = $('act-bar');
-  if(barEl && barEl.dataset.built !== String(S.life.tier)){
-    barEl.dataset.built = String(S.life.tier);
+  const duo = duoCards();
+  const builtKey = `${S.life.tier}|${duo.map(c => c.uid).join(',')}|${S.life.day}`;
+  if(barEl && barEl.dataset.built !== builtKey){
+    barEl.dataset.built = builtKey;
     const unlocked = ACTIONS.filter(x => (x.tier||0) <= S.life.tier);
     const previews = S.life.tier < CAREERS.length - 1
       ? ACTIONS.filter(x => x.tier === S.life.tier + 1) : [];
@@ -63,6 +65,13 @@ function renderLife(){
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
         <div class="desc">${x.desc}</div>
+      </button>`),
+      ...duo.map(c => `
+      <button class="act-btn duo" data-actbtn="${c.id}" title="${c.desc}">
+        <div class="ic">${c.icon}</div>
+        <div class="nm">${c.name}</div>
+        <div class="cost">⚡-${DUO_STAMINA}</div>
+        <div class="desc">${c.desc}</div>
       </button>`),
       ...previews.map(x => `
       <button class="act-btn locked" data-actbtn="${x.id}" disabled title="晋升「${CAREERS[x.tier].name}」后解锁">
@@ -128,7 +137,7 @@ function renderLife(){
   if(log){
     const entries = dayLog();
     log.innerHTML = entries.length ? entries.map(e=>{
-      const cls = e.line.startsWith('🎲') ? 'ev' : (e.line.startsWith('🏅') || e.line.startsWith('🎯') || e.line.startsWith('📆')) ? 'ms' : e.line.startsWith('🏁') ? 'end' : '';
+      const cls = (e.line.startsWith('🎲') || e.line.startsWith('⚖️') || e.line.startsWith('💞') || e.line.startsWith('🧭')) ? 'ev' : (e.line.startsWith('🏅') || e.line.startsWith('🎯') || e.line.startsWith('📆')) ? 'ms' : e.line.startsWith('🏁') ? 'end' : '';
       return `<div class="row ${cls}">${e.line}</div>`;
     }).join('') : '<div class="day-log-empty">新的一天，选个行动开始吧。</div>';
   }
@@ -198,8 +207,9 @@ function renderPartners(){
     const slotIdx = S.slots.indexOf(p.uid);
     const next = favorNext(p);
     const fvMax = 90;
-    return `<div class="pcard${slotIdx >= 0 ? ' inslot' : ''}" style="--rc:${r.hex}">
+    return `<div class="pcard${slotIdx >= 0 ? ' inslot' : ''}${p.stars ? ' starred' : ''}" style="--rc:${r.hex}">
       ${slotIdx >= 0 ? `<span class="slot-tag">随行 ×${slotIdx + 1}</span>` : ''}
+      ${p.stars ? `<span class="star-tag">★${p.stars}</span>` : ''}
       <div id="p-icon-${p.uid}"></div>
       <div class="nm">${m.name}</div>
       <div class="vd">${m.vendor} · ${m.cost}</div>

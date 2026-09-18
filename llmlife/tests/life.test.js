@@ -111,8 +111,10 @@ describe("回合引擎", () => {
   beforeEach(() => {
     fresh();
     PROBS.EVENT = 0; // 事件随机性不好单测，关掉保证确定性（afterAll 恢复）
+    PROBS.CHOICE = 0;
+    PROBS.PARTNER_TALK = 0;
   });
-  afterAll(() => { PROBS.EVENT = 0.62; });
+  afterAll(() => { PROBS.EVENT = 0.62; PROBS.CHOICE = 0.35; PROBS.PARTNER_TALK = 0.18; });
 
   it("行动守卫：体力/钱包/躺平限次", () => {
     expect(canDo("work").ok).toBe(true);
@@ -157,9 +159,14 @@ describe("回合引擎", () => {
     PROBS.EVENT = 1; PROBS.EVENT_EXTRA = 0;
     let lines = endDay();
     expect(lines.filter(l=>l.startsWith("🎲")).length).toBe(1);
+    // 追加位：固定随机序列让两次 weightedPick 落在不同事件（同事件去重是特性）
     S.life.day = 1; // 回退再测追加
     PROBS.EVENT_EXTRA = 1;
+    const seq = [0.5, 0, 0.01, 0.5, 0, 0.99, 0.5];
+    let i = 0;
+    vi.spyOn(Math, "random").mockImplementation(() => seq[i++] ?? 0.5);
     lines = endDay();
+    vi.restoreAllMocks();
     expect(lines.filter(l=>l.startsWith("🎲")).length).toBe(2);
   });
 

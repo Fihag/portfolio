@@ -5,7 +5,7 @@
    ================================================================ */
 import { S, save, fmt } from "../state.js";
 import { SFX, burst, bigMoneyPop, toast } from "../fx.js";
-import { doAction, endDay, anyActionAvailable, restart, chapterIndex, CHAPTER_TOTAL, actionOf } from "../life.js";
+import { doAction, endDay, anyActionAvailable, restart, chapterIndex, CHAPTER_TOTAL, actionOf, choiceEvent, resolveChoice } from "../life.js";
 import { LIFE, CAREERS } from "../config.js";
 import { meetsReq, reqText, tryPromote, stayPut } from "../careers.js";
 import { useItem } from "../items.js";
@@ -69,14 +69,41 @@ function dayHint(){
   return (nextDay - 1) % LIFE.WEEK_DAYS === 0 ? '<br />⚠️ 明天醒来要交 <b>房租 + 伙食</b>，留意余额！' : '';
 }
 
-/** 确认日切 → 结算 → 章末年度结算弹窗（一年一章）或新的一天弹窗 */
+/** 确认日切 → 结算 → 日流程链：分支抉择 → 章末年度结算 → 新的一天 */
 export function handleConfirmEndDay(){
   closeModal();
   const lines = endDay();
   renderAll();
-  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); S._settle=null; return; }
+  S._dayLines = lines; // 暂存（_ 前缀不落盘），供链式弹窗依次消费
+  showDayFlow();
+}
+export function showDayFlow(){
+  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); S._settle=null; S._dayLines=null; return; }
+  showPendingChoice();
+}
+/** 有待选抉择时优先弹出锁定弹窗；否则进入结算/新一天 */
+export function showPendingChoice(){
+  if(S.life.pendingChoice){ showModal(choiceModalHTML(), true); return; }
   if(S._settle){ showModal(chapterSettleHTML(S._settle)); S._settle=null; return; }
-  showModal(newDayHTML(lines));
+  if(S._dayLines){ showModal(newDayHTML(S._dayLines)); S._dayLines=null; }
+}
+function choiceModalHTML(){
+  const ev = choiceEvent();
+  if(!ev) return `<h3>⚖️ 抉择失效<button class="x" data-act="close-modal">×</button></h3><p>这件事悄悄过去了。</p><button class="big-btn" data-act="settle-next">继续 →</button>`;
+  return `<h3>⚖️ ${ev.name}</h3>
+  <p style="line-height:1.85">${ev.text}</p>
+  ${ev.choices.map((c, i) => `<button class="big-btn" data-act="event-choice" data-i="${i}">${c.label}</button>`).join('')}`;
+}
+export function handleEventChoice(i){
+  const line = resolveChoice(i);
+  SFX.win();
+  if(line) toast(line, 3600);
+  renderAll();
+  showPendingChoice(); // 抉择之后才轮到年度结算/新的一天
+}
+export function handleSettleNext(){
+  closeModal();
+  if(S._dayLines){ showModal(newDayHTML(S._dayLines)); S._dayLines=null; }
 }
 function settleChoiceHTML(){
   const next = CAREERS[S.life.tier + 1];
@@ -96,6 +123,7 @@ export function handlePromote(){
   burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#fff'], 140, 10);
   toast(res.line, 3600);
   renderAll();
+  showPendingChoice();
 }
 export function handleStay(){
   closeModal();
@@ -103,6 +131,7 @@ export function handleStay(){
   SFX.click();
   toast(res.line, 2600);
   renderAll();
+  showPendingChoice();
 }
 function chapterSettleHTML(st){
   const neg = st.net < 0;
@@ -120,7 +149,7 @@ function chapterSettleHTML(st){
   ${st.nextTitle
     ? `<p>下一章预告：<b>《${st.nextTitle}》</b>（${st.ageTo} → ${st.ageTo + 1} 岁 · 剩 ${CHAPTER_TOTAL - st.no - 1} 章）</p>`
     : `<p><b>结算的钟声就在门外。</b>这八年如何，明天见分晓。</p>`}
-  ${meetsReq(S.life.tier + 1) ? '' : `<button class="big-btn" data-act="close-modal">翻开第 ${st.no + 2} 章 →</button>`}`;
+  ${meetsReq(S.life.tier + 1) ? '' : `<button class="big-btn" data-act="settle-next">翻开第 ${st.no + 2} 章 →</button>`}`;
 }
 function newDayHTML(lines){
   const a = S.life.attrs;
@@ -128,7 +157,7 @@ function newDayHTML(lines){
   const dayInChapter = (S.life.day - 1) % LIFE.CHAPTER_DAYS + 1;
   const body = lines.length
     ? lines.map(l=>{
-        const cls = l.startsWith('🎲') ? 'ev' : l.startsWith('📆') ? 'ms' : '';
+              const cls = l.startsWith('🎲') || l.startsWith('⚖️') || l.startsWith('💞') || l.startsWith('🧭') ? 'ev' : l.startsWith('📆') ? 'ms' : '';
         return `<div class="row ${cls}" style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;margin-bottom:6px">${l}</div>`;
       }).join('')
     : '<p style="color:var(--faint)">风平浪静的一天。</p>';

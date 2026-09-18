@@ -491,6 +491,8 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .act-btn.locked{border-style:dashed;opacity:.55;background:var(--panel2)}
 .act-btn.locked .nm{color:var(--dim)}
 .act-btn.locked .cost{color:var(--gold)}
+.act-btn.duo{border-color:#c7d9ff;background:linear-gradient(180deg,#f4f7ff,#fff)}
+.act-btn.duo .cost{color:var(--pink,#ec4899)}
 /* 本周目标 */
 .goals-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:9px}
 .goal-row{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -544,6 +546,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .pcard .fv-bar i{display:block;height:100%;background:linear-gradient(90deg,#f472b6,#ec4899);transition:width .3s}
 .pcard .fv-txt{font-size:9.5px;color:var(--faint);text-align:center;margin-top:3px;font-variant-numeric:tabular-nums}
 .pcard .slot-tag{position:absolute;top:6px;right:6px;font-size:9px;background:var(--blue);color:#fff;border-radius:8px;padding:1px 7px;font-weight:800}
+.pcard .star-tag{position:absolute;top:6px;left:6px;font-size:10px;background:var(--gold);color:#fff;border-radius:8px;padding:1px 6px;font-weight:900;letter-spacing:1px}
 .pcard .act-row{display:flex;gap:5px;margin-top:8px}
 .pcard .act-row .mini-btn{flex:1;text-align:center;padding:5px 4px;font-size:10.5px}
 .pcard.empty-slot{opacity:.5}

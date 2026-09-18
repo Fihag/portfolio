@@ -3,15 +3,18 @@
    行动执行 / 日切 / 周结算 / 随机事件 / 年龄与结局判定 / 成就
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
-import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS } from "./config.js";
+import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP } from "./config.js";
 import { S, save, addLedger, fmt, setState, defaultState, logToday, pick, bumpWeekStat } from "./state.js";
-import { slotBoosts, favorAll, staminaCeiling } from "./partners.js";
+import { slotBoosts, favorAll, staminaCeiling, activePartners, effectOf } from "./partners.js";
 import { sampleWorkPay } from "./economy.js";
 import { addAttrs } from "./items.js";
 import { tierMult } from "./careers.js";
 import { ensureWeek, checkGoals, goalOf } from "./goals.js";
 
 const ACTION_MAP = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
+const CHOICE_MAP = Object.fromEntries(CHOICE_EVENTS.map(e => [e.id, e]));
+/* 全事件 id 索引（普通 + 选择 + chainOnly 后续）：后果链按 id 到期解析 */
+const EVENT_IDX = Object.fromEntries([...EVENTS, ...CHOICE_EVENTS].map(e => [e.id, e]));
 const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
 /* 收益展示：保留 1 位小数并去掉尾随 .0 */
 const trimNum = n => String(Math.round(n * 10) / 10);
@@ -24,9 +27,73 @@ export function chapterIndex(day = S.life.day){ return Math.floor((day - 1) / LI
 /** 本局总章数 */
 export const CHAPTER_TOTAL = LIFE.RETIRE_AGE - LIFE.START_AGE;
 
+/**
+ * 满好感同行卡：随行槽中好感 ≥ DUO_EFFECT_MIN 的伙伴各一张动态行动卡，
+ * 效果按厂商通道基础值 ×（1 + 星级×8%），每人每日一次。
+ */
+export function duoCards(){
+  const out = [];
+  for(const p of activePartners()){
+    if(p.favor < DUO_EFFECT_MIN) continue;
+    const m = MMAP[p.m];
+    const fx = DUO_FX[effectOf(m)] || {};
+    const mul = 1 + (p.stars || 0) * DUO_STAR_PCT;
+    const parts = [];
+    if(fx.money) parts.push(`¥${Math.round(fx.money * mul)}`);
+    if(fx.skill) parts.push(`技术+${trimNum(fx.skill * mul)}`);
+    if(fx.charm) parts.push(`魅力+${trimNum(fx.charm * mul)}`);
+    if(fx.mood) parts.push(`心情+${trimNum(fx.mood * mul)}`);
+    if(fx.stamina) parts.push(`体力+${Math.round(fx.stamina * mul)}`);
+    out.push({
+      uid: p.uid, id: `duo:${p.uid}`, name: `与${m.name}同行`, icon: '🫂',
+      desc: `${parts.join(' ')} · 每日一次${p.stars ? ` · ★${p.stars}` : ''}`,
+    });
+  }
+  return out;
+}
+
+/** 执行一次同行（体力/限次已由 canDo 把关） */
+function doDuo(actionId){
+  const uid = Number(actionId.slice(4));
+  const p = S.partners.find(x => x.uid === uid);
+  const m = MMAP[p.m];
+  const fx = DUO_FX[effectOf(m)] || {};
+  const mul = 1 + (p.stars || 0) * DUO_STAR_PCT;
+  S.life.attrs.stamina -= DUO_STAMINA;
+  const applied = [];
+  if(fx.money){
+    const amt = Math.round(fx.money * mul);
+    S.money += amt; addLedger(`与${m.name}同行`, amt); S.stats.earned += amt;
+    applied.push(`收入¥${amt}`);
+  }
+  if(fx.skill || fx.charm || fx.mood || fx.stamina){
+    addAttrs({
+      skill:(fx.skill||0) * mul, charm:(fx.charm||0) * mul,
+      mood:(fx.mood||0) * mul, stamina:(fx.stamina||0) * mul,
+    });
+    if(fx.skill) applied.push(`技术+${trimNum(fx.skill * mul)}`);
+    if(fx.charm) applied.push(`魅力+${trimNum(fx.charm * mul)}`);
+    if(fx.mood) applied.push(`心情+${trimNum(fx.mood * mul)}`);
+    if(fx.stamina) applied.push(`体力+${Math.round(fx.stamina * mul)}`);
+  }
+  if(!S.life.duoUsed) S.life.duoUsed = {};
+  S.life.duoUsed[uid] = S.life.day;
+  bumpWeekStat('duo');
+  return `🫂 与${m.name}同行：${applied.join('，')}`;
+}
+
 /* ---------- 行动守卫 ---------- */
 export function canDo(actionId){
   if(S.ending) return {ok:false, reason:'本局已结束，开个新周目再战'};
+  if(typeof actionId === 'string' && actionId.startsWith('duo:')){
+    const uid = Number(actionId.slice(4));
+    const p = S.partners.find(x => x.uid === uid);
+    const inSlot = p && S.slots.includes(uid);
+    if(!p || !inSlot || p.favor < DUO_EFFECT_MIN) return {ok:false, reason:'同行卡需要该伙伴随行且好感满级（90）'};
+    if((S.life.duoUsed || {})[uid] === S.life.day) return {ok:false, reason:'今天就同行过一次了，来日方长'};
+    if(DUO_STAMINA > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
+    return {ok:true};
+  }
   const a = ACTION_MAP[actionId];
   if(!a) return {ok:false, reason:'未知行动'};
   if((a.tier||0) > S.life.tier) return {ok:false, reason:`职级不足：晋升「${CAREERS[a.tier].name}」后解锁`};
@@ -39,7 +106,8 @@ export function canDo(actionId){
 
 /** 还有没有任何可执行的行动（供"体力见底"提示与禁用态汇总） */
 export function anyActionAvailable(){
-  return ACTIONS.some(a => canDo(a.id).ok);
+  if(ACTIONS.some(a => canDo(a.id).ok)) return true;
+  return duoCards().some(c => canDo(c.id).ok);
 }
 
 /**
@@ -49,6 +117,15 @@ export function anyActionAvailable(){
 export function doAction(actionId){
   const guard = canDo(actionId);
   if(!guard.ok) return {ok:false, line:guard.reason};
+  if(typeof actionId === 'string' && actionId.startsWith('duo:')){
+    const line = doDuo(actionId);
+    const lines = [line];
+    logToday(line);
+    for(const m of checkMilestones()) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
+    for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
+    save();
+    return {ok:true, line, lines};
+  }
   const a = ACTION_MAP[actionId];
   const boosts = slotBoosts();
   const attr = S.life.attrs;
@@ -122,7 +199,7 @@ export function doAction(actionId){
   return {ok:true, line, lines};
 }
 
-/* ---------- 加权抽取事件 ---------- */
+/* ---------- 加权抽取事件（chainOnly 后续事件不进随机池） ---------- */
 function weightedPick(pool){
   const total = pool.reduce((s, e) => s + e.weight, 0);
   if(total <= 0) return null;
@@ -131,21 +208,110 @@ function weightedPick(pool){
   return null;
 }
 
-/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 章节结算 → 年龄 → 结局 ---------- */
-function fireEvent(){
-  const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
-  if(!ev) return null;
-  const delta = {mood:ev.mood||0, stamina:ev.stamina||0, skill:ev.skill||0, charm:ev.charm||0};
+/* ---------- 事件数值结算：字段支持定值或 [min,max] 随机区间 ---------- */
+function fxVal(v){ return Array.isArray(v) ? rand(v[0], v[1]) : v; }
+/** 结算一份 fx（money/mood/stamina/skill/charm/favor），返回展示片段与金额 */
+function applyFx(fx, label = '事件'){
+  const nums = [];
+  let money = 0;
+  if(fx.money){
+    money = fxVal(fx.money);
+    S.money += money;
+    addLedger(label, money);
+    if(money >= 0) S.stats.earned += money; else S.stats.spent += -money;
+    nums.push(`¥${money > 0 ? '+' : ''}${money}`);
+  }
+  const delta = {
+    mood: fx.mood ? fxVal(fx.mood) : 0,
+    stamina: fx.stamina ? fxVal(fx.stamina) : 0,
+    skill: fx.skill ? fxVal(fx.skill) : 0,
+    charm: fx.charm ? fxVal(fx.charm) : 0,
+  };
   addAttrs(delta);
-  if(ev.money){ S.money += ev.money; addLedger(`事件·${ev.name}`, ev.money); }
-  const nums = [
-    ev.money ? `¥${ev.money > 0 ? '+' : ''}${ev.money}` : '',
-    delta.mood ? `心情${delta.mood > 0 ? '+' : ''}${delta.mood}` : '',
-    delta.stamina ? `体力${delta.stamina}` : '',
-    delta.skill ? `技术+${delta.skill}` : '',
-    delta.charm ? `魅力+${delta.charm}` : '',
-  ].filter(Boolean).join('，');
-  return `🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`;
+  if(delta.mood) nums.push(`心情${delta.mood > 0 ? '+' : ''}${delta.mood}`);
+  if(delta.stamina) nums.push(`体力${delta.stamina > 0 ? '+' : ''}${delta.stamina}`);
+  if(delta.skill) nums.push(`技术+${delta.skill}`);
+  if(delta.charm) nums.push(`魅力${delta.charm > 0 ? '+' : ''}${delta.charm}`);
+  if(fx.favor){ favorAll(fx.favor); nums.push(`随行好感+${fx.favor}`); }
+  return {nums, money};
+}
+
+function fireEvent(){
+  const ev = weightedPick(EVENTS.filter(e => !e.chainOnly && (!e.cond || e.cond(S))));
+  if(!ev) return null;
+  const {nums, money} = applyFx(ev, `事件·${ev.name}`);
+  return `🎲 ${ev.name}：${ev.text.replace('{amt}', fmt(Math.abs(money)))}${nums.length ? `（${nums.join('，')}）` : ''}`;
+}
+
+/** 当日主事件：35% 换成分支选择事件（挂 pending，选完才翻页） */
+function rollDailyEvent(){
+  if(!S.life.pendingChoice && Math.random() < PROBS.CHOICE){
+    const cands = CHOICE_EVENTS.filter(e => !e.cond || e.cond(S));
+    if(cands.length){
+      const ev = pick(cands);
+      S.life.pendingChoice = {id: ev.id};
+      return `⚖️ ${ev.name}：${ev.text}`;
+    }
+  }
+  return fireEvent();
+}
+
+/** 在场伙伴小剧场：按随行伙伴效果通道选台本 */
+function partnerTalk(){
+  if(Math.random() >= PROBS.PARTNER_TALK) return null;
+  const act = activePartners();
+  if(!act.length) return null;
+  const p = pick(act);
+  const eff = effectOf(MMAP[p.m]);
+  const cands = PARTNER_EVENTS.filter(e => e.via === 'any' || e.via === eff);
+  if(!cands.length) return null;
+  const e = pick(cands);
+  const {nums} = applyFx({mood:e.mood, stamina:e.stamina, skill:e.skill, charm:e.charm, favor:e.favor});
+  const name = MMAP[p.m].name;
+  const body = (e.text || '').replace(/\{p\}/g, name);
+  return `💞 ${name}：${body}${nums.length ? `（${nums.join('，')}）` : ''}`;
+}
+
+/** 后果链到期注入（日切后按新日期结算） */
+function dueChains(lines){
+  const chains = S.life.chains || [];
+  if(!chains.length) return;
+  const due = chains.filter(c => c.day <= S.life.day);
+  if(!due.length) return;
+  S.life.chains = chains.filter(c => c.day > S.life.day);
+  for(const c of due){
+    const ev = EVENT_IDX[c.ev];
+    if(!ev) continue;
+    if(ev.choices && !S.life.pendingChoice){
+      S.life.pendingChoice = {id: ev.id};
+      lines.push(`🧭 旧事回响 · ${ev.name}：${ev.text}`);
+    } else if(!ev.choices){
+      const {nums, money} = applyFx(ev);
+      lines.push(`🧭 旧事回响 · ${ev.name}：${ev.text.replace('{amt}', fmt(Math.abs(money)))}${nums.length ? `（${nums.join('，')}）` : ''}`);
+    }
+  }
+}
+
+/* ---------- 分支抉择：读取 / 落子（UI 经 data-act="event-choice" 调用） ---------- */
+export function choiceEvent(){
+  const pc = S.life.pendingChoice;
+  return pc ? (CHOICE_MAP[pc.id] || null) : null;
+}
+/** 选定第 idx 项：结算 fx、登记 after 链、清 pending。返回结果行 */
+export function resolveChoice(idx){
+  const ev = choiceEvent();
+  if(!ev || !ev.choices[idx]) return null;
+  const ch = ev.choices[idx];
+  const {nums} = applyFx(ch.fx || {});
+  if(ch.after){
+    if(!Array.isArray(S.life.chains)) S.life.chains = [];
+    S.life.chains.push({day: S.life.day + (ch.after.days || 1), ev: ch.after.ev});
+  }
+  S.life.pendingChoice = null;
+  const line = `⚖️ ${ev.name} → 「${ch.label}」：${ch.text}${nums.length ? `（${nums.join('，')}）` : ''}${ch.after ? `｜${ch.after.days} 天后见分晓` : ''}`;
+  logToday(line);
+  save();
+  return line;
 }
 
 /** 章末年度结算：与 S.chStart 快照做同比差，明细存 S._settle 供 UI 弹窗（不落盘） */
@@ -173,20 +339,23 @@ function settleChapter(){
 
 export function endDay(){
   const lines = [];
-  // 每天必发 1 个事件（PROBS.EVENT=1），概率追加第 2 个
+  // 每天必发 1 个事件（PROBS.EVENT=1，其中 35% 换成分支抉择），概率追加第 2 个
   if(Math.random() < PROBS.EVENT){
-    const first = fireEvent();
+    const first = rollDailyEvent();
     if(first) lines.push(first);
     if(Math.random() < PROBS.EVENT_EXTRA){
-      const second = fireEvent();
+      const second = rollDailyEvent();
       if(second && second !== first) lines.push(second);
     }
   }
   S.life.day++;
   S.life.restUsed = 0;
+  dueChains(lines); // 旧决定的下文：到期注入（负面效果也照常结算）
   const attr = S.life.attrs;
   attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴上限加成）
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
+  const talk = partnerTalk(); // 在场伙伴小剧场（收益落在回满/衰减之后，不被睡眠吞）
+  if(talk) lines.push(talk);
   if((S.life.day - 1) % LIFE.WEEK_DAYS === 0){
     lines.push(weekSettle());
     if(ensureWeek()){

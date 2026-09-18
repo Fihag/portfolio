@@ -3,7 +3,7 @@
    运行时轻量校验（浏览器）+ 导出供 Node 单测直接 import
    重点：卡面分数必须落在其稀有度分段内（AA v4.3 真实分一致性）
    ================================================================ */
-import { MODELS, POOLS, MMAP, RARITY, RORDER, MILESTONES, EVENTS, ITEMS, ITEM_RARITY, BANNER_SEASONS, ENDINGS, ACTIONS } from "./config.js";
+import { MODELS, POOLS, MMAP, RARITY, RORDER, MILESTONES, EVENTS, CHOICE_EVENTS, PARTNER_EVENTS, ITEMS, ITEM_RARITY, BANNER_SEASONS, ENDINGS, ACTIONS, DUO_FX } from "./config.js";
 
 /**
  * 轻量校验，供浏览器启动时自检
@@ -45,7 +45,30 @@ export function validateConfig() {
   if (EVENTS.length === 0) errors.push("EVENTS 为空");
   for (const e of EVENTS) {
     if (!e.id || !e.text) errors.push(`EVENT ${JSON.stringify(e)} 缺 id/text`);
-    if (!e.weight || e.weight <= 0) errors.push(`EVENT ${e.id} weight 非法`);
+    if (!e.chainOnly && (!e.weight || e.weight <= 0)) errors.push(`EVENT ${e.id} weight 非法`);
+  }
+  // 分支选择事件：2~3 选项；after 链目标必须存在于全事件 id 索引
+  const evIds = new Set(EVENTS.map(e => e.id));
+  const chIds = new Set();
+  for (const e of CHOICE_EVENTS) {
+    if (!e.id || !e.text) errors.push(`CHOICE ${JSON.stringify(e)} 缺 id/text`);
+    if (chIds.has(e.id)) errors.push(`CHOICE 重复 id: ${e.id}`);
+    chIds.add(e.id);
+    evIds.add(e.id);
+    if (!Array.isArray(e.choices) || e.choices.length < 2 || e.choices.length > 3) errors.push(`CHOICE ${e.id} 选项数应为 2~3`);
+    for (const c of e.choices || []) {
+      if (!c.label || !c.text) errors.push(`CHOICE ${e.id} 选项缺 label/text`);
+      if (c.after && !c.after.ev) errors.push(`CHOICE ${e.id} after 缺 ev`);
+    }
+  }
+  for (const e of [...EVENTS, ...CHOICE_EVENTS]) {
+    for (const c of e.choices || []) {
+      if (c.after && !evIds.has(c.after.ev)) errors.push(`链目标不存在: ${e.id} -> ${c.after.ev}`);
+    }
+  }
+  for (const e of PARTNER_EVENTS) {
+    if (!e.id || !e.text) errors.push(`PARTNER ${JSON.stringify(e)} 缺 id/text`);
+    if (e.via !== "any" && !DUO_FX[e.via]) errors.push(`PARTNER ${e.id} via 非法: ${e.via}`);
   }
   const itemIds = new Set();
   for (const it of ITEMS) {

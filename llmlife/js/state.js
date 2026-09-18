@@ -25,7 +25,8 @@ export function defaultState(){
     life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
       staminaMax:LIFE.STAMINA_MAX,
-      weekStats:freshWeekStats(), goals:null },
+      weekStats:freshWeekStats(), goals:null,
+      pendingChoice:null, chains:[], duoUsed:{} },
     partners:[], items:[], slots:new Array(SLOT_COUNT).fill(null),
     pity:{partner:0,banner:0,item:0},
     freePulls:0,
@@ -66,6 +67,9 @@ function normalizeV2(s){
   if(s.life.restUsed==null) s.life.restUsed = 0;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
   if(s.life.goals != null && (typeof s.life.goals!=='object' || !Array.isArray(s.life.goals.items))) s.life.goals = null;
+  if(s.life.pendingChoice != null && (typeof s.life.pendingChoice!=='object' || !s.life.pendingChoice.id)) s.life.pendingChoice = null;
+  if(!Array.isArray(s.life.chains)) s.life.chains = [];
+  if(!s.life.duoUsed || typeof s.life.duoUsed!=='object') s.life.duoUsed = {};
   if(s.life.ap != null) delete s.life.ap; // 旧版行动点字段废弃
   if(!Array.isArray(s.partners)) s.partners=[];
   for(const p of s.partners){ if(p.favor==null) p.favor=0; if(p.stars==null) p.stars=0; }

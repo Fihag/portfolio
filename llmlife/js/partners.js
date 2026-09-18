@@ -3,7 +3,7 @@
    伙伴招募 / 重复折好感 / 好感等级 / 随行槽加成汇总
    效果类型由厂商决定（config.VENDOR_EFFECTS），强度由稀有度决定
    ================================================================ */
-import { MMAP, RBOOST, VENDOR_EFFECTS, DEFAULT_EFFECT, FAVOR_LEVELS, FAVOR_MULT, DUPE_FAVOR, SLOT_COUNT, RORDER } from "./config.js";
+import { MMAP, RBOOST, VENDOR_EFFECTS, DEFAULT_EFFECT, FAVOR_LEVELS, FAVOR_MULT, DUPE_FAVOR, SLOT_COUNT, RORDER, STAR_UP_AT, STAR_MAX, DUO_STAR_PCT } from "./config.js";
 import { S } from "./state.js";
 
 /** 模型的效果类型 */
@@ -22,10 +22,10 @@ export function favorNext(p){
   return lv >= favorLevelMax() ? null : FAVOR_LEVELS[lv+1];
 }
 
-/** 单伙伴裸强度（稀有度基础 × 好感系数） */
+/** 单伙伴裸强度（稀有度基础 × 好感系数 × 升星系数） */
 export function boostOf(p){
   const m = MMAP[p.m];
-  return RBOOST[m.r] * FAVOR_MULT[favorLevel(p)];
+  return RBOOST[m.r] * FAVOR_MULT[favorLevel(p)] * (1 + (p.stars||0) * DUO_STAR_PCT);
 }
 
 /** 随行中的伙伴实例 */
@@ -61,16 +61,28 @@ export function slotBoosts(){
   return acc;
 }
 
-/** 招募伙伴（抽卡出货入口）：重复自动折算好感 */
+/**
+ * 招募伙伴（抽卡出货入口）：重复自动折算好感；
+ * 第 3/6 次获得（含首次）各 +1 星（上限 STAR_MAX）。
+ * 星级以 S.dex 的获得计数为准（pulls.js 在调用本函数后自增，故 cnt 需 +1 预含本次）。
+ */
 export function recruit(modelId){
   const owned = S.partners.find(p => p.m === modelId);
+  const cnt = (S.dex[modelId] || 0) + 1;
   if(owned){
     owned.favor += DUPE_FAVOR;
-    return {partner:owned, dupe:true, favor:DUPE_FAVOR};
+    const res = {partner:owned, dupe:true, favor:DUPE_FAVOR, starUp:false};
+    if(STAR_UP_AT.includes(cnt)){
+      const before = owned.stars || 0;
+      owned.stars = Math.min(STAR_MAX, before + 1);
+      res.starUp = owned.stars > before;
+      res.stars = owned.stars;
+    }
+    return res;
   }
   const p = {uid:S.uid++, m:modelId, favor:0, stars:0};
   S.partners.push(p);
-  return {partner:p, dupe:false, favor:0};
+  return {partner:p, dupe:false, favor:0, starUp:false};
 }
 
 /** 随行编排（uid=null 清空槽位） */

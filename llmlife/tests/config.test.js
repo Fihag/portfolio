@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MODELS, MMAP, RARITY, POOLS, BANNER_SEASONS, ITEMS, ITEM_RARITY,
   EVENTS, MILESTONES, ENDINGS, ACTIONS, VENDOR_EFFECTS, DEFAULT_EFFECT, EFFECTS,
-  LIFE, CHAPTER_TITLES, CAREERS, GOAL_POOL, WEEK_STAT_KEYS,
+  LIFE, CHAPTER_TITLES, CAREERS, GOAL_POOL, WEEK_STAT_KEYS, CHOICE_EVENTS,
 } from "../js/config.js";
 import { validateConfig } from "../js/validate.js";
 
@@ -71,9 +71,22 @@ describe("卡池与道具数据", () => {
     for (const id of flat) expect(ITEMS.some(i => i.id === id)).toBe(true);
     expect(ITEMS.length).toBeGreaterThanOrEqual(20);
   });
-  it("事件表 weight 为正且数量充足", () => {
+  it("事件表 weight 为正且数量充足（chainOnly 后续事件除外）", () => {
     expect(EVENTS.length).toBeGreaterThanOrEqual(18);
-    for (const e of EVENTS) expect(e.weight).toBeGreaterThan(0);
+    for (const e of EVENTS) {
+      if (e.chainOnly) continue;
+      expect(e.weight).toBeGreaterThan(0);
+    }
+    // chainOnly 事件只经后果链注入
+    expect(EVENTS.filter(e => e.chainOnly).length).toBeGreaterThanOrEqual(5);
+  });
+  it("分支选择事件齐备且链目标可解析", () => {
+    expect(CHOICE_EVENTS.length).toBeGreaterThanOrEqual(10);
+    const all = new Set(EVENTS.map(e => e.id));
+    for (const e of CHOICE_EVENTS) {
+      expect(e.choices.length).toBeGreaterThanOrEqual(2);
+      for (const c of e.choices) if (c.after) expect(all.has(c.after.ev) || CHOICE_EVENTS.some(x => x.id === c.after.ev)).toBe(true);
+    }
   });
   it("结局阈值严格递减", () => {
     for (let i = 1; i < ENDINGS.length; i++) expect(ENDINGS[i].min).toBeLessThan(ENDINGS[i - 1].min);
