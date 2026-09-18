@@ -29,7 +29,7 @@ export function defaultState(){
     ng:0, endingsSeen:{},
     /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
     chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY, sick:false,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY, sick:false, certs:0,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10, satiety:80, health:LIFE.HEALTH_MAX},
       staminaMax:LIFE.STAMINA_MAX,
       weekStats:freshWeekStats(), goals:null,
@@ -74,7 +74,7 @@ function normalizeV2(s){
   // 逐键回填：新增需求条（饱食/健康）在老档里是 undefined，直接加减会变 NaN
   for(const k of ['stamina','mood','skill','charm','satiety','health'])
     if(s.life.attrs[k]==null) s.life.attrs[k] = defaultState().life.attrs[k];
-  for(const k of ['day','age','staminaMax','tier','house','timeLeft']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+  for(const k of ['day','age','staminaMax','tier','house','timeLeft','certs']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
   if(s.life.restUsed==null) s.life.restUsed = 0;
   if(s.life.sick==null) s.life.sick = false;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();

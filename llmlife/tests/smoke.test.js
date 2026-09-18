@@ -43,11 +43,11 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect($("h-age").textContent).toBe("22");
   });
 
-  it("行动栏渲染 8 个解锁行动 + 下一职级 2 张锁定预告", () => {
+  it("行动栏渲染 11 个解锁行动 + 下一职级 2 张锁定预告", () => {
     const btns = [...document.querySelectorAll("[data-actbtn]")];
-    expect(btns.length).toBe(10);
+    expect(btns.length).toBe(13);
     const unlocked = btns.filter(b => !b.classList.contains("locked"));
-    expect(unlocked.length).toBe(8);
+    expect(unlocked.length).toBe(11);
     const locked = btns.filter(b => b.classList.contains("locked"));
     expect(locked.length).toBe(2);
     expect(locked.every(b => b.disabled)).toBe(true);

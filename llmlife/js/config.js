@@ -114,6 +114,11 @@ export const PROBS = {
   PARTNER_TALK: 0.18,// 日切在场伙伴小剧场概率
 };
 export const PITY_MAX = 60;        // 伙伴池保底
+/* 打工风险：事故概率下限（技术到顶也不归零，riskMul 永远有效） */
+export const DISASTER_FLOOR = .004;
+/* 考证（考试/面试的等价物）：技能是硬底，心情低落再打折；每张证永久工作收入 +8% */
+export const EXAM = { base:.35, perSkill:1/150, lowMoodPen:.1, min:.3, max:.95 };
+export const CERT_PCT = .08;
 export const ITEM_PITY_MAX = 30;   // 道具池保底
 export const PAY_BOOST = 1.3;
 export const START_MONEY = 800;
@@ -208,6 +213,9 @@ export const CAREERS = [
 export const ACTIONS = [
   {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
   {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
+  {id:'cert1',  name:'初级认证', icon:'📜', tier:0, slots:2, stamina:12, money:300, cert:1, exam:true, desc:'通过率看技术：过了永久工作收入 +8%，挂了心情 -6 可重考'},
+  {id:'cert2',  name:'高级认证', icon:'📗', tier:0, slots:2, stamina:12, money:800, cert:1, exam:true, needsCert:1, desc:'需先有 1 张证；更难的考试，过了再 +8% 收入'},
+  {id:'cert3',  name:'行业认证', icon:'🏅', tier:0, slots:2, stamina:12, money:2000, cert:1, exam:true, needsCert:2, desc:'需先有 2 张证；封顶的一张，过了累计 +24% 收入'},
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
   {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, health:2, desc:'最累的一档，但上限成长是真金白银（顺带养健康）'},
   {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
@@ -225,7 +233,7 @@ export const ACTIONS = [
   {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
-export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
+export const WEEK_STAT_KEYS = ['work','learn','cert1','cert2','cert3','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
 
 /* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
 export const GOAL_POOL = [

@@ -25,7 +25,7 @@ describe("standalone.html 单文件离线版", () => {
     });
     await new Promise(r => setTimeout(r, 150));
     const d = dom.window.document;
-    expect(d.querySelectorAll("[data-actbtn]").length).toBe(10); // 8 解锁 + 2 下一职级锁定预告
+    expect(d.querySelectorAll("[data-actbtn]").length).toBe(13); // 11 解锁 + 2 下一职级锁定预告
     expect(d.getElementById("h-money").textContent).toContain("800");
     expect(d.getElementById("page-life").classList.contains("active")).toBe(true);
     // 卡池页三池渲染（证明 boot 全链路走完）

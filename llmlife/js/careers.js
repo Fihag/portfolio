@@ -3,13 +3,15 @@
    职级门槛判定 / 晋升与沉淀 / 净资产口径 / 收入倍率
    晋升只在年度结算时发生（living.js 弹窗驱动），此处纯逻辑
    ================================================================ */
-import { CAREERS, ACTIONS, assetsOf } from "./config.js";
+import { CAREERS, ACTIONS, assetsOf, CERT_PCT } from "./config.js";
 import { S, save } from "./state.js";
 import { addAttrs } from "./items.js";
 
 export function careerOf(tier = S.life.tier){ return CAREERS[Math.min(Math.max(tier,0), CAREERS.length-1)]; }
 /** 工作类收入职级倍率 */
 export function tierMult(){ return careerOf().mult; }
+/** 工作收入总倍率 = 职级 × 证书（每张证 +8%，考出来的溢价） */
+export function incomeMult(){ return tierMult() * (1 + (S.life.certs || 0) * CERT_PCT); }
 
 /** 净资产（现金 + 持仓市值 + 房产×0.7，与结局综合分同源口径） */
 export function netWorth(){ return assetsOf(S); }

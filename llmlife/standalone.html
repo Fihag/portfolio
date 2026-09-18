@@ -630,6 +630,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .slot-track i.on{background:linear-gradient(135deg,var(--blue),#7c3aed)}
 .slot-tx{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;min-width:54px;text-align:right}
 .sick-banner{background:#fff1f0;border:1px solid #ffc9c4;color:#b91c1c;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:8px}
+.act-btn .odds{font-size:10px;font-weight:800;color:var(--blue-d);margin-top:3px;min-height:12px;font-variant-numeric:tabular-nums}
 
 </style>
   </head>
@@ -979,6 +980,11 @@ const PROBS = {
   PARTNER_TALK: 0.18,// 日切在场伙伴小剧场概率
 };
 const PITY_MAX = 60;        // 伙伴池保底
+/* 打工风险：事故概率下限（技术到顶也不归零，riskMul 永远有效） */
+const DISASTER_FLOOR = .004;
+/* 考证（考试/面试的等价物）：技能是硬底，心情低落再打折；每张证永久工作收入 +8% */
+const EXAM = { base:.35, perSkill:1/150, lowMoodPen:.1, min:.3, max:.95 };
+const CERT_PCT = .08;
 const ITEM_PITY_MAX = 30;   // 道具池保底
 const PAY_BOOST = 1.3;
 const START_MONEY = 800;
@@ -1073,6 +1079,9 @@ const CAREERS = [
 const ACTIONS = [
   {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
   {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
+  {id:'cert1',  name:'初级认证', icon:'📜', tier:0, slots:2, stamina:12, money:300, cert:1, exam:true, desc:'通过率看技术：过了永久工作收入 +8%，挂了心情 -6 可重考'},
+  {id:'cert2',  name:'高级认证', icon:'📗', tier:0, slots:2, stamina:12, money:800, cert:1, exam:true, needsCert:1, desc:'需先有 1 张证；更难的考试，过了再 +8% 收入'},
+  {id:'cert3',  name:'行业认证', icon:'🏅', tier:0, slots:2, stamina:12, money:2000, cert:1, exam:true, needsCert:2, desc:'需先有 2 张证；封顶的一张，过了累计 +24% 收入'},
   {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
   {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, health:2, desc:'最累的一档，但上限成长是真金白银（顺带养健康）'},
   {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
@@ -1090,7 +1099,7 @@ const ACTIONS = [
   {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
-const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
+const WEEK_STAT_KEYS = ['work','learn','cert1','cert2','cert3','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
 
 /* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
 const GOAL_POOL = [
@@ -1612,7 +1621,7 @@ function defaultState(){
     ng:0, endingsSeen:{},
     /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
     chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY, sick:false,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY, sick:false, certs:0,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10, satiety:80, health:LIFE.HEALTH_MAX},
       staminaMax:LIFE.STAMINA_MAX,
       weekStats:freshWeekStats(), goals:null,
@@ -1657,7 +1666,7 @@ function normalizeV2(s){
   // 逐键回填：新增需求条（饱食/健康）在老档里是 undefined，直接加减会变 NaN
   for(const k of ['stamina','mood','skill','charm','satiety','health'])
     if(s.life.attrs[k]==null) s.life.attrs[k] = defaultState().life.attrs[k];
-  for(const k of ['day','age','staminaMax','tier','house','timeLeft']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+  for(const k of ['day','age','staminaMax','tier','house','timeLeft','certs']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
   if(s.life.restUsed==null) s.life.restUsed = 0;
   if(s.life.sick==null) s.life.sick = false;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
@@ -1948,6 +1957,97 @@ function buyHouse(){
   return {house:nx.house};
 }
 
+/* ================= js/economy.js ================= */
+/* ================================================================
+   LLMLife · 经济层 (economy.js)
+   打工事件参数单一数据源：概率与倍率只在此定义，
+   sampleWorkPay(life.js) 据此抽样、expectedWorkPay 据此求期望、
+   单测直接 import 断言两者同源。
+   梯度按 v4.3 重标后的技能值域 0~100 线性标定。
+   第 4 参 opts 为工作类行动修正：tierMult 职级倍率 / workMult 行动倍率 /
+   riskMul 事故放大（加班冲刺、外包大单等高收益卡用）。
+   ================================================================ */
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * 打工事件参数（skill 0~100; mood 仅影响低心情惩罚; riskMul 放大事故概率）
+ * @param {number} skill
+ * @param {number} [mood]
+ * @param {number} [riskMul]
+ */
+function payoutParams(skill, mood, riskMul = 1){
+  const lowMood = (mood==null ? 70 : mood) < LIFE.MOOD_LOW;
+  return {
+    pGreat: .02 + Math.max(0, skill) * .0009,                       // 技术越高大成功越多
+    pRework: Math.min(.3, Math.max(.04, .25 - Math.max(0, skill) * .0021) + (lowMood ? .05 : 0)),
+    // 事故下限：技术到顶也不再归零，riskMul 永远有效（加班/大单的代价不能白送）
+    pDisaster: clamp(Math.max(DISASTER_FLOOR, (20 - Math.max(0, skill)) / 1000) * riskMul + (lowMood ? .01 : 0), 0, .1),
+    mult: { great: 2.5, rework: .4 },
+    okRange: [.85, 1.15],          // ok 事件随机区间（期望取中点 1.0）
+    disasterPenalty: 50 * PAY_BOOST * riskMul,
+    boost: PAY_BOOST,
+  };
+}
+
+/** 工作类行动的成功率（拿到正常及以上结果的概率；行动卡公示用，与抽样同源） */
+function workSuccessRate(skill, mood, riskMul = 1){
+  const {pRework, pDisaster} = payoutParams(skill, mood, riskMul);
+  return clamp(1 - pRework - pDisaster, 0, 1);
+}
+
+/** 考证通过率：技能是硬底（0.35~0.95），心情低落再打点折（考试/面试的等价物） */
+function examRate(skill, mood){
+  const lowMood = (mood==null ? 70 : mood) < LIFE.MOOD_LOW;
+  return clamp(EXAM.base + Math.max(0, skill) * EXAM.perSkill - (lowMood ? EXAM.lowMoodPen : 0), EXAM.min, EXAM.max);
+}
+
+/**
+ * 单次打工的基础价（未含事件倍率）：基础单价 × 技术系数 × 心情系数 × 伙伴加成 × 职级倍率 × 行动倍率
+ * @param {number} skill
+ * @param {number} mood
+ * @param {number} [workBoost] 伙伴收入加成小数（0.3 = +30%）
+ * @param {number} [mult] 职级×行动复合倍率
+ */
+function workBasePay(skill, mood, workBoost, mult = 1){
+  return LIFE.WORK_BASE * skillMult(skill) * moodMult(mood) * (1 + (workBoost||0)) * mult;
+}
+
+/**
+ * 各事件的固定结算额（ok 取区间中点）。
+ * 期望 = Σ p_e × amt_e，由 expectedWorkPay 保证与抽样公式同源。
+ */
+function workPayEvents(skill, mood, workBoost, mult = 1, riskMul = 1){
+  const base = workBasePay(skill, mood, workBoost, mult);
+  const {mult: evMult, okRange, disasterPenalty, boost} = payoutParams(skill, mood, riskMul);
+  return {
+    ok:       base * ((okRange[0]+okRange[1])/2) * boost,
+    great:    base * evMult.great * boost,
+    rework:   base * evMult.rework * boost,
+    disaster: -disasterPenalty,
+  };
+}
+
+/** 单次打工期望收益（与 sampleWorkPay 抽样同源） */
+function expectedWorkPay(skill, mood, workBoost, mult = 1, riskMul = 1){
+  const {pGreat, pRework, pDisaster} = payoutParams(skill, mood, riskMul);
+  const ev = workPayEvents(skill, mood, workBoost, mult, riskMul);
+  const pOk = Math.max(0, 1 - pGreat - pRework - pDisaster);
+  return pOk*ev.ok + pGreat*ev.great + pRework*ev.rework + pDisaster*ev.disaster;
+}
+
+/** 抽样一次打工结算（life.js 工作类行动调用） */
+function sampleWorkPay(skill, mood, workBoost, opts = {}){
+  const {mult = 1, riskMul = 1} = opts;
+  const {pGreat, pRework, pDisaster, mult: evMult, okRange, disasterPenalty, boost} = payoutParams(skill, mood, riskMul);
+  const base = workBasePay(skill, mood, workBoost, mult);
+  const roll = Math.random();
+  if(roll < pDisaster) return {amt:-disasterPenalty, evt:'disaster'};
+  if(roll < pDisaster + pRework) return {amt:base*evMult.rework*boost, evt:'rework'};
+  if(roll > 1 - pGreat) return {amt:base*evMult.great*boost, evt:'great'};
+  return {amt:base*(okRange[0]+Math.random()*(okRange[1]-okRange[0]))*boost, evt:'ok'};
+}
+
 /* ================= js/partners.js ================= */
 /* ================================================================
    LLMLife · 伙伴层 (partners.js)
@@ -2175,84 +2275,6 @@ function useItem(id){
   return {ok:true, line:`${it.icon} ${it.name}：${parts.join('，')}`, extra:{}};
 }
 
-/* ================= js/economy.js ================= */
-/* ================================================================
-   LLMLife · 经济层 (economy.js)
-   打工事件参数单一数据源：概率与倍率只在此定义，
-   sampleWorkPay(life.js) 据此抽样、expectedWorkPay 据此求期望、
-   单测直接 import 断言两者同源。
-   梯度按 v4.3 重标后的技能值域 0~100 线性标定。
-   第 4 参 opts 为工作类行动修正：tierMult 职级倍率 / workMult 行动倍率 /
-   riskMul 事故放大（加班冲刺、外包大单等高收益卡用）。
-   ================================================================ */
-
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-
-/**
- * 打工事件参数（skill 0~100; mood 仅影响低心情惩罚; riskMul 放大事故概率）
- * @param {number} skill
- * @param {number} [mood]
- * @param {number} [riskMul]
- */
-function payoutParams(skill, mood, riskMul = 1){
-  const lowMood = (mood==null ? 70 : mood) < LIFE.MOOD_LOW;
-  return {
-    pGreat: .02 + Math.max(0, skill) * .0009,                       // 技术越高大成功越多
-    pRework: Math.min(.3, Math.max(.04, .25 - Math.max(0, skill) * .0021) + (lowMood ? .05 : 0)),
-    pDisaster: clamp(Math.max(0, (20 - Math.max(0, skill)) / 1000) * riskMul + (lowMood ? .01 : 0), 0, .1),
-    mult: { great: 2.5, rework: .4 },
-    okRange: [.85, 1.15],          // ok 事件随机区间（期望取中点 1.0）
-    disasterPenalty: 50 * PAY_BOOST * riskMul,
-    boost: PAY_BOOST,
-  };
-}
-
-/**
- * 单次打工的基础价（未含事件倍率）：基础单价 × 技术系数 × 心情系数 × 伙伴加成 × 职级倍率 × 行动倍率
- * @param {number} skill
- * @param {number} mood
- * @param {number} [workBoost] 伙伴收入加成小数（0.3 = +30%）
- * @param {number} [mult] 职级×行动复合倍率
- */
-function workBasePay(skill, mood, workBoost, mult = 1){
-  return LIFE.WORK_BASE * skillMult(skill) * moodMult(mood) * (1 + (workBoost||0)) * mult;
-}
-
-/**
- * 各事件的固定结算额（ok 取区间中点）。
- * 期望 = Σ p_e × amt_e，由 expectedWorkPay 保证与抽样公式同源。
- */
-function workPayEvents(skill, mood, workBoost, mult = 1, riskMul = 1){
-  const base = workBasePay(skill, mood, workBoost, mult);
-  const {mult: evMult, okRange, disasterPenalty, boost} = payoutParams(skill, mood, riskMul);
-  return {
-    ok:       base * ((okRange[0]+okRange[1])/2) * boost,
-    great:    base * evMult.great * boost,
-    rework:   base * evMult.rework * boost,
-    disaster: -disasterPenalty,
-  };
-}
-
-/** 单次打工期望收益（与 sampleWorkPay 抽样同源） */
-function expectedWorkPay(skill, mood, workBoost, mult = 1, riskMul = 1){
-  const {pGreat, pRework, pDisaster} = payoutParams(skill, mood, riskMul);
-  const ev = workPayEvents(skill, mood, workBoost, mult, riskMul);
-  const pOk = Math.max(0, 1 - pGreat - pRework - pDisaster);
-  return pOk*ev.ok + pGreat*ev.great + pRework*ev.rework + pDisaster*ev.disaster;
-}
-
-/** 抽样一次打工结算（life.js 工作类行动调用） */
-function sampleWorkPay(skill, mood, workBoost, opts = {}){
-  const {mult = 1, riskMul = 1} = opts;
-  const {pGreat, pRework, pDisaster, mult: evMult, okRange, disasterPenalty, boost} = payoutParams(skill, mood, riskMul);
-  const base = workBasePay(skill, mood, workBoost, mult);
-  const roll = Math.random();
-  if(roll < pDisaster) return {amt:-disasterPenalty, evt:'disaster'};
-  if(roll < pDisaster + pRework) return {amt:base*evMult.rework*boost, evt:'rework'};
-  if(roll > 1 - pGreat) return {amt:base*evMult.great*boost, evt:'great'};
-  return {amt:base*(okRange[0]+Math.random()*(okRange[1]-okRange[0]))*boost, evt:'ok'};
-}
-
 /* ================= js/careers.js ================= */
 /* ================================================================
    LLMLife · 职业层 (careers.js)
@@ -2263,6 +2285,8 @@ function sampleWorkPay(skill, mood, workBoost, opts = {}){
 function careerOf(tier = S.life.tier){ return CAREERS[Math.min(Math.max(tier,0), CAREERS.length-1)]; }
 /** 工作类收入职级倍率 */
 function tierMult(){ return careerOf().mult; }
+/** 工作收入总倍率 = 职级 × 证书（每张证 +8%，考出来的溢价） */
+function incomeMult(){ return tierMult() * (1 + (S.life.certs || 0) * CERT_PCT); }
 
 /** 净资产（现金 + 持仓市值 + 房产×0.7，与结局综合分同源口径） */
 function netWorth(){ return assetsOf(S); }
@@ -2491,6 +2515,7 @@ function canDo(actionId){
   if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
     return {ok:false, reason:'今天已经躺平过了，再用道具回体力或提前收工'};
   if((a.slots || 1) > S.life.timeLeft) return {ok:false, reason:'今天的时间格不够了，收工歇着吧'};
+  if(a.needsCert && (S.life.certs || 0) < a.needsCert) return {ok:false, reason:`需要先考过前 ${a.needsCert} 张证`};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
   if(a.money > S.money) return {ok:false, reason:'钱包不够了，先去打工'};
   return {ok:true};
@@ -2539,10 +2564,21 @@ function doAction(actionId){
   bumpWeekStat(actionId);
 
   let line;
-  if(actionId === 'work' || a.workMult){
+  if(a.exam){
+    // 考证：技能定通过率，挂了只是重来（时间与报名费打水漂）
+    const rate = examRate(attr.skill, attr.mood);
+    if(Math.random() < rate){
+      S.life.certs = (S.life.certs || 0) + 1;
+      addAttrs({ skill:3, mood:6 });
+      line = `${a.icon} ${a.name}：通过！证书 ${S.life.certs} 张（工作收入 +${Math.round(S.life.certs * CERT_PCT * 100)}%），技术 +3、心情 +6`;
+    } else {
+      attr.mood = Math.max(0, attr.mood - 6);
+      line = `${a.icon} ${a.name}：差几分没过（通过率 ${Math.round(rate * 100)}%），报名费打水漂、心情 -6，下季再战`;
+    }
+  } else if(actionId === 'work' || a.workMult){
     // 工作类：职级倍率 × 行动倍率走同一 payout 事件流（期望与抽样同源）
     const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work,
-      { mult: tierMult() * (a.workMult || 1) * satMul, riskMul: a.riskMul || 1 });
+      { mult: incomeMult() * (a.workMult || 1) * satMul, riskMul: a.riskMul || 1 });
     S.money += pay.amt;
     addLedger(a.name || '打工收入', pay.amt);
     S.stats.workDays++;
@@ -3008,6 +3044,7 @@ function renderLife(){
         <div class="ic">${x.icon}</div>
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
+        <div class="odds">${oddsOf(x) || ''}</div>
         <div class="desc">${x.desc}</div>
       </button>`),
       ...duo.map(c => `
@@ -3030,6 +3067,11 @@ function renderLife(){
   barEl && barEl.querySelectorAll('[data-actbtn]').forEach(b => {
     if(b.closest('.locked')) return;
     b.disabled = !canDo(b.dataset.actbtn).ok;
+    const oEl = b.querySelector('.odds');
+    if(oEl){
+      const x = ACTIONS.find(v => v.id === b.dataset.actbtn);
+      oEl.textContent = x ? (oddsOf(x) || '') : '';
+    }
   });
   const restHint = $('rest-hint');
   if(restHint) restHint.textContent = S.ending ? '本局已结束'
@@ -3099,6 +3141,14 @@ function renderLife(){
   if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
   const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + LIFE.LIVING);
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
+}
+
+/** 行动卡概率公示（工作类=成功率；考证=通过率；其余行动确定性收益不显示） */
+function oddsOf(x){
+  const a = S.life.attrs;
+  if(x.exam) return `通过率 ${Math.round(examRate(a.skill, a.mood) * 100)}%`;
+  if(x.id === 'work' || x.workMult) return `成功率 ${Math.round(workSuccessRate(a.skill, a.mood, x.riskMul || 1) * 100)}%`;
+  return null;
 }
 
 function costText(x){
@@ -3489,7 +3539,8 @@ function helpHTML(){
   <p><b>职业</b>：五档职级，年度结算时达门槛即可晋升（或躺平换补偿）。职级提升收入倍率并解锁新行动卡（加班冲刺 / 外包大单 / 带队攻坚 / 公司经营……）。</p>
   <p><b>周目标</b>：每周一随机 2 条目标（打工 N 次 / 攒钱 X / 抽卡 Y 次……），完成自动发奖。</p>
   <p><b>属性</b>：时间格决定一天能做几件事（每个行动占用 1~4 格）；体力是身体底（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
-  <p><b>打工</b>：收入 = 基础价 × 职级倍率 × 技术系数 × 心情系数 × 伙伴加成，大成功 ×2.5 / 返工 ×0.4 / 事故倒赔，概率公示页可查。</p>
+  <p><b>打工</b>：收入 = 基础价 × 职级倍率 × 技术系数 × 心情系数 × 伙伴加成，大成功 ×2.5 / 返工 ×0.4 / 事故倒赔。<b>行动卡上直接公示成功率</b>，加班/大单的风险系数永远生效——高收益不是白送的。</p>
+  <p><b>考证</b>：初级/高级/行业三张证，按技术定通过率（30%~95%，低心情打折），通过永久工作收入 +8%/张；落榜只损失报名费与心情，可以重考。</p>
   <p><b>伙伴</b>：最多 3 位随行。效果看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感（×1.0/1.15/1.3）。<b>好感满 90 解锁该伙伴专属行动卡</b>（每天 1 次）；重复卡折好感 +10，同卡满 3 张升 1 星（每星效果 +8%）。</p>
   <p><b>资产</b>：住房升级链改善周租与睡眠；行情系统低买高卖（波动真实且与事件联动），持仓与房产计入净资产。</p>
   <p><b>结局</b>：30 岁按综合分定档（普通码农 → 神之人生，另有 7 种收集）；欠租 ${LIFE.GRACE_WEEKS} 周直接破产；手握 Fihag V1 有彩蛋结局。结算后 NG+ 保留收集。</p>

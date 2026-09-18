@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   payoutParams, workPayEvents, workBasePay, expectedWorkPay, sampleWorkPay,
 } from "../js/economy.js";
-import { LIFE, PAY_BOOST, skillMult, moodMult } from "../js/config.js";
+import { LIFE, PAY_BOOST, skillMult, moodMult, DISASTER_FLOOR } from "../js/config.js";
 
 describe("payoutParams（v4.3 重标梯度）", () => {
   it("大成功概率随技术单调不减，端点对齐设计值", () => {
@@ -25,9 +25,12 @@ describe("payoutParams（v4.3 重标梯度）", () => {
       expect(p.pRework).toBeLessThanOrEqual(0.3);
     }
   });
-  it("生产事故只属于低技术区，且低心情加重惩罚", () => {
-    expect(payoutParams(50, 70).pDisaster).toBe(0);
-    expect(payoutParams(0, 70).pDisaster).toBeGreaterThan(0);
+  it("生产事故有下限：技术到顶也不归零，riskMul 永远有效", () => {
+    expect(payoutParams(50, 70).pDisaster).toBeCloseTo(DISASTER_FLOOR, 6);
+    expect(payoutParams(100, 70).pDisaster).toBeCloseTo(DISASTER_FLOOR, 6);
+    // 高薪行动的风险不是白送：riskMul 直接把下限放大
+    expect(payoutParams(100, 70, 2.5).pDisaster).toBeCloseTo(DISASTER_FLOOR * 2.5, 6);
+    expect(payoutParams(0, 70).pDisaster).toBeGreaterThan(DISASTER_FLOOR);
     expect(payoutParams(10, 20).pRework).toBeGreaterThan(payoutParams(10, 70).pRework);
     expect(payoutParams(10, 20).pDisaster).toBeGreaterThan(payoutParams(10, 70).pDisaster);
   });

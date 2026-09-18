@@ -5,6 +5,7 @@
 import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA, DUO_SLOTS, HOUSES, HOUSE_EQUITY, MARKET, STOCK_SLOTS, assetsOf, houseOf } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
 import { holdingsValue } from "../market.js";
+import { examRate, workSuccessRate } from "../economy.js";
 import { iconImg } from "../fx.js";
 import { validateResult } from "../validate.js";
 import { slotBoosts, favorNext, effectOf, bestPartner, staminaCeiling } from "../partners.js";
@@ -79,6 +80,7 @@ function renderLife(){
         <div class="ic">${x.icon}</div>
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
+        <div class="odds">${oddsOf(x) || ''}</div>
         <div class="desc">${x.desc}</div>
       </button>`),
       ...duo.map(c => `
@@ -101,6 +103,11 @@ function renderLife(){
   barEl && barEl.querySelectorAll('[data-actbtn]').forEach(b => {
     if(b.closest('.locked')) return;
     b.disabled = !canDo(b.dataset.actbtn).ok;
+    const oEl = b.querySelector('.odds');
+    if(oEl){
+      const x = ACTIONS.find(v => v.id === b.dataset.actbtn);
+      oEl.textContent = x ? (oddsOf(x) || '') : '';
+    }
   });
   const restHint = $('rest-hint');
   if(restHint) restHint.textContent = S.ending ? '本局已结束'
@@ -170,6 +177,14 @@ function renderLife(){
   if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
   const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + LIFE.LIVING);
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
+}
+
+/** 行动卡概率公示（工作类=成功率；考证=通过率；其余行动确定性收益不显示） */
+function oddsOf(x){
+  const a = S.life.attrs;
+  if(x.exam) return `通过率 ${Math.round(examRate(a.skill, a.mood) * 100)}%`;
+  if(x.id === 'work' || x.workMult) return `成功率 ${Math.round(workSuccessRate(a.skill, a.mood, x.riskMul || 1) * 100)}%`;
+  return null;
 }
 
 function costText(x){

@@ -3,13 +3,13 @@
    行动执行 / 日切 / 周结算 / 随机事件 / 年龄与结局判定 / 成就
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
-import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_SLOTS, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP, houseOf } from "./config.js";
+import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_SLOTS, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP, houseOf, CERT_PCT } from "./config.js";
 import { tickMarket, shockMarket } from "./market.js";
 import { S, save, addLedger, fmt, setState, defaultState, logToday, pick, bumpWeekStat } from "./state.js";
 import { slotBoosts, favorAll, staminaCeiling, activePartners, effectOf } from "./partners.js";
-import { sampleWorkPay } from "./economy.js";
+import { sampleWorkPay, examRate } from "./economy.js";
 import { addAttrs, clampAttrs } from "./items.js";
-import { tierMult } from "./careers.js";
+import { incomeMult } from "./careers.js";
 import { ensureWeek, checkGoals, goalOf } from "./goals.js";
 
 const ACTION_MAP = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
@@ -108,6 +108,7 @@ export function canDo(actionId){
   if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
     return {ok:false, reason:'今天已经躺平过了，再用道具回体力或提前收工'};
   if((a.slots || 1) > S.life.timeLeft) return {ok:false, reason:'今天的时间格不够了，收工歇着吧'};
+  if(a.needsCert && (S.life.certs || 0) < a.needsCert) return {ok:false, reason:`需要先考过前 ${a.needsCert} 张证`};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
   if(a.money > S.money) return {ok:false, reason:'钱包不够了，先去打工'};
   return {ok:true};
@@ -156,10 +157,21 @@ export function doAction(actionId){
   bumpWeekStat(actionId);
 
   let line;
-  if(actionId === 'work' || a.workMult){
+  if(a.exam){
+    // 考证：技能定通过率，挂了只是重来（时间与报名费打水漂）
+    const rate = examRate(attr.skill, attr.mood);
+    if(Math.random() < rate){
+      S.life.certs = (S.life.certs || 0) + 1;
+      addAttrs({ skill:3, mood:6 });
+      line = `${a.icon} ${a.name}：通过！证书 ${S.life.certs} 张（工作收入 +${Math.round(S.life.certs * CERT_PCT * 100)}%），技术 +3、心情 +6`;
+    } else {
+      attr.mood = Math.max(0, attr.mood - 6);
+      line = `${a.icon} ${a.name}：差几分没过（通过率 ${Math.round(rate * 100)}%），报名费打水漂、心情 -6，下季再战`;
+    }
+  } else if(actionId === 'work' || a.workMult){
     // 工作类：职级倍率 × 行动倍率走同一 payout 事件流（期望与抽样同源）
     const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work,
-      { mult: tierMult() * (a.workMult || 1) * satMul, riskMul: a.riskMul || 1 });
+      { mult: incomeMult() * (a.workMult || 1) * satMul, riskMul: a.riskMul || 1 });
     S.money += pay.amt;
     addLedger(a.name || '打工收入', pay.amt);
     S.stats.workDays++;

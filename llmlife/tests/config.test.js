@@ -139,10 +139,10 @@ describe("职业与周目标数据（阶段 2）", () => {
     });
     expect(CAREERS.length).toBe(5);
   });
-  it("行动卡按职级分布：实习 8 张（含吃饭/下馆子）、后续每级 2 张", () => {
-    expect(ACTIONS.length).toBe(16);
+  it("行动卡按职级分布：实习 11 张（含吃饭/考证）、后续每级 2 张", () => {
+    expect(ACTIONS.length).toBe(19);
     for (let t = 0; t < CAREERS.length; t++) {
-      expect(ACTIONS.filter(a => (a.tier || 0) === t).length).toBe(t === 0 ? 8 : 2);
+      expect(ACTIONS.filter(a => (a.tier || 0) === t).length).toBe(t === 0 ? 11 : 2);
     }
     for (const a of ACTIONS) expect(a.tier || 0).toBeLessThan(CAREERS.length);
     // 每张卡都要吃到时间格预算，且有一条需求/体力成本，否则就是白送的点击

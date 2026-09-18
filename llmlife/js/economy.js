@@ -7,7 +7,7 @@
    第 4 参 opts 为工作类行动修正：tierMult 职级倍率 / workMult 行动倍率 /
    riskMul 事故放大（加班冲刺、外包大单等高收益卡用）。
    ================================================================ */
-import { LIFE, PAY_BOOST, skillMult, moodMult } from "./config.js";
+import { LIFE, PAY_BOOST, skillMult, moodMult, DISASTER_FLOOR, EXAM } from "./config.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -22,12 +22,25 @@ export function payoutParams(skill, mood, riskMul = 1){
   return {
     pGreat: .02 + Math.max(0, skill) * .0009,                       // 技术越高大成功越多
     pRework: Math.min(.3, Math.max(.04, .25 - Math.max(0, skill) * .0021) + (lowMood ? .05 : 0)),
-    pDisaster: clamp(Math.max(0, (20 - Math.max(0, skill)) / 1000) * riskMul + (lowMood ? .01 : 0), 0, .1),
+    // 事故下限：技术到顶也不再归零，riskMul 永远有效（加班/大单的代价不能白送）
+    pDisaster: clamp(Math.max(DISASTER_FLOOR, (20 - Math.max(0, skill)) / 1000) * riskMul + (lowMood ? .01 : 0), 0, .1),
     mult: { great: 2.5, rework: .4 },
     okRange: [.85, 1.15],          // ok 事件随机区间（期望取中点 1.0）
     disasterPenalty: 50 * PAY_BOOST * riskMul,
     boost: PAY_BOOST,
   };
+}
+
+/** 工作类行动的成功率（拿到正常及以上结果的概率；行动卡公示用，与抽样同源） */
+export function workSuccessRate(skill, mood, riskMul = 1){
+  const {pRework, pDisaster} = payoutParams(skill, mood, riskMul);
+  return clamp(1 - pRework - pDisaster, 0, 1);
+}
+
+/** 考证通过率：技能是硬底（0.35~0.95），心情低落再打点折（考试/面试的等价物） */
+export function examRate(skill, mood){
+  const lowMood = (mood==null ? 70 : mood) < LIFE.MOOD_LOW;
+  return clamp(EXAM.base + Math.max(0, skill) * EXAM.perSkill - (lowMood ? EXAM.lowMoodPen : 0), EXAM.min, EXAM.max);
 }
 
 /**
