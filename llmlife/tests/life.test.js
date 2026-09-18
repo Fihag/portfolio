@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import { defaultState, setState, S } from "../js/state.js";
-import { LIFE, ENDINGS, MMAP, PROBS, HOUSES } from "../js/config.js";import { payoutParams, expectedWorkPay } from "../js/economy.js";
+import { LIFE, ENDINGS, MMAP, PROBS, HOUSES, livingCost } from "../js/config.js";import { payoutParams, expectedWorkPay } from "../js/economy.js";
 import { recruit, setSlot, slotBoosts, favorLevel, boostOf, effectOf, staminaCeiling } from "../js/partners.js";
 import { addItem, useItem, itemCount, rollLottery } from "../js/items.js";
 import { doAction, endDay, weekSettle, checkEnd, checkMilestones, canDo, anyActionAvailable, restart, newGamePlus, chapterIndex, CHAPTER_TOTAL } from "../js/life.js";
@@ -236,10 +236,10 @@ describe("回合引擎", () => {
     expect(r.line).toContain("身体到极限");
   });
 
-  it("周结算扣房租（随住房档位），付不起计欠租，两周破产结局", () => {
+  it("周结算扣房租（随住房档位）+ 生活水平，付不起计欠租，两周破产结局", () => {
     S.money = 100000;
     const msg = weekSettle();
-    expect(S.money).toBe(100000 - HOUSES[0].rent - LIFE.LIVING);
+    expect(S.money).toBe(100000 - HOUSES[0].rent - livingCost(S));
     expect(S.debtWeeks).toBe(0);
     expect(msg).toContain("余额");
     expect(msg).toContain(HOUSES[0].name);
@@ -247,7 +247,7 @@ describe("回合引擎", () => {
     S.money = 100000;
     S.life.house = 2;
     weekSettle();
-    expect(S.money).toBe(100000 - HOUSES[2].rent - LIFE.LIVING);
+    expect(S.money).toBe(100000 - HOUSES[2].rent - livingCost(S));
     S.money = -500;
     S.life.house = 0;
     weekSettle();

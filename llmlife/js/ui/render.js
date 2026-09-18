@@ -2,7 +2,7 @@
    LLMLife · 渲染层 (ui/render.js)
    状态变化后全量重渲：头部芯片 / 生活页 / 伙伴页 / 背包页 / 数据页
    ================================================================ */
-import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA, DUO_SLOTS, HOUSES, HOUSE_EQUITY, MARKET, STOCK_SLOTS, assetsOf, houseOf } from "../config.js";
+import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA, DUO_SLOTS, HOUSES, HOUSE_EQUITY, MARKET, STOCK_SLOTS, assetsOf, houseOf, livingCost } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
 import { holdingsValue } from "../market.js";
 import { examRate, workSuccessRate } from "../economy.js";
@@ -175,7 +175,7 @@ function renderLife(){
     : `第 ${ch + 1}/${CHAPTER_TOTAL} 章《${CHAPTER_TITLES[ch] || ''}》· 本年第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天`;
   const atxt = $('life-age-txt');
   if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
-  const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + LIFE.LIVING);
+  const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + livingCost(S));
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
 }
 

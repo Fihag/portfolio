@@ -3,7 +3,7 @@
    行动执行 / 日切 / 周结算 / 随机事件 / 年龄与结局判定 / 成就
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
-import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_SLOTS, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP, houseOf, CERT_PCT } from "./config.js";
+import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_SLOTS, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP, houseOf, CERT_PCT, livingCost, DEBT_INTEREST } from "./config.js";
 import { tickMarket, shockMarket } from "./market.js";
 import { S, save, addLedger, fmt, setState, defaultState, logToday, pick, bumpWeekStat } from "./state.js";
 import { slotBoosts, favorAll, staminaCeiling, activePartners, effectOf } from "./partners.js";
@@ -248,8 +248,10 @@ function fxVal(v){ return Array.isArray(v) ? rand(v[0], v[1]) : v; }
 function applyFx(fx, label = '事件'){
   const nums = [];
   let money = 0;
-  if(fx.money){
-    money = fxVal(fx.money);
+  if(fx.money || fx.moneyPct){
+    money = fx.money ? fxVal(fx.money) : 0;
+    // 按身家比例扣钱（份子钱/消费主义）：收入涨了账单也跟着涨
+    if(fx.moneyPct) money += Math.round(Math.max(0, S.money) * fxVal(fx.moneyPct));
     S.money += money;
     addLedger(label, money);
     if(money >= 0) S.stats.earned += money; else S.stats.spent += -money;
@@ -438,19 +440,25 @@ export function endDay(){
   return lines;
 }
 
-/* ---------- 周结算：房租（随当前住房档位） + 伙食，欠租计周 ---------- */
+/* ---------- 周结算：房租（随住房档位） + 生活水平（随职级/住房上涨），欠租计息-------- */
 export function weekSettle(){
   const h = houseOf(S);
-  const cost = h.rent + LIFE.LIVING;
+  const cost = h.rent + livingCost(S);
   S.money -= cost;
-  addLedger(`周结算·房租(${h.name})伙食`, -cost);
+  addLedger(`周结算·房租(${h.name})+生活`, -cost);
   S.stats.spent += cost;
   if(S.money < 0){
     S.debtWeeks++;
-    return `🏠 周结算：${h.name}房租+伙食 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}，欠租第 ${S.debtWeeks} 周（${LIFE.GRACE_WEEKS} 周破产）`;
+    const interest = Math.round(-S.money * DEBT_INTEREST);
+    if(interest > 0){
+      S.money -= interest;
+      addLedger('欠租滞纳金', -interest);
+      S.stats.spent += interest;
+    }
+    return `🏠 周结算：${h.name}房租+生活 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}，欠租第 ${S.debtWeeks} 周（滞纳金 ¥${interest}，${LIFE.GRACE_WEEKS} 周破产）`;
   }
   S.debtWeeks = 0;
-  return `🏠 周结算：${h.name}房租+伙食 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}`;
+  return `🏠 周结算：${h.name}房租+生活 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}`;
 }
 
 /* ---------- 结局判定（破产 / 30 岁章满结算 / Fihag 彩蛋） ---------- */

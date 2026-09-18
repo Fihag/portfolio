@@ -732,7 +732,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
               <div class="bar"><i id="life-progress-bar" style="width:0%"></i></div>
             </div>
             <div class="qtip" style="margin-top:10px;margin-bottom:0">
-              💡 周结算：房租 + 伙食 <b id="week-cost"></b>，余额不足会欠租，连续欠租 <b id="grace-weeks"></b> 周破产。
+              💡 周结算：房租 + 生活水平 <b id="week-cost"></b>（随职级与住房上涨），余额不足会欠租并计滞纳金，连续欠租 <b id="grace-weeks"></b> 周破产。
             </div>
           </div>
         </div>
@@ -1045,10 +1045,15 @@ const LIFE = {
   SICK_COST: 200,          // 病倒医药费
   SICK_SLOT_MUL: 0.5,      // 病倒次日时间格打折
   SICK_REFILL_MUL: 0.7,    // 病倒次日体力回满打折
-  LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
 };
+/* ---------- 生活水平（周账单的活口：收入涨，生活也跟着涨，钱一直有痛感） ---------- */
+const LIVING_BASE = 600;    // 基础生活开销
+const LIVING_TIER = 500;    // 每职级一档
+const LIVING_HOUSE = 300;   // 每住房一档
+const DEBT_INTEREST = 0.05; // 欠租滞纳金：每周按欠款计息
+const livingCost = s => LIVING_BASE + (s.life.tier || 0) * LIVING_TIER + (s.life.house || 0) * LIVING_HOUSE;
 /* 八章标题：每章年度结算与下一章预告用 */
 const CHAPTER_TITLES = [
   '初入行·交完房租还剩多少',
@@ -1125,6 +1130,8 @@ const EVENTS = [
   {id:'sick',      name:'生病看病',   weight:5, stamina:-15, money:-300, mood:-8, cond:s=>s.life.attrs.stamina<50 || s.life.attrs.health<LIFE.HEALTH_LOW, text:'身体亮红灯，挂号输液一条龙'},
   {id:'gastritis', name:'胃病犯了',   weight:4, health:-5, mood:-6, money:-100, cond:s=>s.life.attrs.satiety<LIFE.SATIETY_LOW, text:'长期不好好吃饭，胃先抗议了'},
   {id:'checkup',   name:'体检报告',   weight:3, health:8, money:-150, cond:s=>s.life.attrs.health<LIFE.HEALTH_LOW, text:'报告上几行箭头看得心里发毛，医生只说了四个字：规律作息'},
+  {id:'wedding',   name:'份子钱',     weight:4, moneyPct:[-.04, -.02], mood:4, cond:s=>s.money>3000, text:'红色炸弹连环到：这个月第三场婚礼，随份子按身家走，钱包在哭泣'},
+  {id:'upgrade',   name:'设备换代',   weight:3, moneyPct:[-.08, -.04], skill:1, mood:-3, cond:s=>s.money>8000, text:'主力机三年高龄、风扇开始唱歌，咬牙换了新的——顺便清空了半个购物车'},
   {id:'aiver',     name:'AI 大版本',  weight:6, skill:3, mood:5, text:'常用模型深夜更新，白嫖到新能力'},
   {id:'found',     name:'捡到钱',     weight:4, money:150, text:'路边捡到红包，法律上不算拾金……算了花吧'},
   {id:'oldclient', name:'老客户返场', weight:5, money:400, cond:s=>s.life.attrs.skill>20, text:'老客户带着新需求回来了，信任无价'},
@@ -1214,6 +1221,10 @@ const CHOICE_EVENTS = [
     {label:'梭 ¥2000 上车', fx:{money:-2000, mood:4}, text:'你按下了买入键，从此每天盯盘十二次。', after:{days:5, ev:'mkt_dip'}},
     {label:'反手举报内幕群', fx:{money:-300, charm:3, mood:6}, text:'反诈中心给你发了朵小红花，群没了，你的钱还在。', after:{days:6, ev:'mkt_chop'}},
     {label:'当他有病', fx:{mood:-2}, text:'你戴上降噪耳机。三天后他请全组吃饭庆祝——你继续写代码。'},
+  ]},
+  {id:'ch_consume', name:'消费主义来电', cond:s=>s.money>=5000, text:'大促的电话和短信轮番轰炸：「现在下单立省一个亿」。购物车已经躺满了。', choices:[
+    {label:'买买买', fx:{moneyPct:-.06, mood:12}, text:'快递堆满门口，心情确实好了三天——第四天开始还信用卡。'},
+    {label:'物理清空购物车', fx:{mood:-4, charm:1}, text:'你删掉 App，又装回来，再删掉。这场战争你暂时赢了。'},
   ]},
 ];
 
@@ -2655,8 +2666,10 @@ function fxVal(v){ return Array.isArray(v) ? rand(v[0], v[1]) : v; }
 function applyFx(fx, label = '事件'){
   const nums = [];
   let money = 0;
-  if(fx.money){
-    money = fxVal(fx.money);
+  if(fx.money || fx.moneyPct){
+    money = fx.money ? fxVal(fx.money) : 0;
+    // 按身家比例扣钱（份子钱/消费主义）：收入涨了账单也跟着涨
+    if(fx.moneyPct) money += Math.round(Math.max(0, S.money) * fxVal(fx.moneyPct));
     S.money += money;
     addLedger(label, money);
     if(money >= 0) S.stats.earned += money; else S.stats.spent += -money;
@@ -2845,19 +2858,25 @@ function endDay(){
   return lines;
 }
 
-/* ---------- 周结算：房租（随当前住房档位） + 伙食，欠租计周 ---------- */
+/* ---------- 周结算：房租（随住房档位） + 生活水平（随职级/住房上涨），欠租计息-------- */
 function weekSettle(){
   const h = houseOf(S);
-  const cost = h.rent + LIFE.LIVING;
+  const cost = h.rent + livingCost(S);
   S.money -= cost;
-  addLedger(`周结算·房租(${h.name})伙食`, -cost);
+  addLedger(`周结算·房租(${h.name})+生活`, -cost);
   S.stats.spent += cost;
   if(S.money < 0){
     S.debtWeeks++;
-    return `🏠 周结算：${h.name}房租+伙食 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}，欠租第 ${S.debtWeeks} 周（${LIFE.GRACE_WEEKS} 周破产）`;
+    const interest = Math.round(-S.money * DEBT_INTEREST);
+    if(interest > 0){
+      S.money -= interest;
+      addLedger('欠租滞纳金', -interest);
+      S.stats.spent += interest;
+    }
+    return `🏠 周结算：${h.name}房租+生活 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}，欠租第 ${S.debtWeeks} 周（滞纳金 ¥${interest}，${LIFE.GRACE_WEEKS} 周破产）`;
   }
   S.debtWeeks = 0;
-  return `🏠 周结算：${h.name}房租+伙食 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}`;
+  return `🏠 周结算：${h.name}房租+生活 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}`;
 }
 
 /* ---------- 结局判定（破产 / 30 岁章满结算 / Fihag 彩蛋） ---------- */
@@ -3139,7 +3158,7 @@ function renderLife(){
     : `第 ${ch + 1}/${CHAPTER_TOTAL} 章《${CHAPTER_TITLES[ch] || ''}》· 本年第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天`;
   const atxt = $('life-age-txt');
   if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
-  const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + LIFE.LIVING);
+  const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + livingCost(S));
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
 }
 
@@ -3528,7 +3547,7 @@ function welcomeHTML(){
   <p>💼 <b>职业</b>——实习生 → 正式员工 → 骨干 → 主管 → 自立门户，每一档晋升都会<b>解锁新行动卡</b>。</p>
   <p>🎯 <b>目标</b>——每周刷新周目标，完成拿抽卡券/现金/体力上限奖励，不用再盯着屏幕想「现在干嘛」。</p>
   <p>🤝 <b>伙伴</b>——抽 AI 伙伴随行：数值加成、好感满级解锁<b>专属行动卡</b>、重复卡升星。抽卡是次要玩法（大概）。</p>
-  <p>🏠 <b>账单</b>——每周房租伙食雷打不动，欠租 2 周破产流浪；中后期还有<b>住房升级与行情投资</b>等烧钱大事。</p>
+  <p>🏠 <b>账单</b>——每周房租 + 生活水平（随职级与住房上涨），欠租按周计滞纳金、2 周破产流浪；中后期还有<b>住房升级与行情投资</b>等烧钱大事。</p>
   <p>🏁 <b>结算</b>——30 岁按综合分定档结局，结算后可 <b>NG+ 新周目</b>：图鉴皮肤成就全保留。</p>
   <button class="big-btn" data-act="start">22 岁，入行 →</button>`;
 }

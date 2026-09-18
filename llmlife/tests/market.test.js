@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { defaultState, setState, S, freshMarket } from "../js/state.js";
-import { MARKET, HOUSES, STOCK_SLOTS, PROBS, HOUSE_EQUITY, LIFE, assetsOf, houseOf, endingScore } from "../js/config.js";
+import { MARKET, HOUSES, STOCK_SLOTS, PROBS, HOUSE_EQUITY, LIFE, assetsOf, houseOf, endingScore, livingCost } from "../js/config.js";
 import { tickMarket, shockMarket, holdingsValue, buyStock, sellStock, buyHouse, nextHouse } from "../js/market.js";
 import { staminaCeiling } from "../js/partners.js";
 import { weekSettle, endDay } from "../js/life.js";
@@ -104,7 +104,7 @@ describe("住房升级链", () => {
     expect(S.money).toBe(4000); // nextHouse 不扣款
     const before = S.money;
     weekSettle();
-    expect(before - S.money).toBe(HOUSES[1].rent + LIFE.LIVING);
+    expect(before - S.money).toBe(HOUSES[1].rent + livingCost(S));
     S.money = 100000;
     expect(staminaCeiling()).toBe(S.life.staminaMax + HOUSES[1].sta);
   });

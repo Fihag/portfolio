@@ -179,10 +179,15 @@ export const LIFE = {
   SICK_COST: 200,          // 病倒医药费
   SICK_SLOT_MUL: 0.5,      // 病倒次日时间格打折
   SICK_REFILL_MUL: 0.7,    // 病倒次日体力回满打折
-  LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
 };
+/* ---------- 生活水平（周账单的活口：收入涨，生活也跟着涨，钱一直有痛感） ---------- */
+export const LIVING_BASE = 600;    // 基础生活开销
+export const LIVING_TIER = 500;    // 每职级一档
+export const LIVING_HOUSE = 300;   // 每住房一档
+export const DEBT_INTEREST = 0.05; // 欠租滞纳金：每周按欠款计息
+export const livingCost = s => LIVING_BASE + (s.life.tier || 0) * LIVING_TIER + (s.life.house || 0) * LIVING_HOUSE;
 /* 八章标题：每章年度结算与下一章预告用 */
 export const CHAPTER_TITLES = [
   '初入行·交完房租还剩多少',
@@ -259,6 +264,8 @@ export const EVENTS = [
   {id:'sick',      name:'生病看病',   weight:5, stamina:-15, money:-300, mood:-8, cond:s=>s.life.attrs.stamina<50 || s.life.attrs.health<LIFE.HEALTH_LOW, text:'身体亮红灯，挂号输液一条龙'},
   {id:'gastritis', name:'胃病犯了',   weight:4, health:-5, mood:-6, money:-100, cond:s=>s.life.attrs.satiety<LIFE.SATIETY_LOW, text:'长期不好好吃饭，胃先抗议了'},
   {id:'checkup',   name:'体检报告',   weight:3, health:8, money:-150, cond:s=>s.life.attrs.health<LIFE.HEALTH_LOW, text:'报告上几行箭头看得心里发毛，医生只说了四个字：规律作息'},
+  {id:'wedding',   name:'份子钱',     weight:4, moneyPct:[-.04, -.02], mood:4, cond:s=>s.money>3000, text:'红色炸弹连环到：这个月第三场婚礼，随份子按身家走，钱包在哭泣'},
+  {id:'upgrade',   name:'设备换代',   weight:3, moneyPct:[-.08, -.04], skill:1, mood:-3, cond:s=>s.money>8000, text:'主力机三年高龄、风扇开始唱歌，咬牙换了新的——顺便清空了半个购物车'},
   {id:'aiver',     name:'AI 大版本',  weight:6, skill:3, mood:5, text:'常用模型深夜更新，白嫖到新能力'},
   {id:'found',     name:'捡到钱',     weight:4, money:150, text:'路边捡到红包，法律上不算拾金……算了花吧'},
   {id:'oldclient', name:'老客户返场', weight:5, money:400, cond:s=>s.life.attrs.skill>20, text:'老客户带着新需求回来了，信任无价'},
@@ -348,6 +355,10 @@ export const CHOICE_EVENTS = [
     {label:'梭 ¥2000 上车', fx:{money:-2000, mood:4}, text:'你按下了买入键，从此每天盯盘十二次。', after:{days:5, ev:'mkt_dip'}},
     {label:'反手举报内幕群', fx:{money:-300, charm:3, mood:6}, text:'反诈中心给你发了朵小红花，群没了，你的钱还在。', after:{days:6, ev:'mkt_chop'}},
     {label:'当他有病', fx:{mood:-2}, text:'你戴上降噪耳机。三天后他请全组吃饭庆祝——你继续写代码。'},
+  ]},
+  {id:'ch_consume', name:'消费主义来电', cond:s=>s.money>=5000, text:'大促的电话和短信轮番轰炸：「现在下单立省一个亿」。购物车已经躺满了。', choices:[
+    {label:'买买买', fx:{moneyPct:-.06, mood:12}, text:'快递堆满门口，心情确实好了三天——第四天开始还信用卡。'},
+    {label:'物理清空购物车', fx:{mood:-4, charm:1}, text:'你删掉 App，又装回来，再删掉。这场战争你暂时赢了。'},
   ]},
 ];
 
