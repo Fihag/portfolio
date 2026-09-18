@@ -51,6 +51,7 @@ function makeEl() {
   };
   let _h = "";
   Object.defineProperty(el, "innerHTML", {
+    configurable: true, // perf.test 需替换该访问器以统计 innerHTML 写入次数
     get() {
       return _h;
     },

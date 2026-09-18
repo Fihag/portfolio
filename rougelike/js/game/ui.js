@@ -1,74 +1,89 @@
+            // ===== HUD 脏检查：值未变且同局（game.runId 每局自增）则跳过 DOM 写，消除每帧全量重写的样式失效与 GC =====
+            function hudSet(el, prop, val) {
+                if (el.__hRun === game.runId && el.__h && el.__h[prop] === val) return;
+                (el.__h || (el.__h = {}))[prop] = val;
+                el.__hRun = game.runId;
+                if (prop === 'text') el.textContent = val;
+                else if (prop === 'title') el.title = val;
+                else el.style[prop] = val;
+            }
+            let hudWepsSig = '';
             function updateHud() {
                 const inGame = game.state !== 'menu';
-                hudTop.style.display = inGame ? 'flex' : 'none';
-                hudWeps.style.display = inGame ? 'flex' : 'none';
-                btnTimeStop.style.display = (inGame && game.player && game.player.relicTimeStop) ? '' : 'none';
-                hudWarning.style.display = 'none';
-                hudHint.style.display = 'none';
-                pauseOverlay.style.display = 'none';
-                btnPause.style.display = inGame ? '' : 'none';
+                hudSet(hudTop, 'display', inGame ? 'flex' : 'none');
+                hudSet(hudWeps, 'display', inGame ? 'flex' : 'none');
+                hudSet(btnTimeStop, 'display', (inGame && game.player && game.player.relicTimeStop) ? '' : 'none');
+                hudSet(btnPause, 'display', inGame ? '' : 'none');
                 if (!inGame) return;
                 const player = game.player;
                 if (player) {
                     const hpRatio = clamp(player.hp / player.maxHp, 0, 1);
-                    hudHpFill.style.width = (hpRatio * 100) + '%';
-                    hudHpText.textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+                    hudSet(hudHpFill, 'width', (hpRatio * 100) + '%');
+                    hudSet(hudHpText, 'text', `${Math.ceil(player.hp)} / ${player.maxHp}`);
                     const xpRatio = clamp(player.xp / player.xpToNext, 0, 1);
-                    hudXpFill.style.width = (xpRatio * 100) + '%';
-                    hudXpText.textContent = `Lv.${player.level}`;
-                    let weps = '';
+                    hudSet(hudXpFill, 'width', (xpRatio * 100) + '%');
+                    hudSet(hudXpText, 'text', `Lv.${player.level}`);
+                    // 武器 chip 的 HTML 含 SVG 图标：仅当（类型×计数）签名变化时重建
+                    let sig = '';
                     for (const w of player.weapons) {
-                        if (w.type === 'magic_missile') weps += '<span class="chip">' + ICONS.flame + '火球</span>';
-                        else if (w.type === 'orbit_blade') weps += '<span class="chip">' + ICONS.swords + '飞刃×' + w.bladeCount + '</span>';
-                        else if (w.type === 'frost_nova') weps += '<span class="chip">' + ICONS.snowflake + '冰霜</span>';
-                        else if (w.type === 'lightning_chain') weps += '<span class="chip">' + ICONS.zap + '闪电</span>';
-                        else if (w.type === 'meteor') weps += '<span class="chip">' + ICONS.orbit + '陨石</span>';
-                        else if (w.type === 'shadow_spirit') weps += '<span class="chip">' + ICONS.ghost + '精灵×' + w.spiritCount + '</span>';
-                        else if (w.type === 'holy_beam') weps += '<span class="chip">' + ICONS.sparkles + '棱镜×' + w.beamCount + '</span>';
-                        else if (w.type === 'plague_cloud') weps += '<span class="chip">' + ICONS.waves + '瘴气×' + w.cloudCount + '</span>';
-                        else if (w.type === 'gravity_well') weps += '<span class="chip">' + ICONS.target + '奇点×' + w.wellCount + '</span>';
+                        sig += w.type + ':' + (w.bladeCount || w.spiritCount || w.beamCount || w.cloudCount || w.wellCount || 0) + '|';
                     }
-                    hudWeps.innerHTML = weps ? '武器：' + weps : '';
+                    if (sig !== hudWepsSig) {
+                        hudWepsSig = sig;
+                        let weps = '';
+                        for (const w of player.weapons) {
+                            if (w.type === 'magic_missile') weps += '<span class="chip">' + ICONS.flame + '火球</span>';
+                            else if (w.type === 'orbit_blade') weps += '<span class="chip">' + ICONS.swords + '飞刃×' + w.bladeCount + '</span>';
+                            else if (w.type === 'frost_nova') weps += '<span class="chip">' + ICONS.snowflake + '冰霜</span>';
+                            else if (w.type === 'lightning_chain') weps += '<span class="chip">' + ICONS.zap + '闪电</span>';
+                            else if (w.type === 'meteor') weps += '<span class="chip">' + ICONS.orbit + '陨石</span>';
+                            else if (w.type === 'shadow_spirit') weps += '<span class="chip">' + ICONS.ghost + '精灵×' + w.spiritCount + '</span>';
+                            else if (w.type === 'holy_beam') weps += '<span class="chip">' + ICONS.sparkles + '棱镜×' + w.beamCount + '</span>';
+                            else if (w.type === 'plague_cloud') weps += '<span class="chip">' + ICONS.waves + '瘴气×' + w.cloudCount + '</span>';
+                            else if (w.type === 'gravity_well') weps += '<span class="chip">' + ICONS.target + '奇点×' + w.wellCount + '</span>';
+                        }
+                        hudWeps.innerHTML = weps ? '武器：' + weps : '';
+                    }
                 }
-                hudTime.textContent = Math.floor(game.time) + 's';
-                hudKills.textContent = game.kills;
+                hudSet(hudTime, 'text', Math.floor(game.time) + 's');
+                hudSet(hudKills, 'text', String(game.kills));
                 // 时停按钮冷却态：冷却中半透明 + title 显示剩余秒数
                 const tsCd = game.timeStopTimer || 0;
-                btnTimeStop.style.opacity = tsCd > 0 ? '0.4' : '1';
-                btnTimeStop.title = tsCd > 0 ? '时停领域 (T)：冷却 ' + Math.ceil(tsCd) + ' 秒' : '时停领域 (T)：就绪';
+                hudSet(btnTimeStop, 'opacity', tsCd > 0 ? '0.4' : '1');
+                hudSet(btnTimeStop, 'title', tsCd > 0 ? '时停领域 (T)：冷却 ' + Math.ceil(tsCd) + ' 秒' : '时停领域 (T)：就绪');
                 const boss = game.enemies.find(e => e.isBoss && e.alive);
                 if (boss) {
-                    hudBoss.style.display = 'flex';
-                    hudBossName.textContent = ENEMY_TYPES[boss.typeKey].name;
-                    hudBossFill.style.width = (clamp(boss.hp / boss.maxHp, 0, 1) * 100) + '%';
+                    hudSet(hudBoss, 'display', 'flex');
+                    hudSet(hudBossName, 'text', ENEMY_TYPES[boss.typeKey].name);
+                    hudSet(hudBossFill, 'width', (clamp(boss.hp / boss.maxHp, 0, 1) * 100) + '%');
                     if (boss.invincible && boss.shieldHp > 0) {
-                        hudShield.style.display = 'block';
-                        hudShield.style.width = (clamp(boss.shieldHp / boss.shieldMax, 0, 1) * 100) + '%';
+                        hudSet(hudShield, 'display', 'block');
+                        hudSet(hudShield, 'width', (clamp(boss.shieldHp / boss.shieldMax, 0, 1) * 100) + '%');
                     } else {
-                        hudShield.style.display = 'none';
+                        hudSet(hudShield, 'display', 'none');
                     }
-                } else if (hudBoss.style.display !== 'none') {
-                    hudBoss.style.display = 'none';
+                } else {
+                    hudSet(hudBoss, 'display', 'none');
                 }
                 if (game.warningTimer > 0) {
-                    hudWarning.textContent = game.warningText;
-                    hudWarning.style.opacity = (0.9 * Math.min(1, game.warningTimer)).toFixed(2);
-                    hudWarning.style.display = 'block';
-                } else if (hudWarning.style.display !== 'none') {
-                    hudWarning.style.display = 'none';
+                    hudSet(hudWarning, 'display', 'block');
+                    hudSet(hudWarning, 'text', game.warningText);
+                    hudSet(hudWarning, 'opacity', (0.9 * Math.min(1, game.warningTimer)).toFixed(2));
+                } else {
+                    hudSet(hudWarning, 'display', 'none');
                 }
                 if (game.time < 4 && game.state === 'playing') {
+                    hudSet(hudHint, 'display', 'block');
                     if (useTouchControl) {
                         const base = game.deathMark.enabled && game.deathMark.mode === 'manual' ? '按住任意位置拖动控制 · 点击敌人标记' : '按住任意位置拖动控制';
-                        hudHint.textContent = isPortraitScreen() ? base + ' · 横屏视野更佳' : base;
+                        hudSet(hudHint, 'text', isPortraitScreen() ? base + ' · 横屏视野更佳' : base);
                     } else {
-                        hudHint.textContent = '键鼠 / 触屏均可操作';
+                        hudSet(hudHint, 'text', '键鼠 / 触屏均可操作');
                     }
-                    hudHint.style.display = 'block';
-                } else if (hudHint.style.display !== 'none') {
-                    hudHint.style.display = 'none';
+                } else {
+                    hudSet(hudHint, 'display', 'none');
                 }
-                pauseOverlay.style.display = (dbg.pauseGame && game.state === 'playing') ? 'flex' : 'none';
+                hudSet(pauseOverlay, 'display', (dbg.pauseGame && game.state === 'playing') ? 'flex' : 'none');
             }
 
             let lastTime = performance.now(), accumulator = 0;

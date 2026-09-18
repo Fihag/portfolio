@@ -67,23 +67,21 @@
                     ctx.ellipse(x, y, r * (1.35 + k * 0.28), r * (0.5 + k * 0.1), spin * (0.5 + k * 0.3) + k, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-                // 暗核（黑心 + 相对论辉光边缘）
-                const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-                g.addColorStop(0, '#000006');
-                g.addColorStop(0.62, '#0a0618');
-                g.addColorStop(0.82, phase2 ? 'rgba(190,70,200,0.55)' : 'rgba(90,110,220,0.5)');
-                g.addColorStop(1, 'rgba(60,40,140,0)');
+                // 暗核（黑心 + 相对论辉光边缘）：渐变以 (0,0) 为心缓存，translate 放置
+                ctx.save(); ctx.translate(x, y);
+                const g = cachedRadial('bh' + (phase2 ? '2' : '1'), 0, r, [
+                    [0, '#000006'], [0.62, '#0a0618'],
+                    [0.82, phase2 ? 'rgba(190,70,200,0.55)' : 'rgba(90,110,220,0.5)'],
+                    [1, 'rgba(60,40,140,0)'],
+                ]);
                 ctx.fillStyle = g;
-                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
             }
 
             function drawMoonDomain(ctx, dom) {
                 const vx0 = cam.x, vy0 = cam.y;
-                // 深空底（蓝紫纵向渐变，二阶段转亮紫红）
-                const bg = ctx.createLinearGradient(0, vy0, 0, vy0 + H);
-                if (dom.phase2) { bg.addColorStop(0, '#140a2e'); bg.addColorStop(0.5, '#241040'); bg.addColorStop(1, '#0d0620'); }
-                else { bg.addColorStop(0, '#0d1233'); bg.addColorStop(0.5, '#1a1445'); bg.addColorStop(1, '#0a0825'); }
-                ctx.fillStyle = bg; ctx.fillRect(vx0 - 10, vy0 - 10, W + 20, H + 20);
+                // 深空底改在 draw() 的 shake 层以屏空间缓存渐变铺满（见 draw 内 moombg），此处只画世界空间内容
                 // 星尘（确定性伪随机 + 闪烁）
                 for (let i = 0; i < 110; i++) {
                     const sx = vx0 + (((Math.sin(i * 127.1) * 43758.5453) % 1) + 1) % 1 * W;
@@ -96,13 +94,14 @@
                 const oa = game.time * 0.12;
                 drawBlackHole(ctx, dom.x + Math.cos(oa) * (dom.r + 260), dom.y + Math.sin(oa) * (dom.r + 260), 46, game.time * 0.9, dom.phase2);
                 drawBlackHole(ctx, dom.x - dom.r * 0.25, dom.y - dom.r * 0.35, 110, game.time * (dom.phase2 ? 1.6 : 1.0), dom.phase2);
-                // 透明地板：极淡高光盘（虚空感）
-                const floorG = ctx.createRadialGradient(dom.x, dom.y, dom.r * 0.1, dom.x, dom.y, dom.r * 0.98);
-                floorG.addColorStop(0, dom.phase2 ? 'rgba(190,120,255,0.10)' : 'rgba(120,140,255,0.08)');
-                floorG.addColorStop(0.75, dom.phase2 ? 'rgba(150,80,230,0.05)' : 'rgba(90,110,220,0.04)');
-                floorG.addColorStop(1, 'rgba(80,60,200,0)');
-                ctx.fillStyle = floorG;
-                ctx.beginPath(); ctx.arc(dom.x, dom.y, dom.r * 0.98, 0, Math.PI * 2); ctx.fill();
+                // 透明地板：极淡高光盘（虚空感）——渐变以领域为心缓存，translate 放置
+                const fr = Math.ceil(dom.r * 0.98), fr0 = Math.ceil(dom.r * 0.1);
+                ctx.save(); ctx.translate(dom.x, dom.y);
+                ctx.fillStyle = cachedRadial('moorfloor' + (dom.phase2 ? '2' : '1'), fr0, fr, dom.phase2
+                    ? [[0, 'rgba(190,120,255,0.10)'], [0.75, 'rgba(150,80,230,0.05)'], [1, 'rgba(80,60,200,0)']]
+                    : [[0, 'rgba(120,140,255,0.08)'], [0.75, 'rgba(90,110,220,0.04)'], [1, 'rgba(80,60,200,0)']]);
+                ctx.beginPath(); ctx.arc(0, 0, fr, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
                 // 满月收缩环（碾压带 + 安全缺口）
                 if (game.moonWaves && game.moonWaves.length) {
                     for (const wv of game.moonWaves) {
@@ -136,15 +135,28 @@
                 ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, W, H);
                 const shake = getShakeOffset();
                 ctx.save(); ctx.translate(shake.x, shake.y);
+                // ===== 月之领域深空底：shake 层、镜头平移之前以屏空间铺满（渐变按 H+阶段缓存，每帧零分配） =====
+                const moonDom = game.moonDomain;
+                if (moonDom && moonDom.active) {
+                    const bg = cachedLinear('moombg' + (moonDom.phase2 ? '2' : '1'), 0, 0, 0, Math.ceil(H), moonDom.phase2
+                        ? [[0, '#140a2e'], [0.5, '#241040'], [1, '#0d0620']]
+                        : [[0, '#0d1233'], [0.5, '#1a1445'], [1, '#0a0825']]);
+                    ctx.fillStyle = bg; ctx.fillRect(-10, -10, W + 20, H + 20);
+                }
                 // ===== 世界空间：镜头平移后绘制世界底色、网格与世界内全部实体（月之领域内整体替换为异空间背景） =====
                 ctx.save(); ctx.translate(-cam.x, -cam.y);
-                if (game.moonDomain && game.moonDomain.active) {
-                    drawMoonDomain(ctx, game.moonDomain);
+                if (moonDom && moonDom.active) {
+                    drawMoonDomain(ctx, moonDom);
                 } else {
                     ctx.fillStyle = '#2b160c'; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
                     ctx.strokeStyle = 'rgba(255,180,120,0.05)'; ctx.lineWidth = 1;
-                    for (let gx = 40; gx < WORLD_W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, WORLD_H); ctx.stroke(); }
-                    for (let gy = 40; gy < WORLD_H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(WORLD_W, gy); ctx.stroke(); }
+                    // 网格：视口裁剪 + 每方向单次批量 stroke（原为每帧全世界约 87 条独立 stroke）
+                    ctx.beginPath();
+                    const gx0 = Math.max(40, Math.floor(cam.x / 40) * 40);
+                    for (let gx = gx0; gx < WORLD_W && gx <= cam.x + W; gx += 40) { ctx.moveTo(gx, 0); ctx.lineTo(gx, WORLD_H); }
+                    const gy0 = Math.max(40, Math.floor(cam.y / 40) * 40);
+                    for (let gy = gy0; gy < WORLD_H && gy <= cam.y + H; gy += 40) { ctx.moveTo(0, gy); ctx.lineTo(WORLD_W, gy); }
+                    ctx.stroke();
                     // 世界边界提示线
                     ctx.strokeStyle = 'rgba(255,150,80,0.35)'; ctx.lineWidth = 3;
                     ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
@@ -187,14 +199,14 @@
                         }
                     }
                 }
-                // 宝箱绘制：金色宝箱 + 发光 + 脉动
+                // 宝箱绘制：金色宝箱 + 发光 + 脉动（辉光渐变缓存，脉动走 globalAlpha）
                 for (const ch of game.chests) {
                     const by = ch.y + Math.sin(game.time * 3 + ch.bob) * 3;
                     const pulse = 0.6 + Math.sin(game.time * 6) * 0.2;
-                    const glow = ctx.createRadialGradient(ch.x, by, 0, ch.x, by, 34);
-                    glow.addColorStop(0, `rgba(255,215,0,${0.35 * pulse})`);
-                    glow.addColorStop(1, 'rgba(255,215,0,0)');
-                    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(ch.x, by, 34, 0, Math.PI * 2); ctx.fill();
+                    ctx.save(); ctx.translate(ch.x, by); ctx.globalAlpha = pulse;
+                    ctx.fillStyle = cachedRadial('chest', 0, 34, [[0, 'rgba(255,215,0,0.35)'], [1, 'rgba(255,215,0,0)']]);
+                    ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
                     ctx.fillStyle = '#ffd700'; ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2.5;
                     ctx.beginPath(); ctx.arc(ch.x, by, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                     ctx.fillStyle = '#8a5a00';
@@ -202,16 +214,15 @@
                     ctx.fillStyle = '#fff3b0';
                     ctx.fillRect(ch.x - 1.5, by - 7, 3, 10);
                 }
-                // 祭坛/传送门绘制
+                // 祭坛/传送门绘制（辉光渐变按类型色缓存；中心色标保持原实现对不透明色标的解析结果）
                 for (const a of game.altars) {
                     const ay = a.y + Math.sin(game.time * 2 + a.pulse) * 3;
                     const colors = { heal: '#55ff88', risk: '#ff4444', portal: '#88aaff' };
                     const col = colors[a.type] || '#ffffff';
-                    const pulse = 0.6 + Math.sin(game.time * 5 + a.pulse) * 0.3;
-                    const glow = ctx.createRadialGradient(a.x, ay, 0, a.x, ay, 40);
-                    glow.addColorStop(0, col.replace(')', `,${0.35 * pulse})`).replace('rgb', 'rgba'));
-                    glow.addColorStop(1, 'rgba(255,255,255,0)');
-                    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(a.x, ay, 40, 0, Math.PI * 2); ctx.fill();
+                    ctx.save(); ctx.translate(a.x, ay);
+                    ctx.fillStyle = cachedRadial('altar' + col, 0, 40, [[0, col], [1, 'rgba(255,255,255,0)']]);
+                    ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
                     ctx.fillStyle = col; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
                     ctx.beginPath(); ctx.arc(a.x, ay, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                     // 图标区分
@@ -371,16 +382,17 @@
                     ctx.lineWidth = 14;
                     ctx.strokeRect(7, 7, W - 14, H - 14);
                 }
-                // 低血量警告 vignette
+                // 低血量警告 vignette（几何按 W/H 缓存，警告强度走 globalAlpha）
                 if (game.state === 'playing' && game.player) {
                     const hpRatio = game.player.hp / game.player.maxHp;
                     if (hpRatio < 0.25) {
                         const pulse = 0.5 + Math.sin(game.time * 5) * 0.3;
-                        const a = (0.25 - hpRatio) / 0.25 * (0.22 + pulse * 0.12);
-                        const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.32, W / 2, H / 2, Math.max(W, H) * 0.62);
-                        vg.addColorStop(0, 'rgba(255,0,0,0)');
-                        vg.addColorStop(1, `rgba(255,0,0,${clamp(a, 0, 0.38)})`);
-                        ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+                        const a = clamp((0.25 - hpRatio) / 0.25 * (0.22 + pulse * 0.12), 0, 0.38);
+                        ctx.save(); ctx.translate(W / 2, H / 2); ctx.globalAlpha = a / 0.38;
+                        ctx.fillStyle = cachedRadial('vig', Math.round(Math.min(W, H) * 0.32), Math.round(Math.max(W, H) * 0.62),
+                            [[0, 'rgba(255,0,0,0)'], [1, 'rgba(255,0,0,0.38)']]);
+                        ctx.fillRect(-W / 2, -H / 2, W, H);
+                        ctx.restore();
                     }
                 }
                 ctx.restore(); // 平衡开头的 shake 层 save

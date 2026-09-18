@@ -3,14 +3,19 @@
             Enemy.prototype.draw = function(ctx) {
                     const flashOn = this.flashTimer > 0;
                     if (this.isBoss) {
-                        const auraGrad = ctx.createRadialGradient(this.x, this.y, this.size * 1.2, this.x, this.y, this.size * 2);
-                        auraGrad.addColorStop(0, this.auraColor); auraGrad.addColorStop(1, 'rgba(80,0,80,0)');
-                        ctx.fillStyle = auraGrad; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2); ctx.fill();
+                        // 光环/狂暴渐变缓存：同色同径共用 CanvasGradient，translate 放置（半径整数量化，≤0.5px 偏差）
+                        const ar = Math.ceil(this.size * 2), ar0 = Math.ceil(this.size * 1.2);
+                        ctx.save(); ctx.translate(this.x, this.y);
+                        ctx.fillStyle = cachedRadial('aura' + this.auraColor, ar0, ar, [[0, this.auraColor], [1, 'rgba(80,0,80,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, ar, 0, Math.PI * 2); ctx.fill();
+                        ctx.restore();
                         if (this.typeKey === 'boss' && this.hp / this.maxHp < 0.5) {
-                            const rageAura = ctx.createRadialGradient(this.x, this.y, this.size * 1.2, this.x, this.y, this.size * 2.2);
-                            rageAura.addColorStop(0, `rgba(255,40,20,${0.35 + Math.sin(game.time * 8) * 0.15})`);
-                            rageAura.addColorStop(1, 'rgba(255,40,20,0)');
-                            ctx.fillStyle = rageAura; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2.2, 0, Math.PI * 2); ctx.fill();
+                            const rr = Math.ceil(this.size * 2.2), rr0 = Math.ceil(this.size * 1.2);
+                            const pulse = (0.35 + Math.sin(game.time * 8) * 0.15) / 0.5;   // 中心 α 以 0.5 烘焙，globalAlpha 还原脉动
+                            ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = pulse;
+                            ctx.fillStyle = cachedRadial('rage', rr0, rr, [[0, 'rgba(255,40,20,0.5)'], [1, 'rgba(255,40,20,0)']]);
+                            ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.fill();
+                            ctx.restore();
                         }
                         if (this.invincible && this.shieldHp > 0) {
                             ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 4;

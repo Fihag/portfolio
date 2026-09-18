@@ -17,7 +17,7 @@ npx serve web/rougelike -l 8123   # http
 npx vite --open                   # ESM 热更新（可选，经典脚本直加载）
 # 开发校验
 npm install
-npm test        # vitest 88 用例（冒烟 + 帧模拟 + Boss/武器/宝库回归）
+npm test        # vitest 93 用例（冒烟 + 帧模拟 + Boss/武器/宝库回归 + 渲染性能缓存）
 npm run lint    # eslint
 ```
 
@@ -78,7 +78,7 @@ web/rougelike/
     └── debug.js            调试面板（P1 合并，仅 debug.html 加载）
 audio/moon/                 幽月魔女音频素材（音乐 2 首 + 采样音效，授权见下节）
 vite.config.js              Vite 双轨（P4，dev:vite 热更新；经典脚本不可打包，勿部署 dist）
-tests/                      vitest 88 用例 / 4 文件（smoke 数值 · frames 帧模拟 · bosses 常规 Boss 与武器 · meta 宝库与存档）
+tests/                      vitest 93 用例 / 5 文件（smoke 数值 · frames 帧模拟 · bosses 常规 Boss 与武器 · meta 宝库与存档 · perf 渲染缓存与 HUD 脏检查）
 ```
 
 - **单仓**：`Pigeon` 已归档为 `debug.html`，`Pages` 部署 `web/rougelike` 根即为正式版（`npx wrangler pages deploy web/rougelike --project-name rougelike-13h`）

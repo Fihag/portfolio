@@ -30,9 +30,12 @@
                                 ctx.beginPath(); ctx.arc(tp.x, tp.y, this.size * (0.3 + i / this.trailPositions.length * 0.5), 0, Math.PI * 2); ctx.fill();
                             }
                             ctx.globalAlpha = 1;
-                            const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2.2);
-                            grad.addColorStop(0, '#ccffcc'); grad.addColorStop(0.4, this.color); grad.addColorStop(1, 'rgba(120,255,80,0)');
-                            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2.2, 0, Math.PI * 2); ctx.fill();
+                            // 渐变缓存：同色同径弹体共用一个 CanvasGradient（坐标以弹体为心，translate 放置）
+                            const r = Math.ceil(this.size * 2.2);
+                            ctx.save(); ctx.translate(this.x, this.y);
+                            ctx.fillStyle = cachedRadial('acid' + this.color, 0, r, [[0, '#ccffcc'], [0.4, this.color], [1, 'rgba(120,255,80,0)']]);
+                            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+                            ctx.restore();
                             ctx.fillStyle = '#eaffea'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.55, 0, Math.PI * 2); ctx.fill();
                         } else if (this.moonBlade) {
                             // 月牙飞刃：细长弯曲的月牙形，凸缘朝速度方向（双圆弧拼合）
@@ -75,9 +78,11 @@
                             ctx.beginPath(); ctx.arc(tp.x, tp.y, this.size * (0.4 + i / this.trailPositions.length * 0.6), 0, Math.PI * 2); ctx.fill();
                         }
                         ctx.globalAlpha = 1;
-                        const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2);
-                        grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.3, this.color); grad.addColorStop(1, 'rgba(255,150,30,0)');
-                        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2); ctx.fill();
+                        const r = Math.ceil(this.size * 2);
+                        ctx.save(); ctx.translate(this.x, this.y);
+                        ctx.fillStyle = cachedRadial('proj' + this.color, 0, r, [[0, '#ffffff'], [0.3, this.color], [1, 'rgba(255,150,30,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+                        ctx.restore();
                         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2); ctx.fill();
                     }
                 }

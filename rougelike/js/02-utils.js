@@ -4,6 +4,34 @@
             function rand(min, max) { return Math.random() * (max - min) + min; }
             function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
 
+            // ===== Canvas 渐变缓存 =====
+            // CanvasGradient 的坐标在「填充时」按当前变换解释：缓存固定以 (0,0) 为中心的对象，
+            // 绘制端 translate(x,y) 后填充即可复用，省掉每帧每实体 createRadialGradient+addColorStop 的分配。
+            // 半径请传整数量化值并用于配套 arc/fillRect，保证同一 key 下几何自洽（与精确值偏差 ≤0.5px）。
+            const _gradCache = new Map();
+            function cachedRadial(key, r0, r1, stops) {
+                const k = 'r|' + key + '|' + r0 + '|' + r1;
+                let g = _gradCache.get(k);
+                if (g === undefined) {
+                    if (_gradCache.size > 512) _gradCache.clear();
+                    g = ctx.createRadialGradient(0, 0, r0, 0, 0, r1);
+                    for (let i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+                    _gradCache.set(k, g);
+                }
+                return g;
+            }
+            function cachedLinear(key, x0, y0, x1, y1, stops) {
+                const k = 'l|' + key + '|' + x0 + '|' + y0 + '|' + x1 + '|' + y1;
+                let g = _gradCache.get(k);
+                if (g === undefined) {
+                    if (_gradCache.size > 512) _gradCache.clear();
+                    g = ctx.createLinearGradient(x0, y0, x1, y1);
+                    for (let i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+                    _gradCache.set(k, g);
+                }
+                return g;
+            }
+
             // ==================== 音效系统（Web Audio 合成） ====================
             const sound = (function() {
                 let ctx = null;
