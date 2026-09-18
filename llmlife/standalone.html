@@ -2615,7 +2615,7 @@ function doAction(actionId){
     if(a.recover){
       const before = attr.stamina;
       attr.stamina = Math.min(staminaCeiling(), attr.stamina + a.recover);
-      applied.push(`体力+${trimNum(attr.stamina - before)}`);
+      if(attr.stamina > before) applied.push(`体力+${trimNum(attr.stamina - before)}`);
     }
     if(a.mood){
       const g = a.mood * (1 + boosts.mood);
