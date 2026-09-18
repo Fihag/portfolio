@@ -151,11 +151,13 @@ describe("满好感同行卡", () => {
   });
 
   it("同行卡按通道结算且每人每日一次，日切后重置", () => {
-    const p = recruit("claude-fable-5-1").partner; // Anthropic → work 通道 ¥150
+    const p = recruit("claude-fable-5-1").partner; // Anthropic → work 通道 ¥120~180
     p.favor = 95;
     setSlot(0, p.uid);
     const m0 = S.money;
-    const r = doAction(`duo:${p.uid}`);
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // 取区间中点 ¥150
+    let r;
+    try { r = doAction(`duo:${p.uid}`); } finally { vi.restoreAllMocks(); }
     expect(r.ok).toBe(true);
     expect(S.money).toBe(m0 + 150);
     expect(S.life.weekStats.duo).toBe(1);
@@ -189,11 +191,13 @@ describe("满好感同行卡", () => {
     expect(p.stars).toBe(2);
     acquire("glm-5-3", 4);
     expect(p.stars).toBe(2);
-    // 同行收益：dual 通道 skill+3 charm+3 ×(1+2×8%)
+    // 同行收益：dual 通道 skill [2,4] charm [2,4] ×（1+2×8%）；区间中点即 3×1.16
     p.favor = 95;
     setSlot(0, p.uid);
     const s0 = S.life.attrs.skill, c0 = S.life.attrs.charm;
-    const r = doAction(`duo:${p.uid}`);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    let r;
+    try { r = doAction(`duo:${p.uid}`); } finally { vi.restoreAllMocks(); }
     expect(r.ok).toBe(true);
     expect(S.life.attrs.skill - s0).toBeCloseTo(3 * 1.16, 1);
     expect(S.life.attrs.charm - c0).toBeCloseTo(3 * 1.16, 1);

@@ -214,28 +214,29 @@ export const CAREERS = [
 ];
 
 /* ---------- 每日行动（tier=解锁职级; slots=占用时间格; cost 为消耗; work 类走 payout 事件流;
-   workMult/riskMul 影响收入与事故率; fee 为魅力出场的随机出场费） ---------- */
+   workMult/riskMul 影响收入与事故率; fee 为魅力出场的随机出场费）
+   奖励一律为 [min,max] 随机区间（成本保持定值：花多少可预期，赚多少看手气） ---------- */
 export const ACTIONS = [
   {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
-  {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
-  {id:'cert1',  name:'初级认证', icon:'📜', tier:0, slots:2, stamina:12, money:300, cert:1, exam:true, desc:'通过率看技术：过了永久工作收入 +8%，挂了心情 -6 可重考'},
-  {id:'cert2',  name:'高级认证', icon:'📗', tier:0, slots:2, stamina:12, money:800, cert:1, exam:true, needsCert:1, desc:'需先有 1 张证；更难的考试，过了再 +8% 收入'},
-  {id:'cert3',  name:'行业认证', icon:'🏅', tier:0, slots:2, stamina:12, money:2000, cert:1, exam:true, needsCert:2, desc:'需先有 2 张证；封顶的一张，过了累计 +24% 收入'},
-  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, health:2, desc:'最累的一档，但上限成长是真金白银（顺带养健康）'},
-  {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, slots:1, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
-  {id:'eat',    name:'回家吃饭', icon:'🍚', tier:0, slots:1, stamina:0,  money:40, satiety:50, recover:8, desc:'填饱肚子才有力气：饱食回满一半以上，顺便回点体力'},
-  {id:'dine',   name:'下馆子',  icon:'🍜', tier:0, slots:1, stamina:0,  money:150, satiety:70, mood:8, desc:'花钱买舒服：饱食补给更多，心情也顺带治好'},
+  {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:[-6,-2], desc:'提升技术，心情低落时效率打折'},
+  {id:'cert1',  name:'初级认证', icon:'📜', tier:0, slots:2, stamina:12, money:300, cert:1, exam:true, skill:[2,4], mood:[4,8], desc:'通过率看技术：过了永久工作收入 +8%，挂了心情 -6 可重考'},
+  {id:'cert2',  name:'高级认证', icon:'📗', tier:0, slots:2, stamina:12, money:800, cert:1, exam:true, needsCert:1, skill:[2,4], mood:[4,8], desc:'需先有 1 张证；更难的考试，过了再 +8% 收入'},
+  {id:'cert3',  name:'行业认证', icon:'🏅', tier:0, slots:2, stamina:12, money:2000, cert:1, exam:true, needsCert:2, skill:[2,4], mood:[4,8], desc:'需先有 2 张证；封顶的一张，过了累计 +24% 收入'},
+  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:[12,24], charm:[1,2], desc:'花点小钱买快乐'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:[1,2], charm:[1,3], health:[1,3], desc:'最累的一档，但上限成长是真金白银（顺带养健康）'},
+  {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:[2,4], mood:[3,9], favor:[1,3], desc:'结交朋友，随行伙伴好感 +1~3'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, slots:1, stamina:0,  money:0,  recover:[30,50], mood:[3,7], desc:'不花钱，原地回血（每天 1 次）'},
+  {id:'eat',    name:'回家吃饭', icon:'🍚', tier:0, slots:1, stamina:0,  money:40, satiety:[40,60], recover:[5,12], desc:'填饱肚子才有力气：饱食回满一半以上，顺便回点体力'},
+  {id:'dine',   name:'下馆子',  icon:'🍜', tier:0, slots:1, stamina:0,  money:150, satiety:[55,85], mood:[5,12], desc:'花钱买舒服：饱食补给更多，心情也顺带治好'},
   /* 职级解锁（health 为健康消耗：高压换钱的真实代价） */
-  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, health:-8, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，代价是健康 -8 与更高事故率'},
-  {id:'training', name:'公司内训', icon:'🏫', tier:1, slots:2, stamina:14, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
-  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, health:-5, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠（健康 -5）'},
-  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, slots:2, stamina:12, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
-  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, health:-7, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情与健康都掉'},
-  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, slots:1, stamina:10, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
-  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, health:-6, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费（健康 -6）'},
-  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, health:[-10,-6], workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，代价是健康 -6~-10 与更高事故率'},
+  {id:'training', name:'公司内训', icon:'🏫', tier:1, slots:2, stamina:14, money:0, skill:[1,3], mood:[-3,-1], desc:'带薪学习：便宜，但涨得少'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, health:[-7,-3], workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠（健康 -3~-7）'},
+  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, slots:2, stamina:12, money:100, charm:[2,4], mood:[3,7], favor:[2,4], desc:'露脸攒人脉：魅力心情双收，伙伴好感 +2~4'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, health:[-9,-5], workMult:1.9, mood:[-11,-5], desc:'带人打仗最耗神：钱多，心情与健康都掉'},
+  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, slots:1, stamina:10, money:0, charm:[1,3], mood:[5,11], favor:[3,5], desc:'教学相长：心情与羁绊双收'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, health:[-8,-4], workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费（健康 -4~-8）'},
+  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:[3,5], mood:[4,9], desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
 export const WEEK_STAT_KEYS = ['work','learn','cert1','cert2','cert3','play','gym','social','rest','eat','dine','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
@@ -382,13 +383,13 @@ export const PARTNER_EVENTS = [
 export const DUO_STAMINA = 8;                       // 同行卡体力成本
 export const DUO_SLOTS = 2;                         // 同行卡时间格成本
 export const DUO_EFFECT_MIN = 90;                    // 解锁好感线（FAVOR_LEVELS 顶档）
-export const DUO_FX = {                              // 各效果通道的基础回报
-  work:    {money:150},
-  learn:   {skill:6},
-  mood:    {mood:20},
-  stamina: {stamina:35},
-  charm:   {charm:5},
-  dual:    {skill:3, charm:3},
+export const DUO_FX = {                              // 各效果通道的基础回报（[min,max] 随机区间 × 星级）
+  work:    {money:[120,180]},
+  learn:   {skill:[5,7]},
+  mood:    {mood:[16,24]},
+  stamina: {stamina:[28,42]},
+  charm:   {charm:[4,6]},
+  dual:    {skill:[2,4], charm:[2,4]},
 };
 export const DUO_STAR_PCT = .08;                     // 每星效果 +8%（3 连/6 连各 +1 星，上限 2）
 export const STAR_UP_AT = [3, 6];                    // 第 N 次获得同名卡 → +1 星

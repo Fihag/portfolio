@@ -209,15 +209,18 @@ describe("回合引擎", () => {
     expect(g2).toBeGreaterThanOrEqual(2);
   });
 
-  it("健身提升体力上限与魅力，休息回 40 体力", () => {
+  it("健身提升体力上限与魅力，休息回体力（奖励为区间）", () => {
     S.life.attrs.stamina = 100;
     S.money = 1000;
-    doAction("gym");
-    expect(S.life.staminaMax).toBe(LIFE.STAMINA_MAX + 1);
-    expect(S.life.attrs.charm).toBe(12);
-    S.life.attrs.stamina = 20;
-    doAction("rest");
-    expect(S.life.attrs.stamina).toBe(60);
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // 区间取中点
+    try {
+      doAction("gym");
+      expect([1, 2]).toContain(S.life.staminaMax - LIFE.STAMINA_MAX); // 上限成长 1~2 且为整数
+      expect(S.life.attrs.charm).toBe(12); // [1,3] 中点 ×1.0
+      S.life.attrs.stamina = 20;
+      doAction("rest");
+      expect(S.life.attrs.stamina).toBe(60); // [30,50] 中点 40
+    } finally { vi.restoreAllMocks(); }
   });
 
   it("撸铁比打工更累：体力门槛更高", () => {
@@ -230,7 +233,9 @@ describe("回合引擎", () => {
     S.life.staminaMax = LIFE.STAMINA_CAP;
     S.life.attrs.stamina = LIFE.STAMINA_CAP;
     S.money = 1000;
-    const r = doAction("gym");
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // 魅力区间中点
+    let r;
+    try { r = doAction("gym"); } finally { vi.restoreAllMocks(); }
     expect(S.life.staminaMax).toBe(LIFE.STAMINA_CAP);
     expect(S.life.attrs.charm).toBe(12);
     expect(r.line).toContain("身体到极限");

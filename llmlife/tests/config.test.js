@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MODELS, MMAP, RARITY, POOLS, BANNER_SEASONS, ITEMS, ITEM_RARITY,
   EVENTS, MILESTONES, ENDINGS, ACTIONS, VENDOR_EFFECTS, DEFAULT_EFFECT, EFFECTS,
-  LIFE, CHAPTER_TITLES, CAREERS, GOAL_POOL, WEEK_STAT_KEYS, CHOICE_EVENTS,
+  LIFE, CHAPTER_TITLES, CAREERS, GOAL_POOL, WEEK_STAT_KEYS, CHOICE_EVENTS, DUO_FX,
 } from "../js/config.js";
 import { validateConfig } from "../js/validate.js";
 
@@ -145,16 +145,28 @@ describe("职业与周目标数据（阶段 2）", () => {
       expect(ACTIONS.filter(a => (a.tier || 0) === t).length).toBe(t === 0 ? 11 : 2);
     }
     for (const a of ACTIONS) expect(a.tier || 0).toBeLessThan(CAREERS.length);
-    // 每张卡都要吃到时间格预算，且有一条需求/体力成本，否则就是白送的点击
+    // 每张卡都要吃到时间格预算，否则就是白送的点击
     for (const a of ACTIONS) expect(a.slots).toBeGreaterThan(0);
+    // 奖励一律是 [min,max] 随机区间；成本（格/体力/钱）保持定值——花多少可预期，赚多少看手气
+    const isRange = v => Array.isArray(v) && v.length === 2
+      && typeof v[0] === "number" && typeof v[1] === "number" && v[0] <= v[1];
+    const REWARD = ["skill", "mood", "charm", "recover", "staminaMax", "satiety", "health", "favor", "fee"];
+    for (const a of ACTIONS) {
+      for (const k of REWARD) if (a[k] != null) expect(isRange(a[k]), `${a.id}.${k} 应为随机区间`).toBe(true);
+      for (const k of ["slots", "stamina", "money"]) if (a[k] != null) expect(typeof a[k], `${a.id}.${k} 应为定值`).toBe("number");
+    }
+    for (const [via, fx] of Object.entries(DUO_FX)) {
+      for (const k of ["money", "skill", "charm", "mood", "stamina"])
+        if (fx[k] != null) expect(isRange(fx[k]), `DUO_FX.${via}.${k} 应为随机区间`).toBe(true);
+    }
     // 工作类卡必须带倍率语义
     expect(ACTIONS.find(a => a.id === "overtime").workMult).toBeGreaterThan(1);
     expect(ACTIONS.find(a => a.id === "overtime").riskMul).toBeGreaterThan(1);
-    expect(ACTIONS.find(a => a.id === "overtime").health).toBeLessThan(0); // 高压行动的代价
+    expect(ACTIONS.find(a => a.id === "overtime").health[1]).toBeLessThan(0); // 高压行动的代价
     expect(ACTIONS.find(a => a.id === "lecture").fee[1]).toBeGreaterThan(ACTIONS.find(a => a.id === "lecture").fee[0]);
     // 吃饭两条线：便宜的补饱食、贵的补心情
-    expect(ACTIONS.find(a => a.id === "eat").satiety).toBeGreaterThan(0);
-    expect(ACTIONS.find(a => a.id === "dine").mood).toBeGreaterThan(0);
+    expect(ACTIONS.find(a => a.id === "eat").satiety[0]).toBeGreaterThan(0);
+    expect(ACTIONS.find(a => a.id === "dine").mood[0]).toBeGreaterThan(0);
   });
   it("周目标模板 stat 全部登记在 WEEK_STAT_KEYS，minTier 不越职级上限", () => {
     expect(new Set(GOAL_POOL.map(g => g.id)).size).toBe(GOAL_POOL.length);

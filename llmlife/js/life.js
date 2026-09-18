@@ -44,12 +44,15 @@ export function duoCards(){
     const m = MMAP[p.m];
     const fx = DUO_FX[effectOf(m)] || {};
     const mul = 1 + (p.stars || 0) * DUO_STAR_PCT;
+    const lo = v => Array.isArray(v) ? v[0] : v;
+    const hi = v => Array.isArray(v) ? v[1] : v;
+    const rng = (v, f = trimNum) => `${f(lo(v) * mul)}~${f(hi(v) * mul)}`;
     const parts = [];
-    if(fx.money) parts.push(`¥${Math.round(fx.money * mul)}`);
-    if(fx.skill) parts.push(`技术+${trimNum(fx.skill * mul)}`);
-    if(fx.charm) parts.push(`魅力+${trimNum(fx.charm * mul)}`);
-    if(fx.mood) parts.push(`心情+${trimNum(fx.mood * mul)}`);
-    if(fx.stamina) parts.push(`体力+${Math.round(fx.stamina * mul)}`);
+    if(fx.money) parts.push(`¥${rng(fx.money, v => Math.round(v))}`);
+    if(fx.skill) parts.push(`技术+${rng(fx.skill)}`);
+    if(fx.charm) parts.push(`魅力+${rng(fx.charm)}`);
+    if(fx.mood) parts.push(`心情+${rng(fx.mood)}`);
+    if(fx.stamina) parts.push(`体力+${rng(fx.stamina, v => Math.round(v))}`);
     out.push({
       uid: p.uid, id: `duo:${p.uid}`, name: `与${m.name}同行`, icon: '🫂',
       desc: `${parts.join(' ')} · 每日一次${p.stars ? ` · ★${p.stars}` : ''}`,
@@ -67,21 +70,24 @@ function doDuo(actionId){
   const mul = 1 + (p.stars || 0) * DUO_STAR_PCT;
   S.life.attrs.stamina -= DUO_STAMINA;
   S.life.timeLeft -= DUO_SLOTS;
+  // 奖励逐项在区间内取一次（星级倍率乘在取到的值上，展示与实际同步）
+  const roll = {};
+  for(const k of ['money', 'skill', 'charm', 'mood', 'stamina']) if(fx[k] != null) roll[k] = fxVal(fx[k]) * mul;
   const applied = [];
-  if(fx.money){
-    const amt = Math.round(fx.money * mul);
+  if(roll.money){
+    const amt = Math.round(roll.money);
     S.money += amt; addLedger(`与${m.name}同行`, amt); S.stats.earned += amt;
     applied.push(`收入¥${amt}`);
   }
-  if(fx.skill || fx.charm || fx.mood || fx.stamina){
+  if(roll.skill || roll.charm || roll.mood || roll.stamina){
     addAttrs({
-      skill:(fx.skill||0) * mul, charm:(fx.charm||0) * mul,
-      mood:(fx.mood||0) * mul, stamina:(fx.stamina||0) * mul,
+      skill:roll.skill || 0, charm:roll.charm || 0,
+      mood:roll.mood || 0, stamina:roll.stamina || 0,
     });
-    if(fx.skill) applied.push(`技术+${trimNum(fx.skill * mul)}`);
-    if(fx.charm) applied.push(`魅力+${trimNum(fx.charm * mul)}`);
-    if(fx.mood) applied.push(`心情+${trimNum(fx.mood * mul)}`);
-    if(fx.stamina) applied.push(`体力+${Math.round(fx.stamina * mul)}`);
+    if(roll.skill) applied.push(`技术+${trimNum(roll.skill)}`);
+    if(roll.charm) applied.push(`魅力+${trimNum(roll.charm)}`);
+    if(roll.mood) applied.push(`心情+${trimNum(roll.mood)}`);
+    if(roll.stamina) applied.push(`体力+${Math.round(roll.stamina)}`);
   }
   if(!S.life.duoUsed) S.life.duoUsed = {};
   S.life.duoUsed[uid] = S.life.day;
@@ -147,8 +153,16 @@ export function doAction(actionId){
   if(a.slots) S.life.timeLeft -= a.slots;
   // 需求条与健康：吃饭/下馆子回饱食，高压行动扣健康（效果行统一在 fxNotes 里展示）
   const fxNotes = [];
-  if(a.health){ attr.health += a.health; fxNotes.push(`健康${a.health > 0 ? '+' : ''}${trimNum(a.health)}`); }
-  if(a.satiety){ attr.satiety += a.satiety; fxNotes.push(`饱食+${trimNum(a.satiety)}`); }
+  if(a.health){
+    const h = Math.round(fxVal(a.health));
+    attr.health += h;
+    fxNotes.push(`健康${h > 0 ? '+' : ''}${h}`);
+  }
+  if(a.satiety){
+    const s = Math.round(fxVal(a.satiety));
+    attr.satiety += s;
+    fxNotes.push(`饱食+${s}`);
+  }
   if(fxNotes.length) clampAttrs();
   const hungry = attr.satiety < LIFE.SATIETY_LOW;
   const satMul = hungry ? .75 : 1;
@@ -162,8 +176,9 @@ export function doAction(actionId){
     const rate = examRate(attr.skill, attr.mood);
     if(Math.random() < rate){
       S.life.certs = (S.life.certs || 0) + 1;
-      addAttrs({ skill:3, mood:6 });
-      line = `${a.icon} ${a.name}：通过！证书 ${S.life.certs} 张（工作收入 +${Math.round(S.life.certs * CERT_PCT * 100)}%），技术 +3、心情 +6`;
+      const gk = fxVal(a.skill), gm = fxVal(a.mood);
+      addAttrs({ skill: gk, mood: gm });
+      line = `${a.icon} ${a.name}：通过！证书 ${S.life.certs} 张（工作收入 +${Math.round(S.life.certs * CERT_PCT * 100)}%），技术 +${trimNum(gk)}、心情 +${trimNum(gm)}`;
     } else {
       attr.mood = Math.max(0, attr.mood - 6);
       line = `${a.icon} ${a.name}：差几分没过（通过率 ${Math.round(rate * 100)}%），报名费打水漂、心情 -6，下季再战`;
@@ -178,8 +193,9 @@ export function doAction(actionId){
     if(pay.amt >= 0) S.stats.earned += pay.amt; else S.stats.spent += -pay.amt;
     if(pay.evt === 'great') S.stats.greats++;
     if(pay.evt === 'disaster') S.stats.disasters++;
-    if(a.mood) attr.mood = Math.max(0, Math.min(100, attr.mood + a.mood));
-    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}${fxNotes.length ? '，' + fxNotes.join('，') : ''}${hungry ? '，饿着肚子效率打折' : ''}`;
+    const moodRoll = a.mood ? fxVal(a.mood) : 0;
+    if(moodRoll) attr.mood = Math.max(0, Math.min(100, attr.mood + moodRoll));
+    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${moodRoll ? `，心情${moodRoll}` : ''}${fxNotes.length ? '，' + fxNotes.join('，') : ''}${hungry ? '，饿着肚子效率打折' : ''}`;
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
@@ -196,27 +212,27 @@ export function doAction(actionId){
     }
     if(a.recover){
       const before = attr.stamina;
-      attr.stamina = Math.min(staminaCeiling(), attr.stamina + a.recover);
+      attr.stamina = Math.min(staminaCeiling(), attr.stamina + fxVal(a.recover));
       if(attr.stamina > before) applied.push(`体力+${trimNum(attr.stamina - before)}`);
     }
     if(a.mood){
-      const g = a.mood * (1 + boosts.mood);
+      const g = fxVal(a.mood) * (1 + boosts.mood);
       attr.mood = Math.min(100, Math.max(0, attr.mood + g));
       applied.push(`心情${g >= 0 ? '+' : ''}${trimNum(g)}`);
     }
     if(a.charm){
-      const g = a.charm * (1 + boosts.charm);
+      const g = fxVal(a.charm) * (1 + boosts.charm);
       attr.charm = Math.min(100, attr.charm + g);
       applied.push(`魅力+${trimNum(g)}`);
     }
     if(a.staminaMax){
-      // 体力上限软帽：到 LIFE.STAMINA_CAP 后不再成长，魅力照涨
+      // 体力上限软帽：到 LIFE.STAMINA_CAP 后不再成长，魅力照涨（上限成长取整）
       const room = Math.max(0, LIFE.STAMINA_CAP - S.life.staminaMax);
-      const add = Math.min(a.staminaMax, room);
+      const add = Math.min(Math.round(fxVal(a.staminaMax)), room);
       S.life.staminaMax += add;
       applied.push(add > 0 ? `体力上限+${trimNum(add)}` : `身体到极限了（${LIFE.STAMINA_CAP}），这次只涨了魅力`);
     }
-    if(a.favor){ favorAll(a.favor); applied.push(`随行好感+${a.favor}`); }
+    if(a.favor){ const f = Math.round(fxVal(a.favor)); favorAll(f); applied.push(`随行好感+${f}`); }
     applied.push(...fxNotes);
     line = `${a.icon} ${a.name}${applied.length ? '：' + applied.join('，') : ''}`;
   }

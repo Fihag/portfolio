@@ -19,13 +19,16 @@ describe("饱食：吃饭与饿肚子", () => {
     endDay();
     expect(S.life.attrs.satiety).toBe(80 - LIFE.SATIETY_DECAY);
     S.money = 1000;
-    doAction("eat"); // 🕒1 ¥40 🍚+50
-    expect(S.life.attrs.satiety).toBe(Math.min(LIFE.SATIETY_MAX, 50 + 50));
-    S.money = 1000;
-    const m0 = S.life.attrs.mood;
-    doAction("dine"); // 🍚+70 且心情 +
-    expect(S.life.attrs.satiety).toBe(LIFE.SATIETY_MAX);
-    expect(S.life.attrs.mood).toBeGreaterThan(m0);
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // 饱食区间取中点（eat 50 / dine 70）
+    try {
+      doAction("eat"); // 🕒1 ¥40 🍚+50
+      expect(S.life.attrs.satiety).toBe(Math.min(LIFE.SATIETY_MAX, 50 + 50));
+      S.money = 1000;
+      const m0 = S.life.attrs.mood;
+      doAction("dine"); // 🍚+70 且心情 +
+      expect(S.life.attrs.satiety).toBe(LIFE.SATIETY_MAX);
+      expect(S.life.attrs.mood).toBeGreaterThan(m0);
+    } finally { vi.restoreAllMocks(); }
   });
 
   it("饿肚子：学习收益 ×0.75、打工收入 ×0.75、睡眠只回八成", () => {
@@ -70,12 +73,15 @@ describe("健康：高压透支、健身回补与病倒", () => {
     S.life.tier = 1;
     S.life.attrs.stamina = 100;
     const before = S.life.attrs.health;
-    doAction("overtime");
-    expect(S.life.attrs.health).toBe(before - 8);
-    S.money = 1000;
-    S.life.attrs.health = 50;
-    doAction("gym");
-    expect(S.life.attrs.health).toBe(52);
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // 健康区间取中点
+    try {
+      doAction("overtime"); // 健康 [-10,-6] → -8
+      expect(S.life.attrs.health).toBe(before - 8);
+      S.money = 1000;
+      S.life.attrs.health = 50;
+      doAction("gym"); // 健康 [1,3] → +2
+      expect(S.life.attrs.health).toBe(52);
+    } finally { vi.restoreAllMocks(); }
   });
 
   it("健康低：体力上限打折（加班换钱的隐性账单）", () => {

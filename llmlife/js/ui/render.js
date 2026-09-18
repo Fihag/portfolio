@@ -187,18 +187,21 @@ function oddsOf(x){
   return null;
 }
 
+/* 数值展示：定值与 [min,max] 区间统一成文本（区间用 ~ 连接） */
+const rng = v => Array.isArray(v) ? `${v[0]}~${v[1]}` : `${v}`;
+
 function costText(x){
   const parts = [];
   if(x.slots) parts.push(`🕒${x.slots}格`);
   if(x.stamina) parts.push(`⚡-${x.stamina}`);
   if(x.money) parts.push(`¥-${x.money}`);
-  if(x.recover) parts.push(`⚡+${x.recover}`);
-  if(x.skill) parts.push(`🧠+${x.skill[0]}~${x.skill[1]}`);
-  if(x.fee) parts.push(`💰${x.fee[0]}~${x.fee[1]}`);
-  if(x.mood && x.mood > 0) parts.push(`🌤+${x.mood}`);
-  if(x.charm) parts.push(`✨+${x.charm}`);
-  if(x.satiety) parts.push(`🍚+${x.satiety}`);
-  if(x.health) parts.push(`❤️${x.health > 0 ? '+' : ''}${x.health}`);
+  if(x.recover) parts.push(`⚡+${rng(x.recover)}`);
+  if(x.skill) parts.push(`🧠+${rng(x.skill)}`);
+  if(x.fee) parts.push(`💰${rng(x.fee)}`);
+  if(x.mood && (Array.isArray(x.mood) ? x.mood[1] > 0 : x.mood > 0)) parts.push(`🌤+${rng(x.mood)}`);
+  if(x.charm) parts.push(`✨+${rng(x.charm)}`);
+  if(x.satiety) parts.push(`🍚+${rng(x.satiety)}`);
+  if(x.health) parts.push(`❤️${rng(x.health)}`);
   return parts.join(' ') || '免费';
 }
 
