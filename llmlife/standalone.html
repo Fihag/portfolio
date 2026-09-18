@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LLMLife · LLM 人生模拟器 — 22 岁入行，60 岁结算</title>
+    <title>LLMLife · LLM 人生模拟器 — 22 岁入行，30 岁结算</title>
     <meta
       name="description"
-      content="LLMLife 是一款 LLM 人生模拟器：接单打工、学习充电、健身社交，把日子过成行动点日程；偶尔抽抽卡，让 AI 伙伴陪你打工。稀有度按 Artificial Analysis v4.3 智能指数标定。"
+      content="LLMLife 是一款 LLM 人生模拟器：22 到 30 岁共 8 章，一章一年。打工赚钱、职业晋升解锁行动卡、每周目标、分支事件抉择，偶尔抽抽卡让 AI 伙伴陪你打工。稀有度按 Artificial Analysis v4.3 智能指数标定。"
     />
     <meta name="keywords" content="LLMLife, LLM, 人生模拟, 属性养成, 抽卡, gacha, AI模型" />
     <meta name="author" content="Fihag" />
@@ -19,7 +19,7 @@
     <meta property="og:title" content="LLMLife · LLM 人生模拟器" />
     <meta
       property="og:description"
-      content="22 岁毕业入行，60 岁结算人生：打工赚钱、学习涨技术、抽 AI 伙伴随行加成。人生是主线，抽卡是调剂。"
+      content="22 岁毕业入行，30 岁结算人生：一年一章共 8 章，打工赚钱、职业晋升解锁新行动、每周目标与分支事件亲手拍板。人生是主线，抽卡是调剂。"
     />
     <link rel="manifest" href="manifest.json" />
     <style>
@@ -511,6 +511,22 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .act-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
 @media(max-width:860px){.act-bar{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:480px){.act-bar{grid-template-columns:repeat(2,1fr)}}
+.career-chip{font-size:11.5px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 11px;margin:2px 0 10px;line-height:1.6}
+.career-chip b{color:var(--blue-d)}
+.act-btn.locked{border-style:dashed;opacity:.55;background:var(--panel2)}
+.act-btn.locked .nm{color:var(--dim)}
+.act-btn.locked .cost{color:var(--gold)}
+/* 本周目标 */
+.goals-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:9px}
+.goal-row{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.goal-top{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:700}
+.goal-top b{font-variant-numeric:tabular-nums;color:var(--dim)}
+.goal-bar{height:7px;border-radius:5px;background:#e2e8f0;margin:7px 0 5px;overflow:hidden}
+.goal-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#2f6bff,#41d9ff);transition:width .25s}
+.goal-rw{font-size:10.5px;color:var(--faint)}
+.goal-row.done{border-color:var(--green)}
+.goal-row.done .goal-rw{color:var(--green);font-weight:800}
+.goal-row.done .goal-bar i{background:linear-gradient(90deg,#10b981,#34d399)}
 .act-btn{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;transition:.15s;box-shadow:var(--shadow);position:relative}
 .act-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--blue);box-shadow:var(--shadow-lg)}
 .act-btn:disabled{opacity:.4;cursor:not-allowed}
@@ -606,7 +622,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       <div class="page" id="page-life" role="tabpanel" aria-label="生活">
         <div class="page-head">
           <h2>生活</h2>
-          <p>行动不设上限 · 体力说话 · 心情太低打工容易翻车</p>
+          <p>行动不设上限 · 体力说话 · 24 天为一年，走完 8 章 30 岁结算</p>
         </div>
         <div class="notice">
           <span class="dot"></span><span id="notice-text">📢 公告加载中…</span>
@@ -637,7 +653,13 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 
         <div class="panel panel-pad" style="margin-top:14px">
           <div class="panel-title">🎯 今日行动<span class="right" style="display:flex;gap:8px;align-items:center"><span id="rest-hint" style="letter-spacing:0"></span><button class="mini-btn" id="btn-end-day">🛏 结束今天</button></span></div>
+          <div class="career-chip" id="career-txt"></div>
           <div class="act-bar" id="act-bar"></div>
+        </div>
+
+        <div class="panel panel-pad" style="margin-top:14px">
+          <div class="panel-title">📌 本周目标<span class="right" style="letter-spacing:0">周初刷新 · 达成自动发奖</span></div>
+          <div class="goals-list" id="goals-list"><div class="day-log-empty">本周暂无目标</div></div>
         </div>
 
         <div class="two-col" style="margin-top:14px">
@@ -649,7 +671,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
           <div class="panel panel-pad">
             <div class="panel-title">📅 人生进度<span class="right" id="life-progress-txt"></span></div>
             <div class="free-progress">
-              <div class="lb"><span>距 60 岁结算</span><span id="life-age-txt"></span></div>
+              <div class="lb"><span>距 30 岁结算</span><span id="life-age-txt"></span></div>
               <div class="bar"><i id="life-progress-bar" style="width:0%"></i></div>
             </div>
             <div class="qtip" style="margin-top:10px;margin-bottom:0">
@@ -915,7 +937,9 @@ const SLOT_COUNT = 3; // 随行槽
 
 /* ---------- 人生常量 ---------- */
 const LIFE = {
-  START_AGE: 22, RETIRE_AGE: 60,
+  START_AGE: 22, RETIRE_AGE: 30,  // 一局 = 8 章，30 岁结算
+  CHAPTER_DAYS: 24,               // 一章 = 1 游戏年 = 24 个游戏日（1 天 ≈ 两周人生）
+  WEEK_DAYS: 7,                   // 一周 = 7 游戏日（周结算/周目标节拍）
   REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
   STAMINA_CAP: 200,        // 体力上限软帽：健身/道具推到 200 后不再成长
@@ -926,19 +950,69 @@ const LIFE = {
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
 };
+/* 八章标题：每章年度结算与下一章预告用 */
+const CHAPTER_TITLES = [
+  '初入行·交完房租还剩多少',
+  '转正年·技术是第一生产力',
+  '打底年·把根基夯实',
+  '岔路口·向左卷技术向右卷人脉',
+  '加速年·单价开始配得上发量',
+  '独当一面·甲方改口叫老师',
+  '分水岭·有人跃迁有人躺平',
+  '结算前夜·八年一瞬',
+];
 /* 技术收入系数: skill 0→0.5, 50→1.5, 100→2.5 */
 const skillMult = s => 0.5 + s/50;
 /* 心情效率系数: mood 0→0.8, 50→1.0, 100→1.2 */
 const moodMult = m => 0.8 + m/250;
 
-/* ---------- 每日行动（cost 为消耗, effect 为固定收益; 打工走 payout 事件流） ---------- */
+/* ---------- 职级阶梯（年度结算晋升；mult 为工作类收入倍率；req 为晋升门槛） ---------- */
+const CAREERS = [
+  {tier:0, name:'实习生',   icon:'🐣', mult:1.0,  req:null,                     desc:'先把手艺练出来，房租会教你做人'},
+  {tier:1, name:'正式员工', icon:'💼', mult:1.35, req:{skill:30},               desc:'转正了：接单更值钱，也更能卷'},
+  {tier:2, name:'技术骨干', icon:'🧠', mult:1.7,  req:{skill:55, charm:25},     desc:'团队里最忙的那双手'},
+  {tier:3, name:'团队主管', icon:'🧑‍✈️', mult:2.1, req:{skill:70, charm:45},    desc:'卖的是判断力，不是工时'},
+  {tier:4, name:'自立门户', icon:'🚀', mult:2.6,  req:{skill:85, net:30000},    desc:'自己就是甲方，盈亏自己扛'},
+];
+
+/* ---------- 每日行动（tier=解锁职级; cost 为消耗; work 类走 payout 事件流;
+   workMult/riskMul 影响收入与事故率; fee 为魅力出场的随机出场费） ---------- */
 const ACTIONS = [
-  {id:'work',   name:'接单打工', icon:'💻', stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情与伙伴加成'},
-  {id:'learn',  name:'学习充电', icon:'📚', stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
-  {id:'play',   name:'娱乐摸鱼', icon:'🎮', stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
-  {id:'social', name:'社交聚会', icon:'🍻', stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
+  {id:'work',   name:'接单打工', icon:'💻', tier:0, stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
+  {id:'learn',  name:'学习充电', icon:'📚', tier:0, stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
+  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
+  {id:'social', name:'社交聚会', icon:'🍻', tier:0, stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
+  /* 职级解锁 */
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, stamina:55, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
+  {id:'training', name:'公司内训', icon:'🏫', tier:1, stamina:20, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, stamina:30, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
+  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, stamina:18, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, stamina:50, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
+  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, stamina:15, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, stamina:45, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
+  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, stamina:20, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
+];
+/* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
+const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item'];
+
+/* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
+const GOAL_POOL = [
+  {id:'g_work6',     icon:'💻', label:'本周接单 6 次',      stat:'work',     target:6,  reward:{money:300}},
+  {id:'g_work12',    icon:'💻', label:'本周狂接单 12 次',   stat:'work',     target:12, reward:{money:650}},
+  {id:'g_learn5',    icon:'📚', label:'本周学习 5 次',      stat:'learn',    target:5,  reward:{skill:3}},
+  {id:'g_gym5',      icon:'🏋️', label:'本周撸铁 5 次',      stat:'gym',      target:5,  reward:{staminaMax:2}},
+  {id:'g_social3',   icon:'🍻', label:'本周社交 3 次',      stat:'social',   target:3,  reward:{charm:3}},
+  {id:'g_play2',     icon:'🎮', label:'本周娱乐 2 次',      stat:'play',     target:2,  reward:{mood:12}},
+  {id:'g_pull2',     icon:'🎰', label:'本周抽卡 2 次',      stat:'pulls',    target:2,  reward:{skinTicket:1}},
+  {id:'g_item3',     icon:'🎒', label:'本周用掉 3 件道具',  stat:'item',     target:3,  reward:{money:200}},
+  {id:'g_rest2',     icon:'🛌', label:'本周躺平 2 次',      stat:'rest',     target:2,  reward:{mood:10}},
+  {id:'g_overtime2', icon:'🌙', label:'本周加班 2 次',      stat:'overtime', target:2,  reward:{money:400}, minTier:1},
+  {id:'g_bigorder1', icon:'📦', label:'本周拿下 1 个大单',  stat:'bigorder', target:1,  reward:{money:500}, minTier:2},
+  {id:'g_salon1',    icon:'🎤', label:'本周出席沙龙 1 次',  stat:'salon',    target:1,  reward:{charm:4},   minTier:2},
+  {id:'g_lead1',     icon:'🧑‍✈️', label:'本周带队攻坚 1 次', stat:'lead',     target:1,  reward:{money:600}, minTier:3},
+  {id:'g_mentor2',   icon:'🧑‍🏫', label:'本周指导新人 2 次', stat:'mentor',   target:2,  reward:{favor:4},   minTier:3},
 ];
 
 /* ---------- 日切随机事件表（weight 加权抽取; effect 为固定数值增减） ---------- */
@@ -1045,20 +1119,21 @@ const MILESTONES = [
   {id:'pFihag',   title:'🔮 天选之人', tag:'抽到 Fihag V1', check:s=>((s.dex||{}).fihagv1?1:0), hype:'0.01% 的命运眷顾，全服公告预定。'},
 ];
 
-/* ---------- 结局（60 岁结算, 按综合分从高到低取第一个达标档） ---------- */
+/* ---------- 结局（30 岁结算, 按综合分从高到低取第一个达标档; 阈值按 8 章尺度标定） ---------- */
 const ENDINGS = [
-  {min:400, id:'god',    title:'🌈 神之人生', desc:'技术、财富、魅力、羁绊全部拉满——你的人生本身就是一个传奇模型。'},
-  {min:250, id:'winner', title:'👑 人生赢家', desc:'事业爱情双丰收，AI 伙伴环绕，存款看一眼都幸福。'},
-  {min:150, id:'free',   title:'🚀 财务自由', desc:'钱够了，接下来的日子只为热爱而写代码。'},
-  {min:80,  id:'expert', title:'💼 技术专家', desc:'没能暴富，但你的名字在圈子里就是质量保证。'},
-  {min:0,   id:'normal', title:'🧑‍💻 普通码农', desc:'平平淡淡也是真，60 岁还在写 if else，但问心无愧。'},
+  {min:650, id:'god',    title:'🌈 神之人生', desc:'技术、财富、魅力、羁绊全部拉满——你的人生本身就是一个传奇模型。'},
+  {min:450, id:'winner', title:'👑 人生赢家', desc:'事业爱情双丰收，AI 伙伴环绕，存款看一眼都幸福。'},
+  {min:300, id:'free',   title:'🚀 财务自由', desc:'钱够了，接下来的日子只为热爱而写代码。'},
+  {min:180, id:'expert', title:'💼 技术专家', desc:'没能暴富，但在圈子里你的名字就是质量保证。'},
+  {min:0,   id:'normal', title:'🧑‍💻 普通码农', desc:'八年结算，平平淡淡也真实——下一局换个活法试试？'},
 ];
 const ENDING_BROKE = {id:'broke', title:'📉 破产流浪', desc:'连续欠租被房东请出家门。代码改得了 bug，改不了账单。'};
-/* 彩蛋结局: 手握 Fihag V1 且综合分 ≥150 时覆盖结算 */
+/* 彩蛋结局: 手握 Fihag V1 且综合分 ≥300 时覆盖结算 */
 const ENDING_CHOSEN = {id:'chosen', title:'🔮 天选之人', desc:'抽到了全站唯一 NB 级存在，人生直接封神——命运的 0.01% 落在了你头上。'};
-/* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成） */
+/* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成；
+   money/400 而非 /200：一局缩到 8 章，存款口径相应放大权重，阈值与 ENDINGS 同步标定） */
 const endingScore = (s, bonusStamina=0) => Math.round(
-  s.money/200 + s.life.attrs.skill*2 + s.life.attrs.charm*2
+  s.money/400 + s.life.attrs.skill*2 + s.life.attrs.charm*2
   + (s.partners||[]).reduce((a,p)=>a+p.favor,0)*0.1 + (s.partners||[]).length*4
   + (s.life.staminaMax - LIFE.STAMINA_MAX) + (bonusStamina||0)
 );
@@ -1119,7 +1194,7 @@ const NOTICES = [
 '📢 公告：重复伙伴自动折算好感 +10，图鉴党狂喜。',
 '📢 公告：有玩家问体力能不能用咖啡补——能，道具池常年营业。',
 '📢 公告：心情低于 25 时打工容易翻车，请注意劳逸结合。',
-'📢 公告：60 岁结算人生，评分不够也不用慌——破产了还能重开，人生没有。',
+'📢 公告：30 岁结算人生。评分不够也不用慌——破产了还能重开，人生没有。',
 '🔥 公告：「寓言限定池」已开启！Claude Fable 5.1 镇池，53.4 分新王等您带回家。',
 '📢 公告：Qwen3.8-Flash-Next 每单 0.47 刀，学习党的性价比之神。',
 '📢 公告：GLM-5.3-Flash 用户已突破百亿 token，智谱：谢谢惠顾。',
@@ -1246,17 +1321,31 @@ const validateResult = (() => {
 /* ================= js/state.js ================= */
 /* ================================================================
    LLMLife · 状态层 (state.js)
-   存档 (ver 1) / 工具函数
+   存档 (ver 2 · llmlife_v2) / v1 旧档迁移 / 工具函数
    S 为 ESM live binding，换档唯一入口 setState()（重开/新周目）
    ================================================================ */
+
+const KEY_V2 = 'llmlife_v2';
+const KEY_V1 = 'llmlife_v1';
+
+/* 周行动计数：WEEK_STAT_KEYS 单源，新增行动/统计项自动出现在这里 */
+function freshWeekStats(){
+  const o = {};
+  for(const k of WEEK_STAT_KEYS) o[k] = 0;
+  return o;
+}
 
 /* ---------- 状态 ---------- */
 let S = null;
 function defaultState(){
-  return { ver:1, money:START_MONEY, uid:1,
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE,
+  return { ver:2, money:START_MONEY, uid:1,
+    ng:0, endingsSeen:{},
+    /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
+    chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
-      staminaMax:LIFE.STAMINA_MAX },
+      staminaMax:LIFE.STAMINA_MAX,
+      weekStats:freshWeekStats(), goals:null },
     partners:[], items:[], slots:new Array(SLOT_COUNT).fill(null),
     pity:{partner:0,banner:0,item:0},
     freePulls:0,
@@ -1268,42 +1357,74 @@ function defaultState(){
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     debtWeeks:0, ending:null };
 }
+/** 周行动计数 +1（life/pulls/items 统一入口；键必须在 WEEK_STAT_KEYS 内） */
+function bumpWeekStat(key, n = 1){
+  if(!S.life.weekStats) S.life.weekStats = freshWeekStats();
+  if(key in S.life.weekStats) S.life.weekStats[key] += n;
+}
+
 // 换档唯一入口 (重开新周目)：保证 S 的 live binding 同步到所有 import 方
 function setState(next){ S = next; }
-function save(){ try{ localStorage.setItem('llmlife_v1', JSON.stringify(S, (k,v)=> k.startsWith('_')?undefined:v)); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY_V2, JSON.stringify(S, (k,v)=> k.startsWith('_')?undefined:v)); }catch(e){} }
 function load(){
   try{
-    const raw = localStorage.getItem('llmlife_v1');
-    const s = JSON.parse(raw);
-    if(!(s && typeof s.money==='number')) return null;
-    // 字段级兜底（v1 起步；未来 ver 升级在此追加迁移段）
-    if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
-    if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
-    for(const k of ['day','age','staminaMax']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
-    if(s.life.restUsed==null) s.life.restUsed = 0;
-    if(s.life.ap != null) delete s.life.ap; // 旧版行动点字段废弃
-    if(!Array.isArray(s.partners)) s.partners=[];
-    for(const p of s.partners){ if(p.favor==null) p.favor=0; if(p.stars==null) p.stars=0; }
-    if(!Array.isArray(s.items)) s.items=[];
-    if(!Array.isArray(s.slots)) s.slots=new Array(SLOT_COUNT).fill(null);
-    if(!s.pity || typeof s.pity!=='object') s.pity={};
-    for(const k of ['partner','banner','item']) if(s.pity[k]==null) s.pity[k]=0;
-    if(s.freePulls==null) s.freePulls=0;
-    if(!Array.isArray(s.ledger)) s.ledger=[];
-    if(!Array.isArray(s.hist)) s.hist=[];
-    if(!s.stats || typeof s.stats!=='object') s.stats=defaultState().stats;
-    if(!s.stats.byR) s.stats.byR={N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0};
-    if(s.stats.best==null) s.stats.best='';
-    if(!s.dex) s.dex={};
-    if(!s.flags || typeof s.flags!=='object') s.flags=defaultState().flags;
-    if(!s.flags.ms) s.flags.ms={};
-    if(!s.skin) s.skin='classic';
-    if(!Array.isArray(s.skinsOwned)) s.skinsOwned=['classic'];
-    if(s.skinTickets==null) s.skinTickets=0;
-    if(s.debtWeeks==null) s.debtWeeks=0;
-    s.ver=1;
-    return s;
+    const raw = localStorage.getItem(KEY_V2);
+    const s = raw ? JSON.parse(raw) : null;
+    if(s && typeof s.money==='number') return normalizeV2(s);
+    // v1 旧档（60 岁长局制）→ 章节制不可续档：只携带图鉴/皮肤/成就标记开新周目
+    const v1 = localStorage.getItem(KEY_V1);
+    const o = v1 ? JSON.parse(v1) : null;
+    if(o && typeof o.money==='number') return migrateV1(o);
+    return null;
   }catch(e){ return null; }
+}
+function normalizeV2(s){
+  // 字段级兜底（v2 起步；未来 ver 升级在此追加迁移段）
+  if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
+  if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
+  for(const k of ['day','age','staminaMax','tier']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+  if(s.life.restUsed==null) s.life.restUsed = 0;
+  if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
+  if(s.life.goals != null && (typeof s.life.goals!=='object' || !Array.isArray(s.life.goals.items))) s.life.goals = null;
+  if(s.life.ap != null) delete s.life.ap; // 旧版行动点字段废弃
+  if(!Array.isArray(s.partners)) s.partners=[];
+  for(const p of s.partners){ if(p.favor==null) p.favor=0; if(p.stars==null) p.stars=0; }
+  if(!Array.isArray(s.items)) s.items=[];
+  if(!Array.isArray(s.slots)) s.slots=new Array(SLOT_COUNT).fill(null);
+  if(!s.pity || typeof s.pity!=='object') s.pity={};
+  for(const k of ['partner','banner','item']) if(s.pity[k]==null) s.pity[k]=0;
+  if(s.freePulls==null) s.freePulls=0;
+  if(!Array.isArray(s.ledger)) s.ledger=[];
+  if(!Array.isArray(s.hist)) s.hist=[];
+  if(!s.stats || typeof s.stats!=='object') s.stats=defaultState().stats;
+  if(!s.stats.byR) s.stats.byR={N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0};
+  if(s.stats.best==null) s.stats.best='';
+  if(!s.dex) s.dex={};
+  if(!s.flags || typeof s.flags!=='object') s.flags=defaultState().flags;
+  if(!s.flags.ms) s.flags.ms={};
+  if(!s.skin) s.skin='classic';
+  if(!Array.isArray(s.skinsOwned)) s.skinsOwned=['classic'];
+  if(s.skinTickets==null) s.skinTickets=0;
+  if(s.debtWeeks==null) s.debtWeeks=0;
+  if(s.ng==null) s.ng=0;
+  if(!s.endingsSeen || typeof s.endingsSeen!=='object') s.endingsSeen={};
+  if(!s.chStart || typeof s.chStart!=='object') s.chStart=defaultState().chStart;
+  s.ver=2;
+  return s;
+}
+function migrateV1(o){
+  const ns = defaultState();
+  if(o.dex && typeof o.dex==='object') ns.dex = o.dex;
+  if(Array.isArray(o.skinsOwned) && o.skinsOwned.length) ns.skinsOwned = [...new Set(['classic', ...o.skinsOwned])];
+  if(o.skin && ns.skinsOwned.includes(o.skin)) ns.skin = o.skin;
+  if(o.skinTickets) ns.skinTickets = o.skinTickets;
+  if(o.flags){
+    if(o.flags.ms && typeof o.flags.ms==='object') ns.flags.ms = o.flags.ms;
+    ns.flags.muted = !!o.flags.muted;
+    ns.flags.autoSkip = !!o.flags.autoSkip;
+  }
+  ns.flags.migrated = true; // 启动时弹一次迁移说明
+  return ns;
 }
 S = load() || defaultState();
 
@@ -1630,6 +1751,7 @@ function useItem(id){
   if(!it || !row || row.qty <= 0) return {ok:false, line:'没有这个道具'};
   row.qty--;
   if(row.qty <= 0) S.items = S.items.filter(x => x.id !== id);
+  bumpWeekStat('item');
 
   // 特殊道具
   if(it.special === 'lottery'){
@@ -1676,68 +1798,215 @@ function useItem(id){
    sampleWorkPay(life.js) 据此抽样、expectedWorkPay 据此求期望、
    单测直接 import 断言两者同源。
    梯度按 v4.3 重标后的技能值域 0~100 线性标定。
+   第 4 参 opts 为工作类行动修正：tierMult 职级倍率 / workMult 行动倍率 /
+   riskMul 事故放大（加班冲刺、外包大单等高收益卡用）。
    ================================================================ */
 
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
 /**
- * 打工事件参数（skill 0~100; mood 仅影响低心情惩罚）
+ * 打工事件参数（skill 0~100; mood 仅影响低心情惩罚; riskMul 放大事故概率）
  * @param {number} skill
  * @param {number} [mood]
+ * @param {number} [riskMul]
  */
-function payoutParams(skill, mood){
+function payoutParams(skill, mood, riskMul = 1){
   const lowMood = (mood==null ? 70 : mood) < LIFE.MOOD_LOW;
   return {
     pGreat: .02 + Math.max(0, skill) * .0009,                       // 技术越高大成功越多
     pRework: Math.min(.3, Math.max(.04, .25 - Math.max(0, skill) * .0021) + (lowMood ? .05 : 0)),
-    pDisaster: Math.min(.03, Math.max(0, (20 - Math.max(0, skill)) / 1000) + (lowMood ? .01 : 0)),
+    pDisaster: clamp(Math.max(0, (20 - Math.max(0, skill)) / 1000) * riskMul + (lowMood ? .01 : 0), 0, .1),
     mult: { great: 2.5, rework: .4 },
     okRange: [.85, 1.15],          // ok 事件随机区间（期望取中点 1.0）
-    disasterPenalty: 50 * PAY_BOOST,
+    disasterPenalty: 50 * PAY_BOOST * riskMul,
     boost: PAY_BOOST,
   };
 }
 
 /**
- * 单次打工的基础价（未含事件倍率）：基础单价 × 技术系数 × 心情系数 × 伙伴加成
+ * 单次打工的基础价（未含事件倍率）：基础单价 × 技术系数 × 心情系数 × 伙伴加成 × 职级倍率 × 行动倍率
  * @param {number} skill
  * @param {number} mood
  * @param {number} [workBoost] 伙伴收入加成小数（0.3 = +30%）
+ * @param {number} [mult] 职级×行动复合倍率
  */
-function workBasePay(skill, mood, workBoost){
-  return LIFE.WORK_BASE * skillMult(skill) * moodMult(mood) * (1 + (workBoost||0));
+function workBasePay(skill, mood, workBoost, mult = 1){
+  return LIFE.WORK_BASE * skillMult(skill) * moodMult(mood) * (1 + (workBoost||0)) * mult;
 }
 
 /**
  * 各事件的固定结算额（ok 取区间中点）。
  * 期望 = Σ p_e × amt_e，由 expectedWorkPay 保证与抽样公式同源。
  */
-function workPayEvents(skill, mood, workBoost){
-  const base = workBasePay(skill, mood, workBoost);
-  const {mult, okRange, disasterPenalty, boost} = payoutParams(skill, mood);
+function workPayEvents(skill, mood, workBoost, mult = 1, riskMul = 1){
+  const base = workBasePay(skill, mood, workBoost, mult);
+  const {mult: evMult, okRange, disasterPenalty, boost} = payoutParams(skill, mood, riskMul);
   return {
     ok:       base * ((okRange[0]+okRange[1])/2) * boost,
-    great:    base * mult.great * boost,
-    rework:   base * mult.rework * boost,
+    great:    base * evMult.great * boost,
+    rework:   base * evMult.rework * boost,
     disaster: -disasterPenalty,
   };
 }
 
 /** 单次打工期望收益（与 sampleWorkPay 抽样同源） */
-function expectedWorkPay(skill, mood, workBoost){
-  const {pGreat, pRework, pDisaster} = payoutParams(skill, mood);
-  const ev = workPayEvents(skill, mood, workBoost);
+function expectedWorkPay(skill, mood, workBoost, mult = 1, riskMul = 1){
+  const {pGreat, pRework, pDisaster} = payoutParams(skill, mood, riskMul);
+  const ev = workPayEvents(skill, mood, workBoost, mult, riskMul);
   const pOk = Math.max(0, 1 - pGreat - pRework - pDisaster);
   return pOk*ev.ok + pGreat*ev.great + pRework*ev.rework + pDisaster*ev.disaster;
 }
 
-/** 抽样一次打工结算（life.js doAction('work') 调用） */
-function sampleWorkPay(skill, mood, workBoost){
-  const {pGreat, pRework, pDisaster, mult, okRange, disasterPenalty, boost} = payoutParams(skill, mood);
-  const base = workBasePay(skill, mood, workBoost);
+/** 抽样一次打工结算（life.js 工作类行动调用） */
+function sampleWorkPay(skill, mood, workBoost, opts = {}){
+  const {mult = 1, riskMul = 1} = opts;
+  const {pGreat, pRework, pDisaster, mult: evMult, okRange, disasterPenalty, boost} = payoutParams(skill, mood, riskMul);
+  const base = workBasePay(skill, mood, workBoost, mult);
   const roll = Math.random();
   if(roll < pDisaster) return {amt:-disasterPenalty, evt:'disaster'};
-  if(roll < pDisaster + pRework) return {amt:base*mult.rework*boost, evt:'rework'};
-  if(roll > 1 - pGreat) return {amt:base*mult.great*boost, evt:'great'};
+  if(roll < pDisaster + pRework) return {amt:base*evMult.rework*boost, evt:'rework'};
+  if(roll > 1 - pGreat) return {amt:base*evMult.great*boost, evt:'great'};
   return {amt:base*(okRange[0]+Math.random()*(okRange[1]-okRange[0]))*boost, evt:'ok'};
+}
+
+/* ================= js/careers.js ================= */
+/* ================================================================
+   LLMLife · 职业层 (careers.js)
+   职级门槛判定 / 晋升与沉淀 / 净资产口径 / 收入倍率
+   晋升只在年度结算时发生（living.js 弹窗驱动），此处纯逻辑
+   ================================================================ */
+
+function careerOf(tier = S.life.tier){ return CAREERS[Math.min(Math.max(tier,0), CAREERS.length-1)]; }
+/** 工作类收入职级倍率 */
+function tierMult(){ return careerOf().mult; }
+
+/** 净资产（现金 + 持仓市值；阶段 4 住房接入后再加房产净值） */
+function netWorth(){
+  let v = S.money;
+  if(S.market && S.market.hold && S.market.price)
+    for(const [id, qty] of Object.entries(S.market.hold)) v += qty * (S.market.price[id]||0);
+  return v;
+}
+
+/** 指定职级晋升门槛是否全部达成 */
+function meetsReq(tier){
+  const c = CAREERS[tier];
+  if(!c) return false;
+  const r = c.req || {};
+  if((r.skill||0) > S.life.attrs.skill) return false;
+  if((r.charm||0) > S.life.attrs.charm) return false;
+  if((r.net||0) > netWorth()) return false;
+  return true;
+}
+
+/** 晋升门槛展示文本（✓/✗ 现状），年度结算弹窗用 */
+function reqText(tier){
+  const c = CAREERS[tier];
+  if(!c || !c.req) return '';
+  const parts = [];
+  for(const [k, v] of Object.entries(c.req)){
+    const now = k==='skill' ? Math.round(S.life.attrs.skill)
+      : k==='charm' ? Math.round(S.life.attrs.charm)
+      : Math.round(netWorth());
+    parts.push(`${k==='skill'?'技术':k==='charm'?'魅力':'净资产'} ${v>now?`${now}/${v}✗`:`${v}✓`}`);
+  }
+  return parts.join(' · ');
+}
+
+/** 接受晋升（年度结算选择） */
+function tryPromote(){
+  const next = S.life.tier + 1;
+  if(next >= CAREERS.length) return {ok:false, line:'已是最高职级'};
+  if(!meetsReq(next)) return {ok:false, line:'晋升条件未达成'};
+  S.life.tier = next;
+  save();
+  const unlocked = ACTIONS.filter(a => a.tier === next).map(a => `${a.icon}${a.name}`);
+  return {ok:true, line:`🎉 晋升「${CAREERS[next].name}」！工作类收入 ×${CAREERS[next].mult}${unlocked.length ? `，解锁新行动：${unlocked.join('、')}` : ''}`};
+}
+
+/** 拒绝晋升、再沉淀一年 */
+function stayPut(){
+  addAttrs({skill:3, mood:10});
+  save();
+  return {ok:true, line:'🍵 再沉淀一年：技术 +3，心情 +10'};
+}
+
+/* ================= js/goals.js ================= */
+/* ================================================================
+   LLMLife · 周目标引擎 (goals.js)
+   每周初抽 2 条目标 → 行动计数推进 → 达成自动发奖（toast 行回传）
+   数据源 GOAL_POOL（config），行动计数 S.life.weekStats（state 单源）
+   ================================================================ */
+
+/** 周序号：每 7 个游戏日一周（周结算节拍） */
+function weekOf(day = S.life.day){ return Math.floor((day - 1) / LIFE.WEEK_DAYS); }
+
+/** 周切换检测：新的一周 → 重抽目标、清零计数（返回 true 表示换周） */
+function ensureWeek(){
+  const wk = weekOf();
+  if(S.life.goals && S.life.goals.wk === wk) return false;
+  S.life.weekStats = freshWeekStats();
+  const pool = GOAL_POOL.filter(g => (g.minTier || 0) <= S.life.tier);
+  const items = [];
+  const cands = pool.slice();
+  while(items.length < 2 && cands.length){
+    const i = Math.floor(Math.random() * cands.length);
+    items.push({ id: cands.splice(i, 1)[0].id, done: false });
+  }
+  S.life.goals = { wk, items };
+  save();
+  return true;
+}
+
+function goalOf(id){ return GOAL_POOL.find(g => g.id === id); }
+/** 单条目标进度 0~1 */
+function goalProg(goalItem){
+  const g = goalOf(goalItem.id);
+  if(!g) return 0;
+  const cur = (S.life.weekStats || {})[g.stat] || 0;
+  return Math.min(1, cur / g.target);
+}
+
+/** 奖励文本（渲染与 toast 共用） */
+function rewardText(r){
+  const parts = [];
+  if(r.money) parts.push(`¥${r.money}`);
+  if(r.skill) parts.push(`技术+${r.skill}`);
+  if(r.charm) parts.push(`魅力+${r.charm}`);
+  if(r.mood) parts.push(`心情+${r.mood}`);
+  if(r.staminaMax) parts.push(`体力上限+${r.staminaMax}`);
+  if(r.favor) parts.push(`随行好感+${r.favor}`);
+  if(r.freePull) parts.push(`免费抽券×${r.freePull}`);
+  if(r.skinTicket) parts.push(`皮肤券×${r.skinTicket}`);
+  return parts.join(' · ');
+}
+
+/** 发放一份奖励 */
+function applyReward(r){
+  if(r.money) S.money += r.money;
+  if(r.freePull) S.freePulls += r.freePull;
+  if(r.skinTicket) S.skinTickets += r.skinTicket;
+  if(r.favor) favorAll(r.favor);
+  addAttrs({ skill:r.skill||0, charm:r.charm||0, mood:r.mood||0, staminaMax:r.staminaMax||0 });
+}
+
+/** 检查新达成的目标并发奖；返回文案行（供 doAction lines / toast） */
+function checkGoals(){
+  const lines = [];
+  const gs = S.life.goals;
+  if(!gs) return lines;
+  let changed = false;
+  for(const item of gs.items){
+    if(item.done) continue;
+    if(goalProg(item) >= 1){
+      item.done = true; changed = true;
+      const g = goalOf(item.id);
+      applyReward(g.reward);
+      lines.push(`🎯 周目标「${g.label}」达成 → ${rewardText(g.reward)}`);
+    }
+  }
+  if(changed) save();
+  return lines;
 }
 
 /* ================= js/life.js ================= */
@@ -1754,11 +2023,18 @@ const trimNum = n => String(Math.round(n * 10) / 10);
 
 const actionOf = id => ACTION_MAP[id];
 
+/* ---------- 章节工具（一章 = LIFE.CHAPTER_DAYS 天 = 1 游戏年） ---------- */
+/** 当前处于第几章（0 起） */
+function chapterIndex(day = S.life.day){ return Math.floor((day - 1) / LIFE.CHAPTER_DAYS); }
+/** 本局总章数 */
+const CHAPTER_TOTAL = LIFE.RETIRE_AGE - LIFE.START_AGE;
+
 /* ---------- 行动守卫 ---------- */
 function canDo(actionId){
   if(S.ending) return {ok:false, reason:'本局已结束，开个新周目再战'};
   const a = ACTION_MAP[actionId];
   if(!a) return {ok:false, reason:'未知行动'};
+  if((a.tier||0) > S.life.tier) return {ok:false, reason:`职级不足：晋升「${CAREERS[a.tier].name}」后解锁`};
   if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
     return {ok:false, reason:'今天已经躺平过了，再用道具回体力或结束今天'};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
@@ -1786,17 +2062,21 @@ function doAction(actionId){
   if(a.stamina) attr.stamina -= a.stamina;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
   if(actionId === 'rest') S.life.restUsed++;
+  bumpWeekStat(actionId);
 
   let line;
-  if(actionId === 'work'){
-    const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work);
+  if(actionId === 'work' || a.workMult){
+    // 工作类：职级倍率 × 行动倍率走同一 payout 事件流（期望与抽样同源）
+    const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work,
+      { mult: tierMult() * (a.workMult || 1), riskMul: a.riskMul || 1 });
     S.money += pay.amt;
-    addLedger('打工收入', pay.amt);
+    addLedger(a.name || '打工收入', pay.amt);
     S.stats.workDays++;
     if(pay.amt >= 0) S.stats.earned += pay.amt; else S.stats.spent += -pay.amt;
     if(pay.evt === 'great') S.stats.greats++;
     if(pay.evt === 'disaster') S.stats.disasters++;
-    line = `${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）`;
+    if(a.mood) attr.mood = Math.max(0, Math.min(100, attr.mood + a.mood));
+    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}`;
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
@@ -1804,6 +2084,12 @@ function doAction(actionId){
       const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1));
       attr.skill = Math.min(100, attr.skill + gain);
       applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}`);
+    }
+    if(a.fee){
+      // 出场费类：随魅力水涨船高
+      const amt = Math.round(rand(a.fee[0], a.fee[1]) * (0.75 + attr.charm/200));
+      S.money += amt; addLedger(`${a.name}·出场费`, amt); S.stats.earned += amt;
+      applied.push(`出场费¥${amt.toLocaleString('zh-CN')}`);
     }
     if(a.recover){
       const before = attr.stamina;
@@ -1835,6 +2121,7 @@ function doAction(actionId){
   logToday(line);
   const msNew = checkMilestones();
   for(const m of msNew) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
+  for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
   if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或结束今天');
   save();
   return {ok:true, line, lines};
@@ -1849,7 +2136,7 @@ function weightedPick(pool){
   return null;
 }
 
-/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 年龄 → 结局 ---------- */
+/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 章节结算 → 年龄 → 结局 ---------- */
 function fireEvent(){
   const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
   if(!ev) return null;
@@ -1864,6 +2151,29 @@ function fireEvent(){
     delta.charm ? `魅力+${delta.charm}` : '',
   ].filter(Boolean).join('，');
   return `🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`;
+}
+
+/** 章末年度结算：与 S.chStart 快照做同比差，明细存 S._settle 供 UI 弹窗（不落盘） */
+function settleChapter(){
+  const cs = S.chStart || defaultState().chStart;
+  const no = chapterIndex(S.life.day) - 1; // 刚完成章的下标（0 起）
+  const attr = S.life.attrs;
+  const settle = {
+    no, ageFrom: LIFE.START_AGE + no, ageTo: LIFE.START_AGE + no + 1,
+    title: CHAPTER_TITLES[no] || `第 ${no + 1} 章`,
+    nextTitle: CHAPTER_TITLES[no + 1] || null,
+    net: S.money - cs.money,
+    earned: S.stats.earned - (cs.earned||0),
+    spent: S.stats.spent - (cs.spent||0),
+    workDays: S.stats.workDays - (cs.workDays||0),
+    pulls: S.stats.pulls - (cs.pulls||0),
+    skill: Math.round(attr.skill), charm: Math.round(attr.charm), mood: Math.round(attr.mood),
+    staminaMax: S.life.staminaMax, partners: S.partners.length,
+    score: endingScore(S, slotBoosts().staminaMax),
+  };
+  S._settle = settle;
+  S.chStart = { day:S.life.day, money:S.money, earned:S.stats.earned, spent:S.stats.spent, workDays:S.stats.workDays, pulls:S.stats.pulls };
+  return `📆 年度结算《${settle.title}》：本年净收支 ${fmt(settle.net)}`;
 }
 
 function endDay(){
@@ -1882,11 +2192,20 @@ function endDay(){
   const attr = S.life.attrs;
   attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴上限加成）
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
-  if((S.life.day - 1) % 7 === 0) lines.push(weekSettle());
-  const newAge = LIFE.START_AGE + Math.floor((S.life.day - 1) / 360);
+  if((S.life.day - 1) % LIFE.WEEK_DAYS === 0){
+    lines.push(weekSettle());
+    if(ensureWeek()){
+      const gs = (S.life.goals?.items || [])
+        .map(gi => goalOf(gi.id)).filter(Boolean)
+        .map(g => `${g.icon} ${g.label}`);
+      if(gs.length) lines.push(`📌 本周目标：${gs.join('；')}`);
+    }
+  }
+  const newAge = LIFE.START_AGE + Math.floor((S.life.day - 1) / LIFE.CHAPTER_DAYS);
   if(newAge !== S.life.age){
     S.life.age = newAge;
-    lines.push(`🎂 新的一年开始了，你 ${S.life.age} 岁`);
+    // 一章恰好一年：生日与章末重合，年度结算行即庆生行
+    lines.push(settleChapter());
   }
   const end = checkEnd();
   if(end) lines.push(`🏁 人生结算：${end.title}`);
@@ -1909,17 +2228,21 @@ function weekSettle(){
   return `🏠 周结算：房租+伙食 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}`;
 }
 
-/* ---------- 结局判定（破产 / 60 岁退休 / Fihag 彩蛋） ---------- */
+/* ---------- 结局判定（破产 / 30 岁章满结算 / Fihag 彩蛋） ---------- */
 function checkEnd(){
   if(S.ending) return S.ending;
   const score = endingScore(S, slotBoosts().staminaMax);
   if(S.debtWeeks >= LIFE.GRACE_WEEKS){
     S.ending = {...ENDING_BROKE, score};
   } else if(S.life.age >= LIFE.RETIRE_AGE){
-    if(S.dex.fihagv1 && score >= 150) S.ending = {...ENDING_CHOSEN, score};
+    if(S.dex.fihagv1 && score >= 300) S.ending = {...ENDING_CHOSEN, score};
     else S.ending = {...(ENDINGS.find(e => score >= e.min) || ENDINGS[ENDINGS.length - 1]), score};
   }
-  if(S.ending) save();
+  if(S.ending){
+    if(!S.endingsSeen) S.endingsSeen = {};
+    S.endingsSeen[S.ending.id] = true; // 多周目结局收集
+    save();
+  }
   return S.ending;
 }
 
@@ -1934,10 +2257,36 @@ function checkMilestones(){
   return got;
 }
 
-/* ---------- 新周目 ---------- */
+/* ---------- 新周目：完全重置（硬重开） ---------- */
 function restart(){
   setState(defaultState());
+  ensureWeek(); // 第一周目标即刻生效
   save();
+}
+
+/**
+ * NG+ 开启新周目：保留收集类进度（图鉴/皮肤/皮肤券/已见结局/成就标记），
+ * 数值与伙伴清零重开，按周目数给予起步资金奖励。
+ */
+function newGamePlus(){
+  const prev = S;
+  const ns = defaultState();
+  ns.ng = (prev.ng||0) + 1;
+  ns.money += Math.min(ns.ng, 8) * 500;         // 周目递增的创业起步金（封顶 8 周目）
+  ns.chStart.money = ns.money;
+  ns.dex = { ...(prev.dex||{}) };                // 模型图鉴
+  ns.skinsOwned = [...new Set(prev.skinsOwned||[])];
+  ns.skinTickets = prev.skinTickets||0;
+  ns.endingsSeen = { ...(prev.endingsSeen||{}) };// 结局收集
+  ns.flags.ms = { ...(prev.flags&&prev.flags.ms||{}) }; // 成就标记
+  ns.flags.muted = !!(prev.flags&&prev.flags.muted);
+  ns.flags.autoSkip = !!(prev.flags&&prev.flags.autoSkip);
+  ns.flags.welcomed = true;
+  ns.skin = prev.skin && ns.skinsOwned.includes(prev.skin) ? prev.skin : 'classic';
+  setState(ns);
+  ensureWeek();
+  save();
+  return ns;
 }
 
 /* ================= js/banner.js ================= */
@@ -2034,20 +2383,33 @@ function renderLife(){
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
 
-  // 行动按钮（首次构建，此后只刷禁用态）
+  // 行动按钮：按职级重建（已解锁 + 下一职级锁定预告），此后只刷禁用态
   const barEl = $('act-bar');
-  if(barEl && !barEl.dataset.built){
-    barEl.dataset.built = '1';
-    barEl.innerHTML = ACTIONS.map(x => `
+  if(barEl && barEl.dataset.built !== String(S.life.tier)){
+    barEl.dataset.built = String(S.life.tier);
+    const unlocked = ACTIONS.filter(x => (x.tier||0) <= S.life.tier);
+    const previews = S.life.tier < CAREERS.length - 1
+      ? ACTIONS.filter(x => x.tier === S.life.tier + 1) : [];
+    barEl.innerHTML = [
+      ...unlocked.map(x => `
       <button class="act-btn" data-actbtn="${x.id}" title="${x.desc}">
         <div class="ic">${x.icon}</div>
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
         <div class="desc">${x.desc}</div>
-      </button>`).join('');
+      </button>`),
+      ...previews.map(x => `
+      <button class="act-btn locked" data-actbtn="${x.id}" disabled title="晋升「${CAREERS[x.tier].name}」后解锁">
+        <div class="ic">🔒</div>
+        <div class="nm">${x.name}</div>
+        <div class="cost">晋升解锁</div>
+        <div class="desc">${CAREERS[x.tier].icon} ${CAREERS[x.tier].name}</div>
+      </button>`),
+    ].join('');
     barEl.querySelectorAll('[data-actbtn]').forEach(b => b.onclick = () => onActionClick(b.dataset.actbtn));
   }
   barEl && barEl.querySelectorAll('[data-actbtn]').forEach(b => {
+    if(b.closest('.locked')) return;
     b.disabled = !canDo(b.dataset.actbtn).ok;
   });
   const restHint = $('rest-hint');
@@ -2069,24 +2431,53 @@ function renderLife(){
       : '<span style="font-size:11px;color:var(--faint)">暂无随行伙伴加成</span>';
   }
 
+  // 职业芯片：当前职级 + 晋升进度
+  const cEl = $('career-txt');
+  if(cEl){
+    const cur = careerOf();
+    const next = CAREERS[S.life.tier + 1];
+    cEl.innerHTML = `${cur.icon} <b>${cur.name}</b> · 工作收入 ×${cur.mult}` +
+      (next ? ` <span style="color:var(--faint)">→ ${next.icon}${next.name}（${reqText(S.life.tier + 1)}）</span>`
+            : ` <span style="color:var(--gold)">已是行业顶点</span>`);
+  }
+
+  // 本周目标面板
+  const gWrap = $('goals-list');
+  if(gWrap){
+    const gs = (S.life.goals && S.life.goals.items) || [];
+    gWrap.innerHTML = gs.length ? gs.map(gi=>{
+      const g = goalOf(gi.id); if(!g) return '';
+      const cur = (S.life.weekStats || {})[g.stat] || 0;
+      const pct = Math.round(goalProg(gi) * 100);
+      return `<div class="goal-row${gi.done ? ' done' : ''}">
+        <div class="goal-top"><span>${g.icon} ${g.label}</span><b>${Math.min(cur, g.target)}/${g.target}</b></div>
+        <div class="goal-bar"><i style="width:${pct}%"></i></div>
+        <div class="goal-rw">${gi.done ? '✓ 已达成' : '奖励：' + rewardText(g.reward)}</div>
+      </div>`;
+    }).join('') : '<div class="day-log-empty">本周暂无目标</div>';
+  }
+
   // 日志流
   const log = $('day-log');
   if(log){
     const entries = dayLog();
     log.innerHTML = entries.length ? entries.map(e=>{
-      const cls = e.line.startsWith('🎲') ? 'ev' : e.line.startsWith('🏅') ? 'ms' : e.line.startsWith('🏁') ? 'end' : '';
+      const cls = e.line.startsWith('🎲') ? 'ev' : (e.line.startsWith('🏅') || e.line.startsWith('🎯') || e.line.startsWith('📆')) ? 'ms' : e.line.startsWith('🏁') ? 'end' : '';
       return `<div class="row ${cls}">${e.line}</div>`;
     }).join('') : '<div class="day-log-empty">新的一天，选个行动开始吧。</div>';
   }
 
-  // 人生进度
-  const totalDays = (LIFE.RETIRE_AGE - LIFE.START_AGE) * 360;
+  // 章节进度（一章 = 一年 = CHAPTER_DAYS 天）
+  const ch = chapterIndex();
+  const dayInChapter = (S.life.day - 1) % LIFE.CHAPTER_DAYS + 1;
+  const totalDays = CHAPTER_TOTAL * LIFE.CHAPTER_DAYS;
   const pbar = $('life-progress-bar');
   if(pbar) pbar.style.width = Math.min(100, (S.life.day - 1) / totalDays * 100) + '%';
   const ptxt = $('life-progress-txt');
-  if(ptxt) ptxt.textContent = S.ending ? `已结算：${S.ending.title}` : `第 ${S.life.day} 天 · 星期${(S.life.day - 1) % 7 + 1}`;
+  if(ptxt) ptxt.textContent = S.ending ? `已结算：${S.ending.title}`
+    : `第 ${ch + 1}/${CHAPTER_TOTAL} 章《${CHAPTER_TITLES[ch] || ''}》· 本年第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天`;
   const atxt = $('life-age-txt');
-  if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁`;
+  if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
   const wc = $('week-cost'); if(wc) wc.textContent = fmt(LIFE.RENT + LIFE.LIVING);
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
 }
@@ -2097,6 +2488,7 @@ function costText(x){
   if(x.money) parts.push(`¥-${x.money}`);
   if(x.recover) parts.push(`⚡+${x.recover}`);
   if(x.skill) parts.push(`🧠+${x.skill[0]}~${x.skill[1]}`);
+  if(x.fee) parts.push(`💰${x.fee[0]}~${x.fee[1]}`);
   if(x.mood && x.mood > 0) parts.push(`🌤+${x.mood}`);
   if(x.charm) parts.push(`✨+${x.charm}`);
   return parts.join(' ') || '免费';
@@ -2232,7 +2624,7 @@ function renderData(){
   }
   const vs = $('validate-status');
   if(vs) vs.textContent = validateResult.ok
-    ? `✓ config 校验通过 · ${MODELS.length} 张卡 · ${ITEMS.length} 种道具 · 本地存档 llmlife_v1`
+    ? `✓ config 校验通过 · ${MODELS.length} 张卡 · ${ITEMS.length} 种道具 · 本地存档 llmlife_v2`
     : `✗ config 校验失败: ${validateResult.errors[0] || ''}`;
 }
 
@@ -2378,16 +2770,21 @@ function goldFlash(){ const g=$('goldflash'); if(!g) return; g.classList.remove(
 function endingHTML(end){
   const s = S;
   const favorSum = s.partners.reduce((a,p)=>a+p.favor,0);
+  const seen = Object.keys(s.endingsSeen||{}).length;
+  const totalEndings = ENDINGS.length + 2; // 5 档 + 破产 + NB 彩蛋
   return `<h3>🏁 人生结算<button class="x" onclick="closeModal()">×</button></h3>
   <div class="end-title">${end.title}</div>
-  <div class="end-sub">综合评分 <b style="color:var(--gold)">${end.score}</b> · 通关用时 ${s.life.day} 天<br />${end.desc}</div>
+  <div class="end-sub">综合评分 <b style="color:var(--gold)">${end.score}</b> · 走完 ${s.life.day} 天（${CHAPTER_TOTAL} 章）<br />${end.desc}</div>
   <div class="end-stats">
     <div class="cell"><span class="lb">最终存款</span><b>${fmt(s.money)}</b></div>
-    <div class="cell"><span class="lb">技术 / 魅力</span><b>${s.life.attrs.skill} / ${s.life.attrs.charm}</b></div>
+    <div class="cell"><span class="lb">技术 / 魅力</span><b>${Math.round(s.life.attrs.skill)} / ${Math.round(s.life.attrs.charm)}</b></div>
     <div class="cell"><span class="lb">伙伴 / 总好感</span><b>${s.partners.length} 位 / ${favorSum}</b></div>
     <div class="cell"><span class="lb">累计打工</span><b>${s.stats.workDays} 次</b></div>
+    <div class="cell"><span class="lb">结局收集</span><b style="color:var(--cyan)">${seen}/${totalEndings}</b></div>
+    <div class="cell"><span class="lb">周目</span><b>${s.ng>0?`NG+${s.ng>1?s.ng:''}`:'一周目'}</b></div>
   </div>
-  <button class="big-btn" data-act="restart">🔄 开启新周目</button>
+  <button class="big-btn" data-act="ng-plus">🔁 新周目+（保留图鉴/皮肤/成就 · 起步资金奖励）</button>
+  <button class="big-btn ghost" data-act="restart">💥 全部清零重开</button>
   <button class="big-btn ghost" onclick="closeModal()">再看看这个世界 →</button>`;
 }
 function showEnding(end){
@@ -2399,22 +2796,26 @@ function showEnding(end){
 /* ---------- 欢迎 / 玩法 ---------- */
 function welcomeHTML(){
   return `<h3>🧑‍💻 欢迎来到 LLMLife<button class="x" onclick="closeModal()">×</button></h3>
-  <p>你是 2026 年毕业的程序员，兜里揣着 <b>¥800</b>。往后的日子这样过：</p>
-  <p>📅 <b>生活</b>——每天 3 点行动力：打工赚钱、学习涨技术、健身社交，或者干脆躺平。</p>
-  <p>🤝 <b>伙伴</b>——抽卡抽 AI 伙伴随行：Anthropic 加收入、DeepSeek 加学习、Google 加体力……抽卡是次要玩法（大概）。</p>
-  <p>🏠 <b>账单</b>——每周房租 + 伙食雷打不动，连续欠租 2 周就破产流浪。</p>
-  <p>🏁 <b>结算</b>——60 岁结算人生，评分看存款、技术、魅力和伙伴羁绊。</p>
+  <p>你是 2026 年毕业的程序员，兜里揣着 <b>¥800</b>。<b>22 岁到 30 岁，一局 8 章</b>——一章一年，一年 24 天：</p>
+  <p>📅 <b>章节</b>——每天行动不设上限、体力说话；日切必发随机事件；<b>年末触发年度结算</b>：盘点收支、解锁下一章。</p>
+  <p>💼 <b>职业</b>——实习生 → 正式员工 → 骨干 → 主管 → 自立门户，每一档晋升都会<b>解锁新行动卡</b>。</p>
+  <p>🎯 <b>目标</b>——每周刷新周目标，完成拿抽卡券/现金/体力上限奖励，不用再盯着屏幕想「现在干嘛」。</p>
+  <p>🤝 <b>伙伴</b>——抽 AI 伙伴随行：数值加成、好感满级解锁<b>专属行动卡</b>、重复卡升星。抽卡是次要玩法（大概）。</p>
+  <p>🏠 <b>账单</b>——每周房租伙食雷打不动，欠租 2 周破产流浪；中后期还有<b>住房升级与行情投资</b>等烧钱大事。</p>
+  <p>🏁 <b>结算</b>——30 岁按综合分定档结局，结算后可 <b>NG+ 新周目</b>：图鉴皮肤成就全保留。</p>
   <button class="big-btn" data-act="start">22 岁，入行 →</button>`;
 }
 
 function helpHTML(){
   return `<h3>❓ 玩法说明<button class="x" onclick="closeModal()">×</button></h3>
-  <p><b>主循环</b>：行动不设上限，体力说话 → 日切（随机事件 1~2 个 + 睡一觉体力回满，心情 -8）→ 周结算（房租+伙食）→ 每 360 天长一岁。</p>
+  <p><b>主循环</b>：行动不设上限，体力说话 → 日切（事件 1~2 个，选择型事件当场拍板 + 睡一觉体力回满，心情 -8）→ 周结算（房租+伙食）→ <b>24 天 = 1 年 = 1 章</b>，章末年度结算 + 晋升抉择。</p>
+  <p><b>职业</b>：五档职级，年度结算时达门槛即可晋升（或躺平换补偿）。职级提升收入倍率并解锁新行动卡（加班冲刺 / 外包大单 / 带队攻坚 / 公司经营……）。</p>
+  <p><b>周目标</b>：每周一随机 2 条目标（打工 N 次 / 攒钱 X / 抽卡 Y 次……），完成自动发奖。</p>
   <p><b>属性</b>：体力限制行动（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
-  <p><b>打工</b>：收入 = 基础价 × 技术系数 × 心情系数 × 伙伴加成，结算走大成功 ×2.5 / 返工 ×0.4 / 生产事故倒赔的事件流，概率公示页可查。</p>
-  <p><b>伙伴</b>：最多 3 位随行。效果类型看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感等级（×1.0/1.15/1.3）。重复卡折算好感 +10。</p>
-  <p><b>道具</b>：福袋开出的一次性道具，咖啡回体力、书籍涨技术、手办涨好感、刮刮乐看命。</p>
-  <p><b>结局</b>：60 岁按综合分定档（普通码农 → 神之人生）；连续 ${LIFE.GRACE_WEEKS} 周欠租直接破产；手握 Fihag V1 另有彩蛋结局。</p>
+  <p><b>打工</b>：收入 = 基础价 × 职级倍率 × 技术系数 × 心情系数 × 伙伴加成，大成功 ×2.5 / 返工 ×0.4 / 事故倒赔，概率公示页可查。</p>
+  <p><b>伙伴</b>：最多 3 位随行。效果看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感（×1.0/1.15/1.3）。<b>好感满 90 解锁该伙伴专属行动卡</b>（每天 1 次）；重复卡折好感 +10，同卡满 3 张升 1 星（每星效果 +8%）。</p>
+  <p><b>资产</b>：住房升级链改善周租与睡眠；行情系统低买高卖（波动真实且与事件联动），持仓与房产计入净资产。</p>
+  <p><b>结局</b>：30 岁按综合分定档（普通码农 → 神之人生，另有 7 种收集）；欠租 ${LIFE.GRACE_WEEKS} 周直接破产；手握 Fihag V1 有彩蛋结局。结算后 NG+ 保留收集。</p>
   <p class="note">卡面指数为 Artificial Analysis v4.3 真实智能指数，稀有度分段据此重标。本作为 TokenGacha 精神续作，纯属娱乐。</p>
   <button class="big-btn ghost" onclick="closeModal()">明白了 →</button>`;
 }
@@ -2488,12 +2889,20 @@ function handleModalAction(el){
     toast('🔄 新周目开始，22 岁的你又坐在了出租屋里');
     return true;
   }
+  if(act === 'ng-plus'){
+    closeModal();
+    newGamePlus();
+    applySkin(S.skin);
+    renderAll();
+    toast(`🔁 NG+${S.ng>1?S.ng:''} 开始！图鉴/皮肤/成就已继承，起步资金 ${fmt(S.money)}`, 3600);
+    return true;
+  }
   if(act === 'start'){
     S.flags.welcomed = true;
     save();
     closeModal();
     SFX.win();
-    toast('🎁 启动资金 ¥800 到账，好好干！');
+    toast('🎁 启动资金 ¥800 到账，第 1 章开始！');
     renderAll();
     return true;
   }
@@ -2523,7 +2932,8 @@ function handleAction(id){
     toast(res.line);
     return;
   }
-  if(id === 'work'){
+  const work = id === 'work' || !!(actionOf(id) || {}).workMult;
+  if(work){
     if(/🤩/.test(res.line)){ SFX.win(); burst(innerWidth/2, innerHeight/2, ['#f59e0b','#2f6bff','#fff'], 90, 9); goldSmall(); }
     else if(/💥/.test(res.line)){ SFX.bad(); }
     else SFX.coin();
@@ -2531,13 +2941,16 @@ function handleAction(id){
     SFX.click();
   }
   // 行动结果行进 toast 突出显示（打工以外的小行动）
-  if(id !== 'work') toast(res.line, 1800);
-  if(id === 'work' && res.line) bigMoneyFromLine(res.line);
-  // 成就
+  if(!work) toast(res.line, 1800);
+  if(work && res.line) bigMoneyFromLine(res.line);
+  // 成就 / 周目标
   for(const l of res.lines || []){
     if(l.startsWith('🏅')){
       SFX.win();
       burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#ff5f6d','#fff'], 160, 11);
+      toast(l, 3000);
+    } else if(l.startsWith('🎯')){
+      SFX.win();
       toast(l, 3000);
     }
   }
@@ -2564,26 +2977,73 @@ function handleEndDay(){
 }
 function dayHint(){
   const nextDay = S.life.day + 1;
-  return (nextDay - 1) % 7 === 0 ? '<br />⚠️ 明天醒来要交 <b>房租 + 伙食</b>，留意余额！' : '';
+  return (nextDay - 1) % LIFE.WEEK_DAYS === 0 ? '<br />⚠️ 明天醒来要交 <b>房租 + 伙食</b>，留意余额！' : '';
 }
 
-/** 确认日切 → 结算 → 新的一天弹窗 */
+/** 确认日切 → 结算 → 章末年度结算弹窗（一年一章）或新的一天弹窗 */
 function handleConfirmEndDay(){
   closeModal();
   const lines = endDay();
   renderAll();
-  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); return; }
+  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); S._settle=null; return; }
+  if(S._settle){ showModal(chapterSettleHTML(S._settle)); S._settle=null; return; }
   showModal(newDayHTML(lines));
+}
+function settleChoiceHTML(){
+  const next = CAREERS[S.life.tier + 1];
+  if(!next) return '';
+  if(meetsReq(S.life.tier + 1)){
+    return `<div class="settle-promo">
+    <p>🪜 <b>晋升机会来了</b>：这一年的成绩单够到了 ${next.icon}「${next.name}」（工作收入 ×${next.mult}）——<span style="color:var(--faint)">${reqText(S.life.tier + 1)}</span>。往上跳，还是再稳一年？</p>
+    <button class="big-btn" data-act="promote">🚀 晋升「${next.name}」</button>
+    <button class="big-btn ghost" data-act="stay">🍵 再沉淀一年（技术 +3 · 心情 +10）</button></div>`;
+  }
+  return `<p style="color:var(--faint)">🔒 下一级 ${next.icon}「${next.name}」的条件还差一点：${reqText(S.life.tier + 1)}。明年此时再来敲门。</p>`;
+}
+function handlePromote(){
+  closeModal();
+  const res = tryPromote();
+  SFX.win();
+  burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#fff'], 140, 10);
+  toast(res.line, 3600);
+  renderAll();
+}
+function handleStay(){
+  closeModal();
+  const res = stayPut();
+  SFX.click();
+  toast(res.line, 2600);
+  renderAll();
+}
+function chapterSettleHTML(st){
+  const neg = st.net < 0;
+  return `<h3>📆 第 ${st.no + 1}/${CHAPTER_TOTAL} 章 ·《${st.title}》<button class="x" data-act="close-modal">×</button></h3>
+  <p>🎂 ${st.ageFrom} 岁 → <b>${st.ageTo} 岁</b>。生日与章末是同一件事——这一年过完了：</p>
+  <div class="end-stats">
+    <div class="cell"><span class="lb">本年净收支</span><b style="color:${neg?'var(--red)':'var(--green)'}">${fmt(st.net)}</b></div>
+    <div class="cell"><span class="lb">收入 / 支出</span><b>${fmt(st.earned)} / ${fmt(st.spent)}</b></div>
+    <div class="cell"><span class="lb">接单 / 抽卡</span><b>${st.workDays} 次 / ${st.pulls} 抽</b></div>
+    <div class="cell"><span class="lb">技术 / 魅力</span><b>${st.skill} / ${st.charm}</b></div>
+    <div class="cell"><span class="lb">当前职级</span><b>${CAREERS[S.life.tier].icon} ${CAREERS[S.life.tier].name}</b></div>
+    <div class="cell"><span class="lb">当前评分</span><b style="color:var(--cyan)">${st.score}</b></div>
+  </div>
+  ${settleChoiceHTML()}
+  ${st.nextTitle
+    ? `<p>下一章预告：<b>《${st.nextTitle}》</b>（${st.ageTo} → ${st.ageTo + 1} 岁 · 剩 ${CHAPTER_TOTAL - st.no - 1} 章）</p>`
+    : `<p><b>结算的钟声就在门外。</b>这八年如何，明天见分晓。</p>`}
+  ${meetsReq(S.life.tier + 1) ? '' : `<button class="big-btn" data-act="close-modal">翻开第 ${st.no + 2} 章 →</button>`}`;
 }
 function newDayHTML(lines){
   const a = S.life.attrs;
+  const ch = chapterIndex();
+  const dayInChapter = (S.life.day - 1) % LIFE.CHAPTER_DAYS + 1;
   const body = lines.length
     ? lines.map(l=>{
-        const cls = l.startsWith('🎲') ? 'ev' : l.startsWith('🎂') ? 'ms' : '';
+        const cls = l.startsWith('🎲') ? 'ev' : l.startsWith('📆') ? 'ms' : '';
         return `<div class="row ${cls}" style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;margin-bottom:6px">${l}</div>`;
       }).join('')
     : '<p style="color:var(--faint)">风平浪静的一天。</p>';
-  return `<h3>🌅 新的一天 · 第 ${S.life.day} 天（星期${(S.life.day - 1) % 7 + 1}）<button class="x" data-act="close-modal">×</button></h3>
+  return `<h3>🌅 第 ${ch + 1}/${CHAPTER_TOTAL} 章 · 第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天（星期${(S.life.day - 1) % LIFE.WEEK_DAYS + 1}）<button class="x" data-act="close-modal">×</button></h3>
   ${body}
   <div class="end-stats">
     <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${S.life.staminaMax}</b></div>
@@ -2594,12 +3054,13 @@ function newDayHTML(lines){
   <button class="big-btn" data-act="close-modal">开始新的一天 →</button>`;
 }
 
-/** header 重开 → 确认弹窗 */
+/** header 重开 → 确认弹窗（给 NG+ 与清档两条路） */
 function handleRestartAsk(){
   showModal(`<h3>🔄 重开新周目<button class="x" data-act="close-modal">×</button></h3>
   <p>当前进度将被清空：<b>第 ${S.life.day} 天 · ${fmt(S.money)} · ${S.partners.length} 位伙伴</b>。</p>
-  <p style="color:var(--faint)">人生没有重开，但游戏有。想好了吗？</p>
-  <button class="big-btn danger" data-act="confirm-reset">确认重开</button>
+  <p style="color:var(--faint)">人生没有重开，但游戏有。<b>NG+</b> 会保留图鉴/皮肤/成就，数值清零重新 22 岁。</p>
+  <button class="big-btn" data-act="ng-plus">🔁 NG+（保留收集）</button>
+  <button class="big-btn danger" data-act="confirm-reset">💥 全部清零重开</button>
   <button class="big-btn ghost" data-act="close-modal">手滑了，继续过 →</button>`);
 }
 function handleConfirmReset(){
@@ -2752,6 +3213,7 @@ function doPulls(poolKey, count){
     S.pity[poolKey] = (res._bottom || pityReset(poolKey, realR, res.id)) ? 0 : S.pity[poolKey]+1;
   }
   rollSkinDrop(results);
+  bumpWeekStat('pulls', results.length);
   save();
   return results;
 }
@@ -2997,6 +3459,8 @@ function bindUI(){
       if(el.dataset.act === 'close-modal'){ SFX.click(); closeModal(); return; }
       if(el.dataset.act === 'confirm-end-day'){ handleConfirmEndDay(); return; }
       if(el.dataset.act === 'confirm-reset'){ handleConfirmReset(); return; }
+      if(el.dataset.act === 'promote'){ handlePromote(); return; }
+      if(el.dataset.act === 'stay'){ handleStay(); return; }
       if(el.dataset.act === 'slot'){ handleSlotAction(el.dataset.slot, el.dataset.uid); return; }
       if(el.dataset.act === 'use-item'){ SFX.click(); handleUseItem(el.dataset.item); return; }
       if(handleModalAction(el)) return;
@@ -3005,6 +3469,7 @@ function bindUI(){
     const slotBox = e.target.closest ? e.target.closest('[data-slot-open]') : null;
     if(slotBox){ SFX.click(); go('partners'); return; }
     if(e.target.id === 'btn-reset'){
+      localStorage.removeItem('llmlife_v2');
       localStorage.removeItem('llmlife_v1');
       location.reload();
     }
@@ -3025,6 +3490,12 @@ function boot(){
   }catch(e){}
   applySkin(S.skin);
   setMuted(!!S.flags.muted);
+  ensureWeek(); // 首启/读档补上本周目标（内部按周序号幂等）
+  // v1 旧档迁移说明（一次性）
+  if(S.flags.migrated){
+    S.flags.migrated = false; save();
+    toast('🧬 旧存档已迁移：人生改为章节制（22→30 岁），图鉴/皮肤/成就已继承', 4600);
+  }
   $('btn-mute').innerHTML = S.flags.muted ? '🔇<span class="lbl"> 静音</span>' : '🔊<span class="lbl"> 音效</span>';
   const notice = $('notice-text'); if(notice) notice.textContent = pick(NOTICES);
   const notice2 = $('notice-text2'); if(notice2) notice2.textContent = pick(NOTICES);

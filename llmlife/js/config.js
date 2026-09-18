@@ -148,7 +148,9 @@ export const SLOT_COUNT = 3; // 随行槽
 
 /* ---------- 人生常量 ---------- */
 export const LIFE = {
-  START_AGE: 22, RETIRE_AGE: 60,
+  START_AGE: 22, RETIRE_AGE: 30,  // 一局 = 8 章，30 岁结算
+  CHAPTER_DAYS: 24,               // 一章 = 1 游戏年 = 24 个游戏日（1 天 ≈ 两周人生）
+  WEEK_DAYS: 7,                   // 一周 = 7 游戏日（周结算/周目标节拍）
   REST_PER_DAY: 1,         // 躺平休息每天限次（道具回体力不受限）
   STAMINA_MAX: 100,
   STAMINA_CAP: 200,        // 体力上限软帽：健身/道具推到 200 后不再成长
@@ -159,19 +161,69 @@ export const LIFE = {
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
 };
+/* 八章标题：每章年度结算与下一章预告用 */
+export const CHAPTER_TITLES = [
+  '初入行·交完房租还剩多少',
+  '转正年·技术是第一生产力',
+  '打底年·把根基夯实',
+  '岔路口·向左卷技术向右卷人脉',
+  '加速年·单价开始配得上发量',
+  '独当一面·甲方改口叫老师',
+  '分水岭·有人跃迁有人躺平',
+  '结算前夜·八年一瞬',
+];
 /* 技术收入系数: skill 0→0.5, 50→1.5, 100→2.5 */
 export const skillMult = s => 0.5 + s/50;
 /* 心情效率系数: mood 0→0.8, 50→1.0, 100→1.2 */
 export const moodMult = m => 0.8 + m/250;
 
-/* ---------- 每日行动（cost 为消耗, effect 为固定收益; 打工走 payout 事件流） ---------- */
+/* ---------- 职级阶梯（年度结算晋升；mult 为工作类收入倍率；req 为晋升门槛） ---------- */
+export const CAREERS = [
+  {tier:0, name:'实习生',   icon:'🐣', mult:1.0,  req:null,                     desc:'先把手艺练出来，房租会教你做人'},
+  {tier:1, name:'正式员工', icon:'💼', mult:1.35, req:{skill:30},               desc:'转正了：接单更值钱，也更能卷'},
+  {tier:2, name:'技术骨干', icon:'🧠', mult:1.7,  req:{skill:55, charm:25},     desc:'团队里最忙的那双手'},
+  {tier:3, name:'团队主管', icon:'🧑‍✈️', mult:2.1, req:{skill:70, charm:45},    desc:'卖的是判断力，不是工时'},
+  {tier:4, name:'自立门户', icon:'🚀', mult:2.6,  req:{skill:85, net:30000},    desc:'自己就是甲方，盈亏自己扛'},
+];
+
+/* ---------- 每日行动（tier=解锁职级; cost 为消耗; work 类走 payout 事件流;
+   workMult/riskMul 影响收入与事故率; fee 为魅力出场的随机出场费） ---------- */
 export const ACTIONS = [
-  {id:'work',   name:'接单打工', icon:'💻', stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情与伙伴加成'},
-  {id:'learn',  name:'学习充电', icon:'📚', stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
-  {id:'play',   name:'娱乐摸鱼', icon:'🎮', stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
-  {id:'social', name:'社交聚会', icon:'🍻', stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
+  {id:'work',   name:'接单打工', icon:'💻', tier:0, stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
+  {id:'learn',  name:'学习充电', icon:'📚', tier:0, stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
+  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
+  {id:'social', name:'社交聚会', icon:'🍻', tier:0, stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
+  /* 职级解锁 */
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, stamina:55, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
+  {id:'training', name:'公司内训', icon:'🏫', tier:1, stamina:20, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, stamina:30, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
+  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, stamina:18, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, stamina:50, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
+  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, stamina:15, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, stamina:45, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
+  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, stamina:20, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
+];
+/* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
+export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item'];
+
+/* ---------- 周目标池（每周初抽 2；minTier=最低职级；reward 见 goals.js 发放） ---------- */
+export const GOAL_POOL = [
+  {id:'g_work6',     icon:'💻', label:'本周接单 6 次',      stat:'work',     target:6,  reward:{money:300}},
+  {id:'g_work12',    icon:'💻', label:'本周狂接单 12 次',   stat:'work',     target:12, reward:{money:650}},
+  {id:'g_learn5',    icon:'📚', label:'本周学习 5 次',      stat:'learn',    target:5,  reward:{skill:3}},
+  {id:'g_gym5',      icon:'🏋️', label:'本周撸铁 5 次',      stat:'gym',      target:5,  reward:{staminaMax:2}},
+  {id:'g_social3',   icon:'🍻', label:'本周社交 3 次',      stat:'social',   target:3,  reward:{charm:3}},
+  {id:'g_play2',     icon:'🎮', label:'本周娱乐 2 次',      stat:'play',     target:2,  reward:{mood:12}},
+  {id:'g_pull2',     icon:'🎰', label:'本周抽卡 2 次',      stat:'pulls',    target:2,  reward:{skinTicket:1}},
+  {id:'g_item3',     icon:'🎒', label:'本周用掉 3 件道具',  stat:'item',     target:3,  reward:{money:200}},
+  {id:'g_rest2',     icon:'🛌', label:'本周躺平 2 次',      stat:'rest',     target:2,  reward:{mood:10}},
+  {id:'g_overtime2', icon:'🌙', label:'本周加班 2 次',      stat:'overtime', target:2,  reward:{money:400}, minTier:1},
+  {id:'g_bigorder1', icon:'📦', label:'本周拿下 1 个大单',  stat:'bigorder', target:1,  reward:{money:500}, minTier:2},
+  {id:'g_salon1',    icon:'🎤', label:'本周出席沙龙 1 次',  stat:'salon',    target:1,  reward:{charm:4},   minTier:2},
+  {id:'g_lead1',     icon:'🧑‍✈️', label:'本周带队攻坚 1 次', stat:'lead',     target:1,  reward:{money:600}, minTier:3},
+  {id:'g_mentor2',   icon:'🧑‍🏫', label:'本周指导新人 2 次', stat:'mentor',   target:2,  reward:{favor:4},   minTier:3},
 ];
 
 /* ---------- 日切随机事件表（weight 加权抽取; effect 为固定数值增减） ---------- */
@@ -278,20 +330,21 @@ export const MILESTONES = [
   {id:'pFihag',   title:'🔮 天选之人', tag:'抽到 Fihag V1', check:s=>((s.dex||{}).fihagv1?1:0), hype:'0.01% 的命运眷顾，全服公告预定。'},
 ];
 
-/* ---------- 结局（60 岁结算, 按综合分从高到低取第一个达标档） ---------- */
+/* ---------- 结局（30 岁结算, 按综合分从高到低取第一个达标档; 阈值按 8 章尺度标定） ---------- */
 export const ENDINGS = [
-  {min:400, id:'god',    title:'🌈 神之人生', desc:'技术、财富、魅力、羁绊全部拉满——你的人生本身就是一个传奇模型。'},
-  {min:250, id:'winner', title:'👑 人生赢家', desc:'事业爱情双丰收，AI 伙伴环绕，存款看一眼都幸福。'},
-  {min:150, id:'free',   title:'🚀 财务自由', desc:'钱够了，接下来的日子只为热爱而写代码。'},
-  {min:80,  id:'expert', title:'💼 技术专家', desc:'没能暴富，但你的名字在圈子里就是质量保证。'},
-  {min:0,   id:'normal', title:'🧑‍💻 普通码农', desc:'平平淡淡也是真，60 岁还在写 if else，但问心无愧。'},
+  {min:650, id:'god',    title:'🌈 神之人生', desc:'技术、财富、魅力、羁绊全部拉满——你的人生本身就是一个传奇模型。'},
+  {min:450, id:'winner', title:'👑 人生赢家', desc:'事业爱情双丰收，AI 伙伴环绕，存款看一眼都幸福。'},
+  {min:300, id:'free',   title:'🚀 财务自由', desc:'钱够了，接下来的日子只为热爱而写代码。'},
+  {min:180, id:'expert', title:'💼 技术专家', desc:'没能暴富，但在圈子里你的名字就是质量保证。'},
+  {min:0,   id:'normal', title:'🧑‍💻 普通码农', desc:'八年结算，平平淡淡也真实——下一局换个活法试试？'},
 ];
 export const ENDING_BROKE = {id:'broke', title:'📉 破产流浪', desc:'连续欠租被房东请出家门。代码改得了 bug，改不了账单。'};
-/* 彩蛋结局: 手握 Fihag V1 且综合分 ≥150 时覆盖结算 */
+/* 彩蛋结局: 手握 Fihag V1 且综合分 ≥300 时覆盖结算 */
 export const ENDING_CHOSEN = {id:'chosen', title:'🔮 天选之人', desc:'抽到了全站唯一 NB 级存在，人生直接封神——命运的 0.01% 落在了你头上。'};
-/* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成） */
+/* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成；
+   money/400 而非 /200：一局缩到 8 章，存款口径相应放大权重，阈值与 ENDINGS 同步标定） */
 export const endingScore = (s, bonusStamina=0) => Math.round(
-  s.money/200 + s.life.attrs.skill*2 + s.life.attrs.charm*2
+  s.money/400 + s.life.attrs.skill*2 + s.life.attrs.charm*2
   + (s.partners||[]).reduce((a,p)=>a+p.favor,0)*0.1 + (s.partners||[]).length*4
   + (s.life.staminaMax - LIFE.STAMINA_MAX) + (bonusStamina||0)
 );
@@ -352,7 +405,7 @@ export const NOTICES = [
 '📢 公告：重复伙伴自动折算好感 +10，图鉴党狂喜。',
 '📢 公告：有玩家问体力能不能用咖啡补——能，道具池常年营业。',
 '📢 公告：心情低于 25 时打工容易翻车，请注意劳逸结合。',
-'📢 公告：60 岁结算人生，评分不够也不用慌——破产了还能重开，人生没有。',
+'📢 公告：30 岁结算人生。评分不够也不用慌——破产了还能重开，人生没有。',
 '🔥 公告：「寓言限定池」已开启！Claude Fable 5.1 镇池，53.4 分新王等您带回家。',
 '📢 公告：Qwen3.8-Flash-Next 每单 0.47 刀，学习党的性价比之神。',
 '📢 公告：GLM-5.3-Flash 用户已突破百亿 token，智谱：谢谢惠顾。',

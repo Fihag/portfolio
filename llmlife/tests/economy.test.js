@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  payoutParams, workPayEvents, expectedWorkPay, sampleWorkPay,
+  payoutParams, workPayEvents, workBasePay, expectedWorkPay, sampleWorkPay,
 } from "../js/economy.js";
 import { LIFE, PAY_BOOST, skillMult, moodMult } from "../js/config.js";
 
@@ -73,5 +73,30 @@ describe("期望同源（expectedWorkPay ≡ sampleWorkPay 抽样公式）", () 
     for (let i = 0; i < N; i++) sum += sampleWorkPay(skill, mood, boost).amt;
     const mc = sum / N;
     expect(Math.abs(mc - analytic) / analytic).toBeLessThan(0.03);
+  });
+});
+
+describe("职级与风险倍率（阶段 2 工作类行动）", () => {
+  it("mult 等比放大基础价，不碰概率", () => {
+    expect(workBasePay(40, 70, 0, 2.6) / workBasePay(40, 70, 0, 1)).toBeCloseTo(2.6, 6);
+    expect(workPayEvents(40, 70, 0, 2.6).ok / workPayEvents(40, 70, 0, 1).ok).toBeCloseTo(2.6, 6);
+  });
+  it("riskMul 只放大事故概率与事故罚单（钳制 0.1 上限）", () => {
+    const p1 = payoutParams(10, 70, 1);
+    const p2 = payoutParams(10, 70, 2.5);
+    expect(p2.pDisaster).toBeCloseTo(p1.pDisaster * 2.5, 6);
+    expect(p2.pGreat).toBe(p1.pGreat);
+    expect(p2.pRework).toBe(p1.pRework);
+    expect(p2.disasterPenalty).toBeCloseTo(p1.disasterPenalty * 2.5, 6);
+    expect(payoutParams(10, 70, 99).pDisaster).toBeLessThanOrEqual(0.1);
+  });
+  it("mult+riskMul 复合参数下抽样与期望仍同源（±3%）", () => {
+    const skill = 10, mood = 70, boost = 0, mult = 1.7, riskMul = 2;
+    const analytic = expectedWorkPay(skill, mood, boost, mult, riskMul);
+    expect(analytic).toBeGreaterThan(50); // 参数选在高期望区，避免相对误差爆炸
+    let sum = 0;
+    const N = 200000;
+    for (let i = 0; i < N; i++) sum += sampleWorkPay(skill, mood, boost, { mult, riskMul }).amt;
+    expect(Math.abs(sum / N - analytic) / analytic).toBeLessThan(0.03);
   });
 });

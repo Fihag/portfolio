@@ -3,7 +3,7 @@
    背包存取 / 效果结算（含刮刮乐、免费抽卡券等特殊道具）
    ================================================================ */
 import { ITEMS, ITEM_RARITY, LIFE } from "./config.js";
-import { S, save } from "./state.js";
+import { S, save, bumpWeekStat } from "./state.js";
 import { favorAll, staminaCeiling } from "./partners.js";
 
 const IMAP = Object.fromEntries(ITEMS.map(i => [i.id, i]));
@@ -63,6 +63,7 @@ export function useItem(id){
   if(!it || !row || row.qty <= 0) return {ok:false, line:'没有这个道具'};
   row.qty--;
   if(row.qty <= 0) S.items = S.items.filter(x => x.id !== id);
+  bumpWeekStat('item');
 
   // 特殊道具
   if(it.special === 'lottery'){

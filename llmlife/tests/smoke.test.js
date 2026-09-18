@@ -43,15 +43,29 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect($("h-age").textContent).toBe("22");
   });
 
-  it("行动栏渲染 6 个行动且禁用态正确", () => {
+  it("行动栏渲染 6 个解锁行动 + 下一职级 2 张锁定预告", () => {
     const btns = [...document.querySelectorAll("[data-actbtn]")];
-    expect(btns.length).toBe(6);
+    expect(btns.length).toBe(8);
+    const unlocked = btns.filter(b => !b.classList.contains("locked"));
+    expect(unlocked.length).toBe(6);
+    const locked = btns.filter(b => b.classList.contains("locked"));
+    expect(locked.length).toBe(2);
+    expect(locked.every(b => b.disabled)).toBe(true);
     const work = btns.find(b => b.dataset.actbtn === "work");
     expect(work.disabled).toBe(false);
     const play = btns.find(b => b.dataset.actbtn === "play");
     expect(play.disabled).toBe(false);
     const rest = btns.find(b => b.dataset.actbtn === "rest");
     expect(rest.disabled).toBe(false);
+  });
+
+  it("职业芯片与本周目标面板渲染", async () => {
+    const G = await import("../js/goals.js");
+    G.ensureWeek();
+    renderAll();
+    expect($("career-txt").textContent).toContain("实习生");
+    expect($("career-txt").textContent).toContain("正式员工"); // 下一级晋升条件预告
+    expect($("goals-list").querySelectorAll(".goal-row").length).toBe(2);
   });
 
   it("点击打工后余额/体力/日志联动刷新", async () => {

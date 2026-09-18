@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MODELS, MMAP, RARITY, POOLS, BANNER_SEASONS, ITEMS, ITEM_RARITY,
   EVENTS, MILESTONES, ENDINGS, ACTIONS, VENDOR_EFFECTS, DEFAULT_EFFECT, EFFECTS,
+  LIFE, CHAPTER_TITLES, CAREERS, GOAL_POOL, WEEK_STAT_KEYS,
 } from "../js/config.js";
 import { validateConfig } from "../js/validate.js";
 
@@ -95,5 +96,56 @@ describe("厂商效果映射", () => {
     expect(VENDOR_EFFECTS[MMAP["gemini-3-8-flash"].vendor]).toBe("stamina");
     expect(VENDOR_EFFECTS[MMAP["muse-spark-1-3"].vendor]).toBe("mood");
     expect(VENDOR_EFFECTS[MMAP["gpt-6-astra"].vendor]).toBe("charm");
+  });
+});
+
+describe("章节制常量", () => {
+  it("22→30 共 8 章，每章 24 天，章标题数与章数一致", () => {
+    expect(LIFE.START_AGE).toBe(22);
+    expect(LIFE.RETIRE_AGE).toBe(30);
+    expect(LIFE.CHAPTER_DAYS).toBe(24);
+    expect(CHAPTER_TITLES.length).toBe(LIFE.RETIRE_AGE - LIFE.START_AGE);
+  });
+  it("结局阈值严格递减且含 0 分兜底档", () => {
+    expect(ENDINGS[ENDINGS.length - 1].min).toBe(0);
+    for (let i = 1; i < ENDINGS.length; i++) expect(ENDINGS[i].min).toBeLessThan(ENDINGS[i - 1].min);
+  });
+});
+
+describe("职业与周目标数据（阶段 2）", () => {
+  it("职级连续、薪资倍率单调增、仅 0 级无门槛", () => {
+    CAREERS.forEach((c, i) => {
+      expect(c.tier).toBe(i);
+      if (i > 0) {
+        expect(c.mult).toBeGreaterThan(CAREERS[i - 1].mult);
+        expect(c.req).toBeTruthy();
+      } else {
+        expect(c.req).toBe(null);
+        expect(c.mult).toBe(1);
+      }
+    });
+    expect(CAREERS.length).toBe(5);
+  });
+  it("行动卡按职级分布：实习 6 张、后续每级 2 张", () => {
+    expect(ACTIONS.length).toBe(14);
+    for (let t = 0; t < CAREERS.length; t++) {
+      expect(ACTIONS.filter(a => (a.tier || 0) === t).length).toBe(t === 0 ? 6 : 2);
+    }
+    for (const a of ACTIONS) expect(a.tier || 0).toBeLessThan(CAREERS.length);
+    // 工作类卡必须带倍率语义
+    expect(ACTIONS.find(a => a.id === "overtime").workMult).toBeGreaterThan(1);
+    expect(ACTIONS.find(a => a.id === "overtime").riskMul).toBeGreaterThan(1);
+    expect(ACTIONS.find(a => a.id === "lecture").fee[1]).toBeGreaterThan(ACTIONS.find(a => a.id === "lecture").fee[0]);
+  });
+  it("周目标模板 stat 全部登记在 WEEK_STAT_KEYS，minTier 不越职级上限", () => {
+    expect(new Set(GOAL_POOL.map(g => g.id)).size).toBe(GOAL_POOL.length);
+    for (const g of GOAL_POOL) {
+      expect(WEEK_STAT_KEYS, g.id).toContain(g.stat);
+      expect(g.target).toBeGreaterThan(0);
+      expect(Object.keys(g.reward).length).toBeGreaterThan(0);
+      expect(g.minTier || 0).toBeLessThan(CAREERS.length);
+    }
+    // 每个行动 id 都有对应周计数键
+    for (const a of ACTIONS) expect(WEEK_STAT_KEYS).toContain(a.id);
   });
 });

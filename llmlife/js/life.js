@@ -3,11 +3,13 @@
    行动执行 / 日切 / 周结算 / 随机事件 / 年龄与结局判定 / 成就
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
-import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT } from "./config.js";
-import { S, save, addLedger, fmt, setState, defaultState, logToday, pick } from "./state.js";
+import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS } from "./config.js";
+import { S, save, addLedger, fmt, setState, defaultState, logToday, pick, bumpWeekStat } from "./state.js";
 import { slotBoosts, favorAll, staminaCeiling } from "./partners.js";
 import { sampleWorkPay } from "./economy.js";
 import { addAttrs } from "./items.js";
+import { tierMult } from "./careers.js";
+import { ensureWeek, checkGoals, goalOf } from "./goals.js";
 
 const ACTION_MAP = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
 const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
@@ -16,11 +18,18 @@ const trimNum = n => String(Math.round(n * 10) / 10);
 
 export const actionOf = id => ACTION_MAP[id];
 
+/* ---------- 章节工具（一章 = LIFE.CHAPTER_DAYS 天 = 1 游戏年） ---------- */
+/** 当前处于第几章（0 起） */
+export function chapterIndex(day = S.life.day){ return Math.floor((day - 1) / LIFE.CHAPTER_DAYS); }
+/** 本局总章数 */
+export const CHAPTER_TOTAL = LIFE.RETIRE_AGE - LIFE.START_AGE;
+
 /* ---------- 行动守卫 ---------- */
 export function canDo(actionId){
   if(S.ending) return {ok:false, reason:'本局已结束，开个新周目再战'};
   const a = ACTION_MAP[actionId];
   if(!a) return {ok:false, reason:'未知行动'};
+  if((a.tier||0) > S.life.tier) return {ok:false, reason:`职级不足：晋升「${CAREERS[a.tier].name}」后解锁`};
   if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
     return {ok:false, reason:'今天已经躺平过了，再用道具回体力或结束今天'};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
@@ -48,17 +57,21 @@ export function doAction(actionId){
   if(a.stamina) attr.stamina -= a.stamina;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
   if(actionId === 'rest') S.life.restUsed++;
+  bumpWeekStat(actionId);
 
   let line;
-  if(actionId === 'work'){
-    const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work);
+  if(actionId === 'work' || a.workMult){
+    // 工作类：职级倍率 × 行动倍率走同一 payout 事件流（期望与抽样同源）
+    const pay = sampleWorkPay(attr.skill, attr.mood, boosts.work,
+      { mult: tierMult() * (a.workMult || 1), riskMul: a.riskMul || 1 });
     S.money += pay.amt;
-    addLedger('打工收入', pay.amt);
+    addLedger(a.name || '打工收入', pay.amt);
     S.stats.workDays++;
     if(pay.amt >= 0) S.stats.earned += pay.amt; else S.stats.spent += -pay.amt;
     if(pay.evt === 'great') S.stats.greats++;
     if(pay.evt === 'disaster') S.stats.disasters++;
-    line = `${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）`;
+    if(a.mood) attr.mood = Math.max(0, Math.min(100, attr.mood + a.mood));
+    line = `${a.icon} ${pick(CLIENT_REQS)} ${pick(WORK_TXT[pay.evt])}（${fmt(pay.amt)}）${a.mood ? `，心情${a.mood}` : ''}`;
   } else {
     const moodSlow = attr.mood < LIFE.MOOD_LOW;
     if(a.skill){
@@ -66,6 +79,12 @@ export function doAction(actionId){
       const gain = Math.max(.5, rand(a.skill[0], a.skill[1]) * (1 + boosts.learn) * (moodSlow ? .5 : 1));
       attr.skill = Math.min(100, attr.skill + gain);
       applied.push(`技术+${trimNum(gain)}${moodSlow ? '（心情低落，效率减半）' : ''}`);
+    }
+    if(a.fee){
+      // 出场费类：随魅力水涨船高
+      const amt = Math.round(rand(a.fee[0], a.fee[1]) * (0.75 + attr.charm/200));
+      S.money += amt; addLedger(`${a.name}·出场费`, amt); S.stats.earned += amt;
+      applied.push(`出场费¥${amt.toLocaleString('zh-CN')}`);
     }
     if(a.recover){
       const before = attr.stamina;
@@ -97,6 +116,7 @@ export function doAction(actionId){
   logToday(line);
   const msNew = checkMilestones();
   for(const m of msNew) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
+  for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
   if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或结束今天');
   save();
   return {ok:true, line, lines};
@@ -111,7 +131,7 @@ function weightedPick(pool){
   return null;
 }
 
-/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 年龄 → 结局 ---------- */
+/* ---------- 日切：事件 1~2 个 → 睡眠 → 周结算 → 章节结算 → 年龄 → 结局 ---------- */
 function fireEvent(){
   const ev = weightedPick(EVENTS.filter(e => !e.cond || e.cond(S)));
   if(!ev) return null;
@@ -126,6 +146,29 @@ function fireEvent(){
     delta.charm ? `魅力+${delta.charm}` : '',
   ].filter(Boolean).join('，');
   return `🎲 ${ev.name}：${ev.text}${nums ? `（${nums}）` : ''}`;
+}
+
+/** 章末年度结算：与 S.chStart 快照做同比差，明细存 S._settle 供 UI 弹窗（不落盘） */
+function settleChapter(){
+  const cs = S.chStart || defaultState().chStart;
+  const no = chapterIndex(S.life.day) - 1; // 刚完成章的下标（0 起）
+  const attr = S.life.attrs;
+  const settle = {
+    no, ageFrom: LIFE.START_AGE + no, ageTo: LIFE.START_AGE + no + 1,
+    title: CHAPTER_TITLES[no] || `第 ${no + 1} 章`,
+    nextTitle: CHAPTER_TITLES[no + 1] || null,
+    net: S.money - cs.money,
+    earned: S.stats.earned - (cs.earned||0),
+    spent: S.stats.spent - (cs.spent||0),
+    workDays: S.stats.workDays - (cs.workDays||0),
+    pulls: S.stats.pulls - (cs.pulls||0),
+    skill: Math.round(attr.skill), charm: Math.round(attr.charm), mood: Math.round(attr.mood),
+    staminaMax: S.life.staminaMax, partners: S.partners.length,
+    score: endingScore(S, slotBoosts().staminaMax),
+  };
+  S._settle = settle;
+  S.chStart = { day:S.life.day, money:S.money, earned:S.stats.earned, spent:S.stats.spent, workDays:S.stats.workDays, pulls:S.stats.pulls };
+  return `📆 年度结算《${settle.title}》：本年净收支 ${fmt(settle.net)}`;
 }
 
 export function endDay(){
@@ -144,11 +187,20 @@ export function endDay(){
   const attr = S.life.attrs;
   attr.stamina = staminaCeiling(); // 睡一觉体力回满（含随行伙伴上限加成）
   attr.mood = Math.max(0, attr.mood - LIFE.MOOD_DECAY);
-  if((S.life.day - 1) % 7 === 0) lines.push(weekSettle());
-  const newAge = LIFE.START_AGE + Math.floor((S.life.day - 1) / 360);
+  if((S.life.day - 1) % LIFE.WEEK_DAYS === 0){
+    lines.push(weekSettle());
+    if(ensureWeek()){
+      const gs = (S.life.goals?.items || [])
+        .map(gi => goalOf(gi.id)).filter(Boolean)
+        .map(g => `${g.icon} ${g.label}`);
+      if(gs.length) lines.push(`📌 本周目标：${gs.join('；')}`);
+    }
+  }
+  const newAge = LIFE.START_AGE + Math.floor((S.life.day - 1) / LIFE.CHAPTER_DAYS);
   if(newAge !== S.life.age){
     S.life.age = newAge;
-    lines.push(`🎂 新的一年开始了，你 ${S.life.age} 岁`);
+    // 一章恰好一年：生日与章末重合，年度结算行即庆生行
+    lines.push(settleChapter());
   }
   const end = checkEnd();
   if(end) lines.push(`🏁 人生结算：${end.title}`);
@@ -171,17 +223,21 @@ export function weekSettle(){
   return `🏠 周结算：房租+伙食 -¥${cost.toLocaleString('zh-CN')}，余额 ${fmt(S.money)}`;
 }
 
-/* ---------- 结局判定（破产 / 60 岁退休 / Fihag 彩蛋） ---------- */
+/* ---------- 结局判定（破产 / 30 岁章满结算 / Fihag 彩蛋） ---------- */
 export function checkEnd(){
   if(S.ending) return S.ending;
   const score = endingScore(S, slotBoosts().staminaMax);
   if(S.debtWeeks >= LIFE.GRACE_WEEKS){
     S.ending = {...ENDING_BROKE, score};
   } else if(S.life.age >= LIFE.RETIRE_AGE){
-    if(S.dex.fihagv1 && score >= 150) S.ending = {...ENDING_CHOSEN, score};
+    if(S.dex.fihagv1 && score >= 300) S.ending = {...ENDING_CHOSEN, score};
     else S.ending = {...(ENDINGS.find(e => score >= e.min) || ENDINGS[ENDINGS.length - 1]), score};
   }
-  if(S.ending) save();
+  if(S.ending){
+    if(!S.endingsSeen) S.endingsSeen = {};
+    S.endingsSeen[S.ending.id] = true; // 多周目结局收集
+    save();
+  }
   return S.ending;
 }
 
@@ -196,8 +252,34 @@ export function checkMilestones(){
   return got;
 }
 
-/* ---------- 新周目 ---------- */
+/* ---------- 新周目：完全重置（硬重开） ---------- */
 export function restart(){
   setState(defaultState());
+  ensureWeek(); // 第一周目标即刻生效
   save();
+}
+
+/**
+ * NG+ 开启新周目：保留收集类进度（图鉴/皮肤/皮肤券/已见结局/成就标记），
+ * 数值与伙伴清零重开，按周目数给予起步资金奖励。
+ */
+export function newGamePlus(){
+  const prev = S;
+  const ns = defaultState();
+  ns.ng = (prev.ng||0) + 1;
+  ns.money += Math.min(ns.ng, 8) * 500;         // 周目递增的创业起步金（封顶 8 周目）
+  ns.chStart.money = ns.money;
+  ns.dex = { ...(prev.dex||{}) };                // 模型图鉴
+  ns.skinsOwned = [...new Set(prev.skinsOwned||[])];
+  ns.skinTickets = prev.skinTickets||0;
+  ns.endingsSeen = { ...(prev.endingsSeen||{}) };// 结局收集
+  ns.flags.ms = { ...(prev.flags&&prev.flags.ms||{}) }; // 成就标记
+  ns.flags.muted = !!(prev.flags&&prev.flags.muted);
+  ns.flags.autoSkip = !!(prev.flags&&prev.flags.autoSkip);
+  ns.flags.welcomed = true;
+  ns.skin = prev.skin && ns.skinsOwned.includes(prev.skin) ? prev.skin : 'classic';
+  setState(ns);
+  ensureWeek();
+  save();
+  return ns;
 }

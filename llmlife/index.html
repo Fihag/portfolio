@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LLMLife · LLM 人生模拟器 — 22 岁入行，60 岁结算</title>
+    <title>LLMLife · LLM 人生模拟器 — 22 岁入行，30 岁结算</title>
     <meta
       name="description"
-      content="LLMLife 是一款 LLM 人生模拟器：接单打工、学习充电、健身社交，把日子过成行动点日程；偶尔抽抽卡，让 AI 伙伴陪你打工。稀有度按 Artificial Analysis v4.3 智能指数标定。"
+      content="LLMLife 是一款 LLM 人生模拟器：22 到 30 岁共 8 章，一章一年。打工赚钱、职业晋升解锁行动卡、每周目标、分支事件抉择，偶尔抽抽卡让 AI 伙伴陪你打工。稀有度按 Artificial Analysis v4.3 智能指数标定。"
     />
     <meta name="keywords" content="LLMLife, LLM, 人生模拟, 属性养成, 抽卡, gacha, AI模型" />
     <meta name="author" content="Fihag" />
@@ -19,7 +19,7 @@
     <meta property="og:title" content="LLMLife · LLM 人生模拟器" />
     <meta
       property="og:description"
-      content="22 岁毕业入行，60 岁结算人生：打工赚钱、学习涨技术、抽 AI 伙伴随行加成。人生是主线，抽卡是调剂。"
+      content="22 岁毕业入行，30 岁结算人生：一年一章共 8 章，打工赚钱、职业晋升解锁新行动、每周目标与分支事件亲手拍板。人生是主线，抽卡是调剂。"
     />
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="css/style.css?v=1" />
@@ -57,7 +57,7 @@
       <div class="page" id="page-life" role="tabpanel" aria-label="生活">
         <div class="page-head">
           <h2>生活</h2>
-          <p>行动不设上限 · 体力说话 · 心情太低打工容易翻车</p>
+          <p>行动不设上限 · 体力说话 · 24 天为一年，走完 8 章 30 岁结算</p>
         </div>
         <div class="notice">
           <span class="dot"></span><span id="notice-text">📢 公告加载中…</span>
@@ -88,7 +88,13 @@
 
         <div class="panel panel-pad" style="margin-top:14px">
           <div class="panel-title">🎯 今日行动<span class="right" style="display:flex;gap:8px;align-items:center"><span id="rest-hint" style="letter-spacing:0"></span><button class="mini-btn" id="btn-end-day">🛏 结束今天</button></span></div>
+          <div class="career-chip" id="career-txt"></div>
           <div class="act-bar" id="act-bar"></div>
+        </div>
+
+        <div class="panel panel-pad" style="margin-top:14px">
+          <div class="panel-title">📌 本周目标<span class="right" style="letter-spacing:0">周初刷新 · 达成自动发奖</span></div>
+          <div class="goals-list" id="goals-list"><div class="day-log-empty">本周暂无目标</div></div>
         </div>
 
         <div class="two-col" style="margin-top:14px">
@@ -100,7 +106,7 @@
           <div class="panel panel-pad">
             <div class="panel-title">📅 人生进度<span class="right" id="life-progress-txt"></span></div>
             <div class="free-progress">
-              <div class="lb"><span>距 60 岁结算</span><span id="life-age-txt"></span></div>
+              <div class="lb"><span>距 30 岁结算</span><span id="life-age-txt"></span></div>
               <div class="bar"><i id="life-progress-bar" style="width:0%"></i></div>
             </div>
             <div class="qtip" style="margin-top:10px;margin-bottom:0">

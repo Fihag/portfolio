@@ -5,7 +5,7 @@
    两阶段执行：先生成结果序列（含十连补底修正），再统一结算入档
    ================================================================ */
 import { POOLS, PITY_MAX, RORDER, RORDER_DESC, MODELS, MMAP, PROBS, LIMITED_IDS } from "./config.js";
-import { S, save } from "./state.js";
+import { S, save, bumpWeekStat } from "./state.js";
 import { recruit } from "./partners.js";
 import { addItem, randomItemByRarity } from "./items.js";
 import { rollSkinDrop } from "./skins.js";
@@ -124,6 +124,7 @@ export function doPulls(poolKey, count){
     S.pity[poolKey] = (res._bottom || pityReset(poolKey, realR, res.id)) ? 0 : S.pity[poolKey]+1;
   }
   rollSkinDrop(results);
+  bumpWeekStat('pulls', results.length);
   save();
   return results;
 }

@@ -7,9 +7,10 @@ import { S, $, save, pick } from "../state.js";
 import { SFX, toast, setMuted, toggleMute } from "../fx.js";
 import { applySkin } from "../skins.js";
 import { go } from "./router.js";
-import { initLiving, handleUseItem, handleSlotAction, handleEndDay, handleConfirmEndDay, handleRestartAsk, handleConfirmReset } from "./living.js";
+import { initLiving, handleUseItem, handleSlotAction, handleEndDay, handleConfirmEndDay, handleRestartAsk, handleConfirmReset, handlePromote, handleStay } from "./living.js";
 import { showModal, closeModal, welcomeHTML, helpHTML, ratesHTML, dexHTML, skinPickerHTML, handleModalAction, showEnding } from "./modals.js";
 import { tryPull, acceptHalluc } from "./gacha.js";
+import { ensureWeek } from "../goals.js";
 
 /* ---------- 事件绑定 ---------- */
 export function bindUI(){
@@ -31,6 +32,8 @@ export function bindUI(){
       if(el.dataset.act === 'close-modal'){ SFX.click(); closeModal(); return; }
       if(el.dataset.act === 'confirm-end-day'){ handleConfirmEndDay(); return; }
       if(el.dataset.act === 'confirm-reset'){ handleConfirmReset(); return; }
+      if(el.dataset.act === 'promote'){ handlePromote(); return; }
+      if(el.dataset.act === 'stay'){ handleStay(); return; }
       if(el.dataset.act === 'slot'){ handleSlotAction(el.dataset.slot, el.dataset.uid); return; }
       if(el.dataset.act === 'use-item'){ SFX.click(); handleUseItem(el.dataset.item); return; }
       if(handleModalAction(el)) return;
@@ -39,6 +42,7 @@ export function bindUI(){
     const slotBox = e.target.closest ? e.target.closest('[data-slot-open]') : null;
     if(slotBox){ SFX.click(); go('partners'); return; }
     if(e.target.id === 'btn-reset'){
+      localStorage.removeItem('llmlife_v2');
       localStorage.removeItem('llmlife_v1');
       location.reload();
     }
@@ -59,6 +63,12 @@ export function boot(){
   }catch(e){}
   applySkin(S.skin);
   setMuted(!!S.flags.muted);
+  ensureWeek(); // 首启/读档补上本周目标（内部按周序号幂等）
+  // v1 旧档迁移说明（一次性）
+  if(S.flags.migrated){
+    S.flags.migrated = false; save();
+    toast('🧬 旧存档已迁移：人生改为章节制（22→30 岁），图鉴/皮肤/成就已继承', 4600);
+  }
   $('btn-mute').innerHTML = S.flags.muted ? '🔇<span class="lbl"> 静音</span>' : '🔊<span class="lbl"> 音效</span>';
   const notice = $('notice-text'); if(notice) notice.textContent = pick(NOTICES);
   const notice2 = $('notice-text2'); if(notice2) notice2.textContent = pick(NOTICES);

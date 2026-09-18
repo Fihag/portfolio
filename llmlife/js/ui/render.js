@@ -2,13 +2,15 @@
    LLMLife · 渲染层 (ui/render.js)
    状态变化后全量重渲：头部芯片 / 生活页 / 伙伴页 / 背包页 / 数据页
    ================================================================ */
-import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore } from "../config.js";
+import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
 import { iconImg } from "../fx.js";
 import { validateResult } from "../validate.js";
 import { slotBoosts, favorNext, effectOf, bestPartner, staminaCeiling } from "../partners.js";
 import { itemOf } from "../items.js";
-import { canDo } from "../life.js";
+import { canDo, chapterIndex, CHAPTER_TOTAL } from "../life.js";
+import { careerOf, reqText } from "../careers.js";
+import { goalOf, goalProg, rewardText } from "../goals.js";
 import { bannerCountdownText } from "../banner.js";
 
 let lastMoney = null;
@@ -47,20 +49,33 @@ function renderLife(){
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
 
-  // 行动按钮（首次构建，此后只刷禁用态）
+  // 行动按钮：按职级重建（已解锁 + 下一职级锁定预告），此后只刷禁用态
   const barEl = $('act-bar');
-  if(barEl && !barEl.dataset.built){
-    barEl.dataset.built = '1';
-    barEl.innerHTML = ACTIONS.map(x => `
+  if(barEl && barEl.dataset.built !== String(S.life.tier)){
+    barEl.dataset.built = String(S.life.tier);
+    const unlocked = ACTIONS.filter(x => (x.tier||0) <= S.life.tier);
+    const previews = S.life.tier < CAREERS.length - 1
+      ? ACTIONS.filter(x => x.tier === S.life.tier + 1) : [];
+    barEl.innerHTML = [
+      ...unlocked.map(x => `
       <button class="act-btn" data-actbtn="${x.id}" title="${x.desc}">
         <div class="ic">${x.icon}</div>
         <div class="nm">${x.name}</div>
         <div class="cost">${costText(x)}</div>
         <div class="desc">${x.desc}</div>
-      </button>`).join('');
+      </button>`),
+      ...previews.map(x => `
+      <button class="act-btn locked" data-actbtn="${x.id}" disabled title="晋升「${CAREERS[x.tier].name}」后解锁">
+        <div class="ic">🔒</div>
+        <div class="nm">${x.name}</div>
+        <div class="cost">晋升解锁</div>
+        <div class="desc">${CAREERS[x.tier].icon} ${CAREERS[x.tier].name}</div>
+      </button>`),
+    ].join('');
     barEl.querySelectorAll('[data-actbtn]').forEach(b => b.onclick = () => onActionClick(b.dataset.actbtn));
   }
   barEl && barEl.querySelectorAll('[data-actbtn]').forEach(b => {
+    if(b.closest('.locked')) return;
     b.disabled = !canDo(b.dataset.actbtn).ok;
   });
   const restHint = $('rest-hint');
@@ -82,24 +97,53 @@ function renderLife(){
       : '<span style="font-size:11px;color:var(--faint)">暂无随行伙伴加成</span>';
   }
 
+  // 职业芯片：当前职级 + 晋升进度
+  const cEl = $('career-txt');
+  if(cEl){
+    const cur = careerOf();
+    const next = CAREERS[S.life.tier + 1];
+    cEl.innerHTML = `${cur.icon} <b>${cur.name}</b> · 工作收入 ×${cur.mult}` +
+      (next ? ` <span style="color:var(--faint)">→ ${next.icon}${next.name}（${reqText(S.life.tier + 1)}）</span>`
+            : ` <span style="color:var(--gold)">已是行业顶点</span>`);
+  }
+
+  // 本周目标面板
+  const gWrap = $('goals-list');
+  if(gWrap){
+    const gs = (S.life.goals && S.life.goals.items) || [];
+    gWrap.innerHTML = gs.length ? gs.map(gi=>{
+      const g = goalOf(gi.id); if(!g) return '';
+      const cur = (S.life.weekStats || {})[g.stat] || 0;
+      const pct = Math.round(goalProg(gi) * 100);
+      return `<div class="goal-row${gi.done ? ' done' : ''}">
+        <div class="goal-top"><span>${g.icon} ${g.label}</span><b>${Math.min(cur, g.target)}/${g.target}</b></div>
+        <div class="goal-bar"><i style="width:${pct}%"></i></div>
+        <div class="goal-rw">${gi.done ? '✓ 已达成' : '奖励：' + rewardText(g.reward)}</div>
+      </div>`;
+    }).join('') : '<div class="day-log-empty">本周暂无目标</div>';
+  }
+
   // 日志流
   const log = $('day-log');
   if(log){
     const entries = dayLog();
     log.innerHTML = entries.length ? entries.map(e=>{
-      const cls = e.line.startsWith('🎲') ? 'ev' : e.line.startsWith('🏅') ? 'ms' : e.line.startsWith('🏁') ? 'end' : '';
+      const cls = e.line.startsWith('🎲') ? 'ev' : (e.line.startsWith('🏅') || e.line.startsWith('🎯') || e.line.startsWith('📆')) ? 'ms' : e.line.startsWith('🏁') ? 'end' : '';
       return `<div class="row ${cls}">${e.line}</div>`;
     }).join('') : '<div class="day-log-empty">新的一天，选个行动开始吧。</div>';
   }
 
-  // 人生进度
-  const totalDays = (LIFE.RETIRE_AGE - LIFE.START_AGE) * 360;
+  // 章节进度（一章 = 一年 = CHAPTER_DAYS 天）
+  const ch = chapterIndex();
+  const dayInChapter = (S.life.day - 1) % LIFE.CHAPTER_DAYS + 1;
+  const totalDays = CHAPTER_TOTAL * LIFE.CHAPTER_DAYS;
   const pbar = $('life-progress-bar');
   if(pbar) pbar.style.width = Math.min(100, (S.life.day - 1) / totalDays * 100) + '%';
   const ptxt = $('life-progress-txt');
-  if(ptxt) ptxt.textContent = S.ending ? `已结算：${S.ending.title}` : `第 ${S.life.day} 天 · 星期${(S.life.day - 1) % 7 + 1}`;
+  if(ptxt) ptxt.textContent = S.ending ? `已结算：${S.ending.title}`
+    : `第 ${ch + 1}/${CHAPTER_TOTAL} 章《${CHAPTER_TITLES[ch] || ''}》· 本年第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天`;
   const atxt = $('life-age-txt');
-  if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁`;
+  if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
   const wc = $('week-cost'); if(wc) wc.textContent = fmt(LIFE.RENT + LIFE.LIVING);
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
 }
@@ -110,6 +154,7 @@ function costText(x){
   if(x.money) parts.push(`¥-${x.money}`);
   if(x.recover) parts.push(`⚡+${x.recover}`);
   if(x.skill) parts.push(`🧠+${x.skill[0]}~${x.skill[1]}`);
+  if(x.fee) parts.push(`💰${x.fee[0]}~${x.fee[1]}`);
   if(x.mood && x.mood > 0) parts.push(`🌤+${x.mood}`);
   if(x.charm) parts.push(`✨+${x.charm}`);
   return parts.join(' ') || '免费';
@@ -245,7 +290,7 @@ function renderData(){
   }
   const vs = $('validate-status');
   if(vs) vs.textContent = validateResult.ok
-    ? `✓ config 校验通过 · ${MODELS.length} 张卡 · ${ITEMS.length} 种道具 · 本地存档 llmlife_v1`
+    ? `✓ config 校验通过 · ${MODELS.length} 张卡 · ${ITEMS.length} 种道具 · 本地存档 llmlife_v2`
     : `✗ config 校验失败: ${validateResult.errors[0] || ''}`;
 }
 

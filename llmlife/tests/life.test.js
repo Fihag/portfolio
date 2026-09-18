@@ -3,7 +3,7 @@ import { defaultState, setState, S } from "../js/state.js";
 import { LIFE, ENDINGS, MMAP, PROBS } from "../js/config.js";import { payoutParams, expectedWorkPay } from "../js/economy.js";
 import { recruit, setSlot, slotBoosts, favorLevel, boostOf, effectOf, staminaCeiling } from "../js/partners.js";
 import { addItem, useItem, itemCount, rollLottery } from "../js/items.js";
-import { doAction, endDay, weekSettle, checkEnd, checkMilestones, canDo, anyActionAvailable, restart } from "../js/life.js";
+import { doAction, endDay, weekSettle, checkEnd, checkMilestones, canDo, anyActionAvailable, restart, newGamePlus, chapterIndex, CHAPTER_TOTAL } from "../js/life.js";
 
 function fresh(){ setState(defaultState()); return S; }
 
@@ -237,17 +237,55 @@ describe("回合引擎", () => {
     expect(S.ending.id).toBe("broke");
   });
 
-  it("360 天长一岁，60 岁触发退休结算", () => {
-    S.life.day = 360 * 38; // 22 + 38 = 60
+  it("章计算：24 天一章、一局 8 章", () => {
+    expect(CHAPTER_TOTAL).toBe(8);
+    expect(LIFE.CHAPTER_DAYS).toBe(24);
+    expect(chapterIndex(1)).toBe(0);
+    expect(chapterIndex(24)).toBe(0);
+    expect(chapterIndex(25)).toBe(1);
+    expect(chapterIndex(24 * 8)).toBe(7);
+  });
+
+  it("章末（第 24 天日切）触发年度结算，chStart 快照滚动", () => {
+    S.life.day = 24;
+    S.chStart = { day:24, money:5000, earned:1000, spent:800, workDays:10, pulls:3 };
+    S.money = 9000; S.stats.earned = 5000; S.stats.spent = 2000; S.stats.workDays = 40; S.stats.pulls = 8;
     const lines = endDay();
-    expect(S.life.age).toBe(60);
+    expect(lines.join("\n")).toContain("年度结算");
+    expect(S.life.age).toBe(23); // 一章恰好一年：生日=章末
+    const st = S._settle;
+    expect(st.no).toBe(0);
+    expect(st.ageFrom).toBe(22);
+    expect(st.ageTo).toBe(23);
+    expect(st.net).toBe(4000);
+    expect(st.earned).toBe(4000);
+    expect(st.workDays).toBe(30);
+    expect(st.pulls).toBe(5);
+    expect(st.nextTitle).toBeTruthy();
+    expect(S.chStart.day).toBe(25);
+    expect(S.chStart.money).toBe(9000);
+  });
+
+  it("章中不触发年度结算", () => {
+    S.life.day = 10;
+    const lines = endDay();
+    expect(lines.join("\n")).not.toContain("年度结算");
+    expect(S._settle).toBeUndefined();
+    expect(S.life.age).toBe(22);
+  });
+
+  it("八章走完（192 天）触发 30 岁结算结局并记录收集", () => {
+    S.life.day = LIFE.CHAPTER_DAYS * 8;
+    const lines = endDay();
+    expect(S.life.age).toBe(30);
     expect(S.ending).not.toBeNull();
-    expect(ENDINGS.some(e => e.id === S.ending.id) || S.ending.id === "chosen").toBe(true);
+    expect(ENDINGS.some(e => e.id === S.ending.id) || S.ending.id === "chosen" || S.ending.id === "broke").toBe(true);
     expect(lines.join("\n")).toContain("人生结算");
+    expect(S.endingsSeen[S.ending.id]).toBe(true);
   });
 
   it("综合分决定结局档位", () => {
-    S.life.day = 360 * 38;
+    S.life.day = LIFE.CHAPTER_DAYS * 8;
     S.money = 300000; S.life.attrs.skill = 100; S.life.attrs.charm = 100;
     S.life.staminaMax = 140;
     const partner = recruit("glm-5-3").partner;
@@ -257,11 +295,36 @@ describe("回合引擎", () => {
   });
 
   it("持有 Fihag V1 触发天选结局", () => {
-    S.life.day = 360 * 38;
+    S.life.day = LIFE.CHAPTER_DAYS * 8;
     S.dex.fihagv1 = 1;
-    S.money = 60000;
+    S.money = 120000; // money/400=300 叠加基础属性分 ≥300 门槛
     endDay();
     expect(S.ending.id).toBe("chosen");
+  });
+
+  it("newGamePlus 继承收集、发起步资金、清数值", () => {
+    S.ng = 2;
+    S.money = 99999;
+    S.dex = { "glm-5-3": 3 };
+    S.skinsOwned = ["classic", "night"];
+    S.skinTickets = 5;
+    S.flags.ms = { m2k: true };
+    S.endingsSeen = { free: true };
+    S.ending = { id: "free" };
+    const ns = newGamePlus();
+    expect(S).toBe(ns);
+    expect(ns.ng).toBe(3);
+    expect(ns.money).toBe(800 + 3 * 500);
+    expect(ns.chStart.money).toBe(ns.money);
+    expect(ns.dex["glm-5-3"]).toBe(3);
+    expect(ns.skinsOwned).toContain("night");
+    expect(ns.skinTickets).toBe(5);
+    expect(ns.flags.ms.m2k).toBe(true);
+    expect(ns.flags.welcomed).toBe(true);
+    expect(ns.endingsSeen.free).toBe(true);
+    expect(ns.ending).toBeNull();
+    expect(ns.life.day).toBe(1);
+    expect(ns.partners).toEqual([]);
   });
 
   it("日切体力回满（含伙伴上限加成）并衰减心情", () => {

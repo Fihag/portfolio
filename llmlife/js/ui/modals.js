@@ -2,11 +2,11 @@
    LLMLife · 弹窗层 (ui/modals.js)
    通用弹窗 / 结局结算 / 欢迎 / 玩法 / 概率公示 / 图鉴 / 皮肤
    ================================================================ */
-import { MODELS, RARITY, POOLS, SKINS, LIFE } from "../config.js";
+import { MODELS, RARITY, POOLS, SKINS, LIFE, ENDINGS } from "../config.js";
 import { S, $, save, fmt } from "../state.js";
 import { iconImg, SFX, burst, toast } from "../fx.js";
 import { applySkin } from "../skins.js";
-import { restart } from "../life.js";
+import { restart, newGamePlus, CHAPTER_TOTAL } from "../life.js";
 import { renderAll } from "./render.js";
 
 /* ---------- 通用弹窗 ---------- */
@@ -27,16 +27,21 @@ export function goldFlash(){ const g=$('goldflash'); if(!g) return; g.classList.
 export function endingHTML(end){
   const s = S;
   const favorSum = s.partners.reduce((a,p)=>a+p.favor,0);
+  const seen = Object.keys(s.endingsSeen||{}).length;
+  const totalEndings = ENDINGS.length + 2; // 5 档 + 破产 + NB 彩蛋
   return `<h3>🏁 人生结算<button class="x" onclick="closeModal()">×</button></h3>
   <div class="end-title">${end.title}</div>
-  <div class="end-sub">综合评分 <b style="color:var(--gold)">${end.score}</b> · 通关用时 ${s.life.day} 天<br />${end.desc}</div>
+  <div class="end-sub">综合评分 <b style="color:var(--gold)">${end.score}</b> · 走完 ${s.life.day} 天（${CHAPTER_TOTAL} 章）<br />${end.desc}</div>
   <div class="end-stats">
     <div class="cell"><span class="lb">最终存款</span><b>${fmt(s.money)}</b></div>
-    <div class="cell"><span class="lb">技术 / 魅力</span><b>${s.life.attrs.skill} / ${s.life.attrs.charm}</b></div>
+    <div class="cell"><span class="lb">技术 / 魅力</span><b>${Math.round(s.life.attrs.skill)} / ${Math.round(s.life.attrs.charm)}</b></div>
     <div class="cell"><span class="lb">伙伴 / 总好感</span><b>${s.partners.length} 位 / ${favorSum}</b></div>
     <div class="cell"><span class="lb">累计打工</span><b>${s.stats.workDays} 次</b></div>
+    <div class="cell"><span class="lb">结局收集</span><b style="color:var(--cyan)">${seen}/${totalEndings}</b></div>
+    <div class="cell"><span class="lb">周目</span><b>${s.ng>0?`NG+${s.ng>1?s.ng:''}`:'一周目'}</b></div>
   </div>
-  <button class="big-btn" data-act="restart">🔄 开启新周目</button>
+  <button class="big-btn" data-act="ng-plus">🔁 新周目+（保留图鉴/皮肤/成就 · 起步资金奖励）</button>
+  <button class="big-btn ghost" data-act="restart">💥 全部清零重开</button>
   <button class="big-btn ghost" onclick="closeModal()">再看看这个世界 →</button>`;
 }
 export function showEnding(end){
@@ -48,22 +53,26 @@ export function showEnding(end){
 /* ---------- 欢迎 / 玩法 ---------- */
 export function welcomeHTML(){
   return `<h3>🧑‍💻 欢迎来到 LLMLife<button class="x" onclick="closeModal()">×</button></h3>
-  <p>你是 2026 年毕业的程序员，兜里揣着 <b>¥800</b>。往后的日子这样过：</p>
-  <p>📅 <b>生活</b>——每天 3 点行动力：打工赚钱、学习涨技术、健身社交，或者干脆躺平。</p>
-  <p>🤝 <b>伙伴</b>——抽卡抽 AI 伙伴随行：Anthropic 加收入、DeepSeek 加学习、Google 加体力……抽卡是次要玩法（大概）。</p>
-  <p>🏠 <b>账单</b>——每周房租 + 伙食雷打不动，连续欠租 2 周就破产流浪。</p>
-  <p>🏁 <b>结算</b>——60 岁结算人生，评分看存款、技术、魅力和伙伴羁绊。</p>
+  <p>你是 2026 年毕业的程序员，兜里揣着 <b>¥800</b>。<b>22 岁到 30 岁，一局 8 章</b>——一章一年，一年 24 天：</p>
+  <p>📅 <b>章节</b>——每天行动不设上限、体力说话；日切必发随机事件；<b>年末触发年度结算</b>：盘点收支、解锁下一章。</p>
+  <p>💼 <b>职业</b>——实习生 → 正式员工 → 骨干 → 主管 → 自立门户，每一档晋升都会<b>解锁新行动卡</b>。</p>
+  <p>🎯 <b>目标</b>——每周刷新周目标，完成拿抽卡券/现金/体力上限奖励，不用再盯着屏幕想「现在干嘛」。</p>
+  <p>🤝 <b>伙伴</b>——抽 AI 伙伴随行：数值加成、好感满级解锁<b>专属行动卡</b>、重复卡升星。抽卡是次要玩法（大概）。</p>
+  <p>🏠 <b>账单</b>——每周房租伙食雷打不动，欠租 2 周破产流浪；中后期还有<b>住房升级与行情投资</b>等烧钱大事。</p>
+  <p>🏁 <b>结算</b>——30 岁按综合分定档结局，结算后可 <b>NG+ 新周目</b>：图鉴皮肤成就全保留。</p>
   <button class="big-btn" data-act="start">22 岁，入行 →</button>`;
 }
 
 export function helpHTML(){
   return `<h3>❓ 玩法说明<button class="x" onclick="closeModal()">×</button></h3>
-  <p><b>主循环</b>：行动不设上限，体力说话 → 日切（随机事件 1~2 个 + 睡一觉体力回满，心情 -8）→ 周结算（房租+伙食）→ 每 360 天长一岁。</p>
+  <p><b>主循环</b>：行动不设上限，体力说话 → 日切（事件 1~2 个，选择型事件当场拍板 + 睡一觉体力回满，心情 -8）→ 周结算（房租+伙食）→ <b>24 天 = 1 年 = 1 章</b>，章末年度结算 + 晋升抉择。</p>
+  <p><b>职业</b>：五档职级，年度结算时达门槛即可晋升（或躺平换补偿）。职级提升收入倍率并解锁新行动卡（加班冲刺 / 外包大单 / 带队攻坚 / 公司经营……）。</p>
+  <p><b>周目标</b>：每周一随机 2 条目标（打工 N 次 / 攒钱 X / 抽卡 Y 次……），完成自动发奖。</p>
   <p><b>属性</b>：体力限制行动（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
-  <p><b>打工</b>：收入 = 基础价 × 技术系数 × 心情系数 × 伙伴加成，结算走大成功 ×2.5 / 返工 ×0.4 / 生产事故倒赔的事件流，概率公示页可查。</p>
-  <p><b>伙伴</b>：最多 3 位随行。效果类型看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感等级（×1.0/1.15/1.3）。重复卡折算好感 +10。</p>
-  <p><b>道具</b>：福袋开出的一次性道具，咖啡回体力、书籍涨技术、手办涨好感、刮刮乐看命。</p>
-  <p><b>结局</b>：60 岁按综合分定档（普通码农 → 神之人生）；连续 ${LIFE.GRACE_WEEKS} 周欠租直接破产；手握 Fihag V1 另有彩蛋结局。</p>
+  <p><b>打工</b>：收入 = 基础价 × 职级倍率 × 技术系数 × 心情系数 × 伙伴加成，大成功 ×2.5 / 返工 ×0.4 / 事故倒赔，概率公示页可查。</p>
+  <p><b>伙伴</b>：最多 3 位随行。效果看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感（×1.0/1.15/1.3）。<b>好感满 90 解锁该伙伴专属行动卡</b>（每天 1 次）；重复卡折好感 +10，同卡满 3 张升 1 星（每星效果 +8%）。</p>
+  <p><b>资产</b>：住房升级链改善周租与睡眠；行情系统低买高卖（波动真实且与事件联动），持仓与房产计入净资产。</p>
+  <p><b>结局</b>：30 岁按综合分定档（普通码农 → 神之人生，另有 7 种收集）；欠租 ${LIFE.GRACE_WEEKS} 周直接破产；手握 Fihag V1 有彩蛋结局。结算后 NG+ 保留收集。</p>
   <p class="note">卡面指数为 Artificial Analysis v4.3 真实智能指数，稀有度分段据此重标。本作为 TokenGacha 精神续作，纯属娱乐。</p>
   <button class="big-btn ghost" onclick="closeModal()">明白了 →</button>`;
 }
@@ -137,12 +146,20 @@ export function handleModalAction(el){
     toast('🔄 新周目开始，22 岁的你又坐在了出租屋里');
     return true;
   }
+  if(act === 'ng-plus'){
+    closeModal();
+    newGamePlus();
+    applySkin(S.skin);
+    renderAll();
+    toast(`🔁 NG+${S.ng>1?S.ng:''} 开始！图鉴/皮肤/成就已继承，起步资金 ${fmt(S.money)}`, 3600);
+    return true;
+  }
   if(act === 'start'){
     S.flags.welcomed = true;
     save();
     closeModal();
     SFX.win();
-    toast('🎁 启动资金 ¥800 到账，好好干！');
+    toast('🎁 启动资金 ¥800 到账，第 1 章开始！');
     renderAll();
     return true;
   }

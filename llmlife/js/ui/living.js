@@ -5,7 +5,9 @@
    ================================================================ */
 import { S, save, fmt } from "../state.js";
 import { SFX, burst, bigMoneyPop, toast } from "../fx.js";
-import { doAction, endDay, anyActionAvailable, restart } from "../life.js";
+import { doAction, endDay, anyActionAvailable, restart, chapterIndex, CHAPTER_TOTAL, actionOf } from "../life.js";
+import { LIFE, CAREERS } from "../config.js";
+import { meetsReq, reqText, tryPromote, stayPut } from "../careers.js";
 import { useItem } from "../items.js";
 import { setSlot } from "../partners.js";
 import { setActionHandler, renderAll } from "./render.js";
@@ -19,7 +21,8 @@ export function handleAction(id){
     toast(res.line);
     return;
   }
-  if(id === 'work'){
+  const work = id === 'work' || !!(actionOf(id) || {}).workMult;
+  if(work){
     if(/🤩/.test(res.line)){ SFX.win(); burst(innerWidth/2, innerHeight/2, ['#f59e0b','#2f6bff','#fff'], 90, 9); goldSmall(); }
     else if(/💥/.test(res.line)){ SFX.bad(); }
     else SFX.coin();
@@ -27,13 +30,16 @@ export function handleAction(id){
     SFX.click();
   }
   // 行动结果行进 toast 突出显示（打工以外的小行动）
-  if(id !== 'work') toast(res.line, 1800);
-  if(id === 'work' && res.line) bigMoneyFromLine(res.line);
-  // 成就
+  if(!work) toast(res.line, 1800);
+  if(work && res.line) bigMoneyFromLine(res.line);
+  // 成就 / 周目标
   for(const l of res.lines || []){
     if(l.startsWith('🏅')){
       SFX.win();
       burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#ff5f6d','#fff'], 160, 11);
+      toast(l, 3000);
+    } else if(l.startsWith('🎯')){
+      SFX.win();
       toast(l, 3000);
     }
   }
@@ -60,26 +66,73 @@ export function handleEndDay(){
 }
 function dayHint(){
   const nextDay = S.life.day + 1;
-  return (nextDay - 1) % 7 === 0 ? '<br />⚠️ 明天醒来要交 <b>房租 + 伙食</b>，留意余额！' : '';
+  return (nextDay - 1) % LIFE.WEEK_DAYS === 0 ? '<br />⚠️ 明天醒来要交 <b>房租 + 伙食</b>，留意余额！' : '';
 }
 
-/** 确认日切 → 结算 → 新的一天弹窗 */
+/** 确认日切 → 结算 → 章末年度结算弹窗（一年一章）或新的一天弹窗 */
 export function handleConfirmEndDay(){
   closeModal();
   const lines = endDay();
   renderAll();
-  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); return; }
+  if(S.ending){ setTimeout(()=>showEnding(S.ending), 350); S._settle=null; return; }
+  if(S._settle){ showModal(chapterSettleHTML(S._settle)); S._settle=null; return; }
   showModal(newDayHTML(lines));
+}
+function settleChoiceHTML(){
+  const next = CAREERS[S.life.tier + 1];
+  if(!next) return '';
+  if(meetsReq(S.life.tier + 1)){
+    return `<div class="settle-promo">
+    <p>🪜 <b>晋升机会来了</b>：这一年的成绩单够到了 ${next.icon}「${next.name}」（工作收入 ×${next.mult}）——<span style="color:var(--faint)">${reqText(S.life.tier + 1)}</span>。往上跳，还是再稳一年？</p>
+    <button class="big-btn" data-act="promote">🚀 晋升「${next.name}」</button>
+    <button class="big-btn ghost" data-act="stay">🍵 再沉淀一年（技术 +3 · 心情 +10）</button></div>`;
+  }
+  return `<p style="color:var(--faint)">🔒 下一级 ${next.icon}「${next.name}」的条件还差一点：${reqText(S.life.tier + 1)}。明年此时再来敲门。</p>`;
+}
+export function handlePromote(){
+  closeModal();
+  const res = tryPromote();
+  SFX.win();
+  burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#fff'], 140, 10);
+  toast(res.line, 3600);
+  renderAll();
+}
+export function handleStay(){
+  closeModal();
+  const res = stayPut();
+  SFX.click();
+  toast(res.line, 2600);
+  renderAll();
+}
+function chapterSettleHTML(st){
+  const neg = st.net < 0;
+  return `<h3>📆 第 ${st.no + 1}/${CHAPTER_TOTAL} 章 ·《${st.title}》<button class="x" data-act="close-modal">×</button></h3>
+  <p>🎂 ${st.ageFrom} 岁 → <b>${st.ageTo} 岁</b>。生日与章末是同一件事——这一年过完了：</p>
+  <div class="end-stats">
+    <div class="cell"><span class="lb">本年净收支</span><b style="color:${neg?'var(--red)':'var(--green)'}">${fmt(st.net)}</b></div>
+    <div class="cell"><span class="lb">收入 / 支出</span><b>${fmt(st.earned)} / ${fmt(st.spent)}</b></div>
+    <div class="cell"><span class="lb">接单 / 抽卡</span><b>${st.workDays} 次 / ${st.pulls} 抽</b></div>
+    <div class="cell"><span class="lb">技术 / 魅力</span><b>${st.skill} / ${st.charm}</b></div>
+    <div class="cell"><span class="lb">当前职级</span><b>${CAREERS[S.life.tier].icon} ${CAREERS[S.life.tier].name}</b></div>
+    <div class="cell"><span class="lb">当前评分</span><b style="color:var(--cyan)">${st.score}</b></div>
+  </div>
+  ${settleChoiceHTML()}
+  ${st.nextTitle
+    ? `<p>下一章预告：<b>《${st.nextTitle}》</b>（${st.ageTo} → ${st.ageTo + 1} 岁 · 剩 ${CHAPTER_TOTAL - st.no - 1} 章）</p>`
+    : `<p><b>结算的钟声就在门外。</b>这八年如何，明天见分晓。</p>`}
+  ${meetsReq(S.life.tier + 1) ? '' : `<button class="big-btn" data-act="close-modal">翻开第 ${st.no + 2} 章 →</button>`}`;
 }
 function newDayHTML(lines){
   const a = S.life.attrs;
+  const ch = chapterIndex();
+  const dayInChapter = (S.life.day - 1) % LIFE.CHAPTER_DAYS + 1;
   const body = lines.length
     ? lines.map(l=>{
-        const cls = l.startsWith('🎲') ? 'ev' : l.startsWith('🎂') ? 'ms' : '';
+        const cls = l.startsWith('🎲') ? 'ev' : l.startsWith('📆') ? 'ms' : '';
         return `<div class="row ${cls}" style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;margin-bottom:6px">${l}</div>`;
       }).join('')
     : '<p style="color:var(--faint)">风平浪静的一天。</p>';
-  return `<h3>🌅 新的一天 · 第 ${S.life.day} 天（星期${(S.life.day - 1) % 7 + 1}）<button class="x" data-act="close-modal">×</button></h3>
+  return `<h3>🌅 第 ${ch + 1}/${CHAPTER_TOTAL} 章 · 第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天（星期${(S.life.day - 1) % LIFE.WEEK_DAYS + 1}）<button class="x" data-act="close-modal">×</button></h3>
   ${body}
   <div class="end-stats">
     <div class="cell"><span class="lb">体力</span><b>${Math.round(a.stamina)}/${S.life.staminaMax}</b></div>
@@ -90,12 +143,13 @@ function newDayHTML(lines){
   <button class="big-btn" data-act="close-modal">开始新的一天 →</button>`;
 }
 
-/** header 重开 → 确认弹窗 */
+/** header 重开 → 确认弹窗（给 NG+ 与清档两条路） */
 export function handleRestartAsk(){
   showModal(`<h3>🔄 重开新周目<button class="x" data-act="close-modal">×</button></h3>
   <p>当前进度将被清空：<b>第 ${S.life.day} 天 · ${fmt(S.money)} · ${S.partners.length} 位伙伴</b>。</p>
-  <p style="color:var(--faint)">人生没有重开，但游戏有。想好了吗？</p>
-  <button class="big-btn danger" data-act="confirm-reset">确认重开</button>
+  <p style="color:var(--faint)">人生没有重开，但游戏有。<b>NG+</b> 会保留图鉴/皮肤/成就，数值清零重新 22 岁。</p>
+  <button class="big-btn" data-act="ng-plus">🔁 NG+（保留收集）</button>
+  <button class="big-btn danger" data-act="confirm-reset">💥 全部清零重开</button>
   <button class="big-btn ghost" data-act="close-modal">手滑了，继续过 →</button>`);
 }
 export function handleConfirmReset(){

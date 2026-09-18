@@ -25,11 +25,14 @@ describe("standalone.html 单文件离线版", () => {
     });
     await new Promise(r => setTimeout(r, 150));
     const d = dom.window.document;
-    expect(d.querySelectorAll("[data-actbtn]").length).toBe(6);
+    expect(d.querySelectorAll("[data-actbtn]").length).toBe(8); // 6 解锁 + 2 下一职级锁定预告
     expect(d.getElementById("h-money").textContent).toContain("800");
     expect(d.getElementById("page-life").classList.contains("active")).toBe(true);
     // 卡池页三池渲染（证明 boot 全链路走完）
     dom.window.document.querySelector('[data-page="gacha"]').click();
     expect(d.querySelectorAll("#pool-cards .pool-card").length).toBe(3);
+    // 职业芯片 + 周目标面板（boot 的 ensureWeek 生效）
+    expect(d.getElementById("career-txt").textContent).toContain("实习生");
+    expect(d.querySelectorAll("#goals-list .goal-row").length).toBe(2);
   });
 });
