@@ -3,10 +3,17 @@
    存档 (ver 2 · llmlife_v2) / v1 旧档迁移 / 工具函数
    S 为 ESM live binding，换档唯一入口 setState()（重开/新周目）
    ================================================================ */
-import { START_MONEY, LIFE, SLOT_COUNT, WEEK_STAT_KEYS } from "./config.js";
+import { START_MONEY, LIFE, SLOT_COUNT, WEEK_STAT_KEYS, MARKET } from "./config.js";
 
 const KEY_V2 = 'llmlife_v2';
 const KEY_V1 = 'llmlife_v1';
+
+/* 行情初始态：各标的按发行基准价挂牌、持仓清零（state 持有默认值，market.js 只负责推进与交易） */
+export function freshMarket(){
+  const price = {}, hold = {};
+  for(const t of MARKET){ price[t.id] = t.base; hold[t.id] = 0; }
+  return { price, hold, prev:{...price} };
+}
 
 /* 周行动计数：WEEK_STAT_KEYS 单源，新增行动/统计项自动出现在这里 */
 export function freshWeekStats(){
@@ -22,11 +29,12 @@ export function defaultState(){
     ng:0, endingsSeen:{},
     /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
     chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
       staminaMax:LIFE.STAMINA_MAX,
       weekStats:freshWeekStats(), goals:null,
       pendingChoice:null, chains:[], duoUsed:{} },
+    market:freshMarket(),
     partners:[], items:[], slots:new Array(SLOT_COUNT).fill(null),
     pity:{partner:0,banner:0,item:0},
     freePulls:0,
@@ -63,7 +71,7 @@ function normalizeV2(s){
   // 字段级兜底（v2 起步；未来 ver 升级在此追加迁移段）
   if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
   if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
-  for(const k of ['day','age','staminaMax','tier']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+  for(const k of ['day','age','staminaMax','tier','house']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
   if(s.life.restUsed==null) s.life.restUsed = 0;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
   if(s.life.goals != null && (typeof s.life.goals!=='object' || !Array.isArray(s.life.goals.items))) s.life.goals = null;
@@ -84,6 +92,9 @@ function normalizeV2(s){
   if(!s.stats.byR) s.stats.byR={N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0};
   if(s.stats.best==null) s.stats.best='';
   if(!s.dex) s.dex={};
+  if(!s.market || typeof s.market!=='object' || !s.market.price || typeof s.market.price!=='object') s.market = freshMarket();
+  else { for(const t of MARKET){ if(s.market.price[t.id]==null) s.market.price[t.id]=t.base; if(s.market.hold[t.id]==null) s.market.hold[t.id]=0; } }
+  if(!s.market.prev || typeof s.market.prev!=='object') s.market.prev = {...s.market.price};
   if(!s.flags || typeof s.flags!=='object') s.flags=defaultState().flags;
   if(!s.flags.ms) s.flags.ms={};
   if(!s.skin) s.skin='classic';

@@ -564,3 +564,32 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .item-card .use-btn:hover{background:#dfeaff}
 .item-card .use-btn:disabled{opacity:.4;cursor:not-allowed}
 .item-empty{color:var(--faint);font-size:13px;text-align:center;padding:30px 10px;line-height:1.9}
+
+/* ---------- 资产页（阶段 4）：净资产格 / 住房链 / 行情行 ---------- */
+.nw-cells{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.nw-cell{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.nw-cell i{display:block;font-style:normal;font-size:10px;color:var(--faint);font-weight:600}
+.nw-cell b{display:block;font-size:12.5px;margin-top:3px;font-variant-numeric:tabular-nums}
+.nw-cell.total b{color:var(--gold)}
+.house-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel2);margin-bottom:8px}
+.house-card.cur{border-color:var(--blue);background:var(--panel)}
+.house-card.old{opacity:.6}
+.h-head{font-weight:800;font-size:13px}
+.h-tag{font-size:9.5px;border-radius:8px;padding:1px 7px;background:var(--line);color:var(--dim);margin-left:6px;font-weight:700}
+.h-tag.cur{background:var(--blue);color:#fff}
+.h-stat{font-size:10.5px;color:var(--dim);margin-top:4px;font-variant-numeric:tabular-nums}
+.h-desc{font-size:10.5px;color:var(--faint);margin-top:2px}
+.house-btn{display:block;width:100%;margin-top:8px;font-weight:800}
+.house-btn:disabled,.mkt-btns .mini-btn:disabled{opacity:.38;cursor:not-allowed}
+.mkt-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line2);flex-wrap:wrap}
+.mkt-row:last-child{border-bottom:none}
+.mkt-id{flex:1;min-width:150px;font-size:12.5px}
+.mkt-desc{display:block;font-size:10px;color:var(--faint);margin-top:1px;font-weight:400}
+.mkt-px{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;min-width:72px}
+.mkt-chg{font-size:10.5px;font-weight:800;margin-left:4px;font-variant-numeric:tabular-nums}
+.mkt-chg.up{color:var(--red)}
+.mkt-chg.down{color:var(--green)}
+.mkt-hold{font-size:11px;color:var(--dim);min-width:104px;font-variant-numeric:tabular-nums}
+.mkt-btns{display:flex;gap:5px}
+.mkt-btns .mini-btn{padding:4px 9px;font-size:10.5px}
+.mkt-btns .mini-btn.sell{background:#f6ffed;border-color:#c9e7bd;color:var(--green)}

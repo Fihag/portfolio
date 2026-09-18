@@ -34,5 +34,12 @@ describe("standalone.html 单文件离线版", () => {
     // 职业芯片 + 周目标面板（boot 的 ensureWeek 生效）
     expect(d.getElementById("career-txt").textContent).toContain("实习生");
     expect(d.querySelectorAll("#goals-list .goal-row").length).toBe(2);
+    // 资产页（阶段 4）：6 导航钮，住房链 4 档 + 行情 3 行 + 净资产 4 格
+    expect(d.querySelectorAll(".top-nav button").length).toBe(6);
+    d.querySelector('[data-page="assets"]').click();
+    expect(d.getElementById("page-assets").classList.contains("active")).toBe(true);
+    expect(d.querySelectorAll("#house-zone .house-card").length).toBe(4);
+    expect(d.querySelectorAll("#market-zone .mkt-row").length).toBe(3);
+    expect(d.querySelectorAll("#nw-cells .nw-cell").length).toBe(4);
   });
 });

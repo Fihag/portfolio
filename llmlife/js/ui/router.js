@@ -6,7 +6,7 @@ import { SFX } from "../fx.js";
 import { renderAll } from "./render.js";
 
 /* ---------- 路由 ---------- */
-export const PAGES=['life','partners','gacha','bag','data'];
+export const PAGES=['life','partners','gacha','assets','bag','data'];
 export function go(page){
   if(!PAGES.includes(page)) page='life';
   for(const p of PAGES){

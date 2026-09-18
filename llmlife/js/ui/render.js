@@ -2,8 +2,9 @@
    LLMLife · 渲染层 (ui/render.js)
    状态变化后全量重渲：头部芯片 / 生活页 / 伙伴页 / 背包页 / 数据页
    ================================================================ */
-import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA } from "../config.js";
+import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA, HOUSES, HOUSE_EQUITY, MARKET, STOCK_SLOTS, assetsOf, houseOf } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
+import { holdingsValue } from "../market.js";
 import { iconImg } from "../fx.js";
 import { validateResult } from "../validate.js";
 import { slotBoosts, favorNext, effectOf, bestPartner, staminaCeiling } from "../partners.js";
@@ -153,7 +154,7 @@ function renderLife(){
     : `第 ${ch + 1}/${CHAPTER_TOTAL} 章《${CHAPTER_TITLES[ch] || ''}》· 本年第 ${dayInChapter}/${LIFE.CHAPTER_DAYS} 天`;
   const atxt = $('life-age-txt');
   if(atxt) atxt.textContent = `${S.life.age} / ${LIFE.RETIRE_AGE} 岁${S.ng > 0 ? ` · NG+${S.ng > 1 ? S.ng : ''}` : ''}`;
-  const wc = $('week-cost'); if(wc) wc.textContent = fmt(LIFE.RENT + LIFE.LIVING);
+  const wc = $('week-cost'); if(wc) wc.textContent = fmt(houseOf(S).rent + LIFE.LIVING);
   const gw = $('grace-weeks'); if(gw) gw.textContent = LIFE.GRACE_WEEKS;
 }
 
@@ -351,6 +352,59 @@ let actionHandler = null;
 export function setActionHandler(fn){ actionHandler = fn; }
 function onActionClick(id){ if(actionHandler) actionHandler(id); }
 
+/* ---------- 资产页：净资产格 / 住房升级链 / 行情持仓 ---------- */
+function renderAssets(){
+  const cells = $('nw-cells'); if(!cells) return;
+  const house = houseOf(S);
+  const holdVal = holdingsValue();
+  const houseEq = Math.round(house.cost * HOUSE_EQUITY);
+  const net = Math.round(assetsOf(S));
+  const nw = $('net-worth-txt'); if(nw) nw.textContent = fmt(net);
+  cells.innerHTML =
+    `<div class="nw-cell"><i>现金</i><b>${fmt(S.money)}</b></div>` +
+    `<div class="nw-cell"><i>持仓市值</i><b>${fmt(holdVal)}</b></div>` +
+    `<div class="nw-cell"><i>房产净值</i><b>${fmt(houseEq)}</b></div>` +
+    `<div class="nw-cell total"><i>净资产合计</i><b>${fmt(net)}</b></div>`;
+  const hz = $('house-zone');
+  if(hz){
+    const cur = S.life.house || 0;
+    hz.innerHTML = HOUSES.map((h,i)=>{
+      const owned = i <= cur;
+      const isCur = i === cur;
+      const isNext = i === cur + 1;
+      const afford = isNext && S.money >= h.cost;
+      const tag = isCur ? '<span class="h-tag cur">现住</span>' : (owned ? '<span class="h-tag">已置</span>' : '');
+      const btn = isNext ? `<button class="mini-btn house-btn" data-act="house-buy" ${afford?'':'disabled'}>${afford?`首付 ${fmt(h.cost)} 升级`:`现金不足 · 需 ${fmt(h.cost)}`}</button>` : '';
+      return `<div class="house-card ${isCur?'cur':''} ${owned&&!isCur?'old':''}">
+        <div class="h-head">${h.icon} ${h.name}${tag}</div>
+        <div class="h-stat">周支出 ${fmt(h.rent + LIFE.LIVING)} · 睡眠心情 +${h.mood} · 体力上限 +${h.sta}</div>
+        <div class="h-desc">${h.desc}</div>${btn}</div>`;
+    }).join('');
+  }
+  const mz = $('market-zone');
+  if(mz){
+    const m = S.market || {price:{}, hold:{}};
+    mz.innerHTML = MARKET.map(t=>{
+      const p = m.price[t.id] || t.base;
+      const prev = (m.prev || {})[t.id];
+      let chg = '';
+      if(prev && prev !== p){
+        const pct = (p - prev) / prev * 100;
+        chg = `<span class="mkt-chg ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '+' : ''}${pct.toFixed(1)}%</span>`;
+      }
+      const q = m.hold[t.id] || 0;
+      const buys = STOCK_SLOTS.map(k=>`<button class="mini-btn" data-act="stock-buy" data-tid="${t.id}" data-q="${k}" ${S.money < k * p ? 'disabled' : ''}>买${k}</button>`).join('');
+      const sells = q > 0 ? STOCK_SLOTS.filter(k=>k<=q).map(k=>`<button class="mini-btn sell" data-act="stock-sell" data-tid="${t.id}" data-q="${k}">卖${k}</button>`).join('') : '';
+      return `<div class="mkt-row">
+        <div class="mkt-id">${t.icon} <b>${t.name}</b><span class="mkt-desc">${t.desc}</span></div>
+        <div class="mkt-px">${fmt(p)}${chg}</div>
+        <div class="mkt-hold">持 ${q} 份 · <b>${fmt(q * p)}</b></div>
+        <div class="mkt-btns">${buys}${sells}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
 /* ---------- 全量重渲 ---------- */
 export function renderAll(){
   renderHeader();
@@ -359,4 +413,5 @@ export function renderAll(){
   renderBag();
   renderData();
   renderGacha();
+  renderAssets();
 }

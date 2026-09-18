@@ -118,6 +118,28 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect(document.getElementById("overlay").classList.contains("show")).toBe(false);
   });
 
+  it("资产页渲染净资产/住房链/行情并完成一次买入闭环", () => {
+    NS.S.money = 60000;
+    renderAll();
+    document.querySelector('[data-page="assets"]').click();
+    expect($("page-assets").classList.contains("active")).toBe(true);
+    expect($("nw-cells").querySelectorAll(".nw-cell").length).toBe(4);
+    expect($("net-worth-txt").textContent).toContain("60,000");
+    const houses = [...document.querySelectorAll("#house-zone .house-card")];
+    expect(houses.length).toBe(4);
+    expect(houses[0].classList.contains("cur")).toBe(true);
+    expect(document.querySelectorAll('[data-act="house-buy"]').length).toBe(1);
+    expect(document.querySelectorAll("#market-zone .mkt-row").length).toBe(3);
+    document.querySelector('[data-act="stock-buy"][data-tid="meme"][data-q="10"]').click();
+    expect(NS.S.money).toBe(60000 - 10 * CFG.MARKET.find(t=>t.id==="meme").base);
+    expect(document.querySelector("#market-zone .mkt-row:nth-child(3) .mkt-hold").textContent).toContain("10");
+    document.querySelector('[data-act="house-buy"]').click();
+    expect(NS.S.life.house).toBe(1);
+    expect(houses.length).toBe(4);
+    renderAll();
+    expect(document.querySelector("#house-zone .house-card.cur").textContent).toContain("一居室");
+  });
+
   it("结束今天 → 新的一天弹窗 → 日期推进", () => {
     PROBS.EVENT = 0;
     const day = NS.S.life.day;

@@ -36,6 +36,7 @@
         <button data-page="life" aria-label="生活" aria-current="page">生活</button>
         <button data-page="partners" aria-label="伙伴">伙伴</button>
         <button data-page="gacha" aria-label="卡池">卡池</button>
+        <button data-page="assets" aria-label="资产">资产</button>
         <button data-page="bag" aria-label="背包">背包</button>
         <button data-page="data" aria-label="数据">数据</button>
       </nav>
@@ -153,7 +154,27 @@
         <div class="pool-scroll-hint">← 左右滑动查看更多卡池 →</div>
       </div>
 
-      <!-- ============ 页面4: 背包 ============ -->
+      <!-- ============ 页面5: 资产 ============ -->
+      <div class="page" id="page-assets">
+        <div class="page-head">
+          <h2>资产</h2>
+          <p>钱要花，也要生钱 · 净资产（现金+持仓+房产×0.7）计入 30 岁结算</p>
+        </div>
+        <div class="panel panel-pad" style="margin-bottom:14px">
+          <div class="panel-title">💎 净资产<span class="right" id="net-worth-txt"></span></div>
+          <div class="nw-cells" id="nw-cells"></div>
+        </div>
+        <div class="panel panel-pad" style="margin-bottom:14px">
+          <div class="panel-title">🏠 住房<span class="right">升级改变周房租 / 睡眠心情 / 体力上限</span></div>
+          <div id="house-zone"></div>
+        </div>
+        <div class="panel panel-pad">
+          <div class="panel-title">📈 行情<span class="right">每天日切后随机游走 · 买卖即时成交</span></div>
+          <div id="market-zone"></div>
+        </div>
+      </div>
+
+      <!-- ============ 页面6: 背包 ============ -->
       <div class="page" id="page-bag">
         <div class="page-head">
           <h2>背包</h2>

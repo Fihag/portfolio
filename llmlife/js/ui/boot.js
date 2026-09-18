@@ -10,6 +10,7 @@ import { go } from "./router.js";
 import { initLiving, handleUseItem, handleSlotAction, handleEndDay, handleConfirmEndDay, handleRestartAsk, handleConfirmReset, handlePromote, handleStay, handleEventChoice, handleSettleNext, showPendingChoice } from "./living.js";
 import { showModal, closeModal, welcomeHTML, helpHTML, ratesHTML, dexHTML, skinPickerHTML, handleModalAction, showEnding } from "./modals.js";
 import { tryPull, acceptHalluc } from "./gacha.js";
+import { handleHouseBuy, handleStockTrade } from "./assets.js";
 import { ensureWeek } from "../goals.js";
 
 /* ---------- 事件绑定 ---------- */
@@ -38,6 +39,9 @@ export function bindUI(){
       if(el.dataset.act === 'settle-next'){ SFX.click(); handleSettleNext(); return; }
       if(el.dataset.act === 'slot'){ handleSlotAction(el.dataset.slot, el.dataset.uid); return; }
       if(el.dataset.act === 'use-item'){ SFX.click(); handleUseItem(el.dataset.item); return; }
+      if(el.dataset.act === 'house-buy'){ handleHouseBuy(); return; }
+      if(el.dataset.act === 'stock-buy'){ handleStockTrade('buy', el.dataset.tid, Number(el.dataset.q)); return; }
+      if(el.dataset.act === 'stock-sell'){ handleStockTrade('sell', el.dataset.tid, Number(el.dataset.q)); return; }
       if(handleModalAction(el)) return;
     }
     // 生活页/伙伴页空槽 → 去伙伴页编排

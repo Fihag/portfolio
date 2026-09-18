@@ -158,8 +158,7 @@ export const LIFE = {
   STAMINA_CAP: 200,        // 体力上限软帽：健身/道具推到 200 后不再成长
   MOOD_DECAY: 8,           // 日切心情自然衰减
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
-  RENT: 1200,              // 周结算房租
-  LIVING: 400,             // 周结算伙食水电
+  LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
 };
@@ -260,6 +259,10 @@ export const EVENTS = [
   {id:'ch_conf_result', name:'论文放榜',     weight:0, chainOnly:true, skill:3, mood:[-10, 18], money:[0, 1500], text:'审稿意见出炉：{amt}的奖学金/差旅补贴顺带有了着落'},
   {id:'ch_crypto_crash',name:'币圈惊魂',     weight:0, chainOnly:true, money:[0, 400], mood:-12, text:'亲戚推销的币腰斩再脚踝斩：{amt}是他“帮你操作”后的残值'},
   {id:'ch_offer_result',name:'大厂放榜',     weight:0, chainOnly:true, money:[0, 3000], skill:2, mood:[-5, 15], text:'三个月面试流程走完：{amt}的签字费和一句“欢迎加入”'},
+  {id:'mkt_boom',    name:'利好落地',   weight:0, chainOnly:true, market:{mul:1.3},  text:'传闻一夜应验，账户跟着行情坐了回火箭'},
+  {id:'mkt_crash',   name:'黑天鹅',     weight:0, chainOnly:true, market:{mul:0.7},  text:'凌晨的突发公告让绿光映在你脸上：市场先生今天心情很差'},
+  {id:'mkt_dip',     name:'内幕局开牌', weight:0, chainOnly:true, market:{mul:[0.55, 1.5]}, text:'跟风的局今天开牌，K 线上蹿下跳，心跳跟着账户走'},
+  {id:'mkt_chop',    name:'横盘震荡',   weight:0, chainOnly:true, market:{mul:[0.92, 1.08]}, text:'连日横盘，买卖都嫌手续费，你决定装死'},
 ];
 
 /* ---------- 分支选择事件（日切时以 PROBS.CHOICE 概率替代普通事件；after → 后果链到期注入） ---------- */
@@ -313,6 +316,11 @@ export const CHOICE_EVENTS = [
     {label:'备战面试', fx:{stamina:-20, money:-300, skill:5}, text:'你刷了三个月算法题，发量略有代价，手感逐渐滚烫。', after:{days:9, ev:'ch_offer_result'}},
     {label:'现在挺好', fx:{mood:3}, text:'你说谢谢不了，转头继续写自己的小项目。自由也是薪。'},
   ]},
+  {id:'ch_stocks', name:'隔壁工位的财富密码', cond:s=>s.money>=2000, text:'隔壁工位神秘兮兮转过一张截图：「内幕局，三天翻倍，跟不跟？」', choices:[
+    {label:'梭 ¥2000 上车', fx:{money:-2000, mood:4}, text:'你按下了买入键，从此每天盯盘十二次。', after:{days:5, ev:'mkt_dip'}},
+    {label:'反手举报内幕群', fx:{money:-300, charm:3, mood:6}, text:'反诈中心给你发了朵小红花，群没了，你的钱还在。', after:{days:6, ev:'mkt_chop'}},
+    {label:'当他有病', fx:{mood:-2}, text:'你戴上降噪耳机。三天后他请全组吃饭庆祝——你继续写代码。'},
+  ]},
 ];
 
 /* ---------- 在场伙伴小剧场（日切 PROBS.PARTNER_TALK 概率，按随行伙伴效果通道选台本） ---------- */
@@ -345,6 +353,43 @@ export const DUO_FX = {                              // 各效果通道的基础
 export const DUO_STAR_PCT = .08;                     // 每星效果 +8%（3 连/6 连各 +1 星，上限 2）
 export const STAR_UP_AT = [3, 6];                    // 第 N 次获得同名卡 → +1 星
 export const STAR_MAX = 2;
+
+/* ---------- 住房升级链（阶段 4：RENT 由当前住房决定，房产×0.7 计净资产） ---------- */
+export const HOUSE_EQUITY = 0.7;
+export const HOUSES = [
+  {id:'share',  name:'合租隔断间', icon:'🛏', cost:0,     rent:1200, mood:0, sta:0,
+    desc:'六平米的床位，隔音约等于没有'},
+  {id:'single', name:'一居室',     icon:'🏠', cost:6000,  rent:1600, mood:4, sta:10,
+    desc:'属于自己的门——关上门，这就是全世界'},
+  {id:'flat',   name:'江景大平层', icon:'🌆', cost:20000, rent:2600, mood:6, sta:16,
+    desc:'落地窗外的江景，治愈一切加班'},
+  {id:'mansion',name:'顶层豪宅',   icon:'🏰', cost:80000, rent:4200, mood:9, sta:24,
+    desc:'电梯直通、泳池恒温，人生赢家标本房'},
+];
+
+/* ---------- 行情（3 个虚拟标的：固定漂移 + 随机游走，日切逐日 tick） ---------- */
+export const MARKET = [
+  {id:'compute', name:'算力指数', icon:'🖥', base:1000, drift:.004,  vol:.06,
+    desc:'AI 基建晴雨表：长期向上，短期坐过山车'},
+  {id:'chip',    name:'芯片期货', icon:'🧩', base:600,  drift:.002,  vol:.09,
+    desc:'晶圆周期之王，暴涨暴跌都是日常'},
+  {id:'meme',    name:'Meme 币',  icon:'🐸', base:50,   drift:-.003, vol:.22,
+    desc:'归零还是登月，全看今晚谁发推'},
+];
+export const STOCK_SLOTS = [1, 5, 10];               // 资产页买卖步进
+
+/* ---------- 资产口径（config 内定义，market/careers/UI/endingScore 共用单源，避免循环依赖） ---------- */
+export const houseOf = s => HOUSES[(s.life && s.life.house) || 0] || HOUSES[0];
+/* 净资产 = 现金 + Σ 持仓×现价 + 房产价×0.7 */
+export const assetsOf = s => {
+  let v = s.money || 0;
+  const m = s.market;
+  if(m) for(const t of MARKET){
+    const q = m.hold[t.id] || 0;
+    if(q > 0) v += q * (m.price[t.id] || t.base);
+  }
+  return v + houseOf(s).cost * HOUSE_EQUITY;
+};
 
 
 /* ---------- 道具（一次性使用; favor 生效于全部随行伙伴） ---------- */
@@ -439,9 +484,10 @@ export const ENDING_BROKE = {id:'broke', title:'📉 破产流浪', desc:'连续
 /* 彩蛋结局: 手握 Fihag V1 且综合分 ≥300 时覆盖结算 */
 export const ENDING_CHOSEN = {id:'chosen', title:'🔮 天选之人', desc:'抽到了全站唯一 NB 级存在，人生直接封神——命运的 0.01% 落在了你头上。'};
 /* 综合分公式（单调，供结局与结算预览；bonusStamina 传入随行伙伴的体力上限加成；
-   money/400 而非 /200：一局缩到 8 章，存款口径相应放大权重，阈值与 ENDINGS 同步标定） */
+   净资产/400：现金+持仓市值+房产净值一起计——钱躺在股票和房子里也算数；
+   一局缩到 8 章，存款口径相应放大权重，阈值与 ENDINGS 同步标定） */
 export const endingScore = (s, bonusStamina=0) => Math.round(
-  s.money/400 + s.life.attrs.skill*2 + s.life.attrs.charm*2
+  assetsOf(s)/400 + s.life.attrs.skill*2 + s.life.attrs.charm*2
   + (s.partners||[]).reduce((a,p)=>a+p.favor,0)*0.1 + (s.partners||[]).length*4
   + (s.life.staminaMax - LIFE.STAMINA_MAX) + (bonusStamina||0)
 );

@@ -3,7 +3,7 @@
    职级门槛判定 / 晋升与沉淀 / 净资产口径 / 收入倍率
    晋升只在年度结算时发生（living.js 弹窗驱动），此处纯逻辑
    ================================================================ */
-import { CAREERS, ACTIONS } from "./config.js";
+import { CAREERS, ACTIONS, assetsOf } from "./config.js";
 import { S, save } from "./state.js";
 import { addAttrs } from "./items.js";
 
@@ -11,13 +11,8 @@ export function careerOf(tier = S.life.tier){ return CAREERS[Math.min(Math.max(t
 /** 工作类收入职级倍率 */
 export function tierMult(){ return careerOf().mult; }
 
-/** 净资产（现金 + 持仓市值；阶段 4 住房接入后再加房产净值） */
-export function netWorth(){
-  let v = S.money;
-  if(S.market && S.market.hold && S.market.price)
-    for(const [id, qty] of Object.entries(S.market.hold)) v += qty * (S.market.price[id]||0);
-  return v;
-}
+/** 净资产（现金 + 持仓市值 + 房产×0.7，与结局综合分同源口径） */
+export function netWorth(){ return assetsOf(S); }
 
 /** 指定职级晋升门槛是否全部达成 */
 export function meetsReq(tier){
