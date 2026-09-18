@@ -158,6 +158,8 @@ export const LIFE = {
   STAMINA_CAP: 200,        // 体力上限软帽：健身/道具推到 200 后不再成长
   MOOD_DECAY: 8,           // 日切心情自然衰减
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
+  SLOTS_PER_DAY: 12,       // 一天 12 个时间格（1 格 ≈ 2 小时 = 24h）；行动吃格 + 体力
+  SLOT_HOURS: 2,           // 单格小时数（展示用）
   LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
@@ -187,24 +189,24 @@ export const CAREERS = [
   {tier:4, name:'自立门户', icon:'🚀', mult:2.6,  req:{skill:85, net:30000},    desc:'自己就是甲方，盈亏自己扛'},
 ];
 
-/* ---------- 每日行动（tier=解锁职级; cost 为消耗; work 类走 payout 事件流;
+/* ---------- 每日行动（tier=解锁职级; slots=占用时间格; cost 为消耗; work 类走 payout 事件流;
    workMult/riskMul 影响收入与事故率; fee 为魅力出场的随机出场费） ---------- */
 export const ACTIONS = [
-  {id:'work',   name:'接单打工', icon:'💻', tier:0, stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
-  {id:'learn',  name:'学习充电', icon:'📚', tier:0, stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
-  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
-  {id:'social', name:'社交聚会', icon:'🍻', tier:0, stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
+  {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
+  {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
+  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
+  {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, slots:1, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
   /* 职级解锁 */
-  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, stamina:55, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
-  {id:'training', name:'公司内训', icon:'🏫', tier:1, stamina:20, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
-  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, stamina:30, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
-  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, stamina:18, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
-  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, stamina:50, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
-  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, stamina:15, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
-  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, stamina:45, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
-  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, stamina:20, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
+  {id:'training', name:'公司内训', icon:'🏫', tier:1, slots:2, stamina:14, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
+  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, slots:2, stamina:12, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
+  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, slots:1, stamina:10, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
+  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
 export const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
@@ -340,7 +342,8 @@ export const PARTNER_EVENTS = [
 ];
 
 /* ---------- 满好感专属同行卡（随行且好感 ≥90 的伙伴解锁，每人每日一次） ---------- */
-export const DUO_STAMINA = 10;                      // 同行卡体力成本
+export const DUO_STAMINA = 8;                       // 同行卡体力成本
+export const DUO_SLOTS = 2;                         // 同行卡时间格成本
 export const DUO_EFFECT_MIN = 90;                    // 解锁好感线（FAVOR_LEVELS 顶档）
 export const DUO_FX = {                              // 各效果通道的基础回报
   work:    {money:150},

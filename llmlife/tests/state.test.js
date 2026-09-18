@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { defaultState, setState, save, load, S, addLedger, logToday, dayLog } from "../js/state.js";
-import { START_MONEY, SLOT_COUNT } from "../js/config.js";
+import { START_MONEY, SLOT_COUNT, LIFE } from "../js/config.js";
 
 describe("state 存档 v2", () => {
   beforeEach(() => {
@@ -13,6 +13,7 @@ describe("state 存档 v2", () => {
     expect(s.money).toBe(START_MONEY);
     expect(s.life.day).toBe(1);
     expect(s.life.restUsed).toBe(0);
+    expect(s.life.timeLeft).toBe(LIFE.SLOTS_PER_DAY);
     expect(s.life.attrs.stamina).toBe(100);
     expect(s.slots).toHaveLength(SLOT_COUNT);
     expect(s.partners).toEqual([]);
@@ -40,6 +41,7 @@ describe("state 存档 v2", () => {
     const s = load();
     expect(s.money).toBe(500);
     expect(s.life.day).toBe(1);
+    expect(s.life.timeLeft).toBe(LIFE.SLOTS_PER_DAY); // 老档回填满格
     expect(s.pity.partner).toBe(0);
     expect(Array.isArray(s.slots)).toBe(true);
     expect(s.ver).toBe(2);

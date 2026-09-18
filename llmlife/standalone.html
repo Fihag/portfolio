@@ -619,6 +619,14 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .mkt-btns .mini-btn{padding:4px 9px;font-size:10.5px}
 .mkt-btns .mini-btn.sell{background:#f6ffed;border-color:#c9e7bd;color:var(--green)}
 
+/* ---------- 时间格（主玩法改造）：今日剩余时间点阵 ---------- */
+.slot-line{display:flex;align-items:center;gap:8px;margin:8px 0 2px}
+.slot-lb{font-size:11px;color:var(--dim);font-weight:700;white-space:nowrap}
+.slot-track{display:flex;gap:3px;flex:1}
+.slot-track i{flex:1;height:9px;border-radius:3px;background:var(--line);display:block;transition:.15s}
+.slot-track i.on{background:linear-gradient(135deg,var(--blue),#7c3aed)}
+.slot-tx{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;min-width:54px;text-align:right}
+
 </style>
   </head>
   <body>
@@ -655,7 +663,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       <div class="page" id="page-life" role="tabpanel" aria-label="生活">
         <div class="page-head">
           <h2>生活</h2>
-          <p>行动不设上限 · 体力说话 · 24 天为一年，走完 8 章 30 岁结算</p>
+          <p>一天 12 格时间（1 格≈2 小时）· 行动吃格也吃体力 · 格尽自动收工 · 24 天为一年，走完 8 章 30 岁结算</p>
         </div>
         <div class="notice">
           <span class="dot"></span><span id="notice-text">📢 公告加载中…</span>
@@ -685,7 +693,8 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
         </div>
 
         <div class="panel panel-pad" style="margin-top:14px">
-          <div class="panel-title">🎯 今日行动<span class="right" style="display:flex;gap:8px;align-items:center"><span id="rest-hint" style="letter-spacing:0"></span><button class="mini-btn" id="btn-end-day">🛏 结束今天</button></span></div>
+          <div class="panel-title">🎯 今日行动<span class="right" style="display:flex;gap:8px;align-items:center"><span id="rest-hint" style="letter-spacing:0"></span><button class="mini-btn" id="btn-end-day">🛏 提前收工</button></span></div>
+          <div class="slot-line"><span class="slot-lb">🕒 今天还剩</span><span class="slot-track" id="slot-track"></span><span class="slot-tx" id="slot-txt"></span></div>
           <div class="career-chip" id="career-txt"></div>
           <div class="act-bar" id="act-bar"></div>
         </div>
@@ -1000,6 +1009,8 @@ const LIFE = {
   STAMINA_CAP: 200,        // 体力上限软帽：健身/道具推到 200 后不再成长
   MOOD_DECAY: 8,           // 日切心情自然衰减
   MOOD_LOW: 25,            // 低心情阈值（事件惩罚放大）
+  SLOTS_PER_DAY: 12,       // 一天 12 个时间格（1 格 ≈ 2 小时 = 24h）；行动吃格 + 体力
+  SLOT_HOURS: 2,           // 单格小时数（展示用）
   LIVING: 400,             // 周结算伙食水电（房租改由当前住房 HOUSES[].rent 决定）
   GRACE_WEEKS: 2,          // 连续欠租 N 周 → 破产结局
   WORK_BASE: 260,          // 接单基础价
@@ -1029,24 +1040,24 @@ const CAREERS = [
   {tier:4, name:'自立门户', icon:'🚀', mult:2.6,  req:{skill:85, net:30000},    desc:'自己就是甲方，盈亏自己扛'},
 ];
 
-/* ---------- 每日行动（tier=解锁职级; cost 为消耗; work 类走 payout 事件流;
+/* ---------- 每日行动（tier=解锁职级; slots=占用时间格; cost 为消耗; work 类走 payout 事件流;
    workMult/riskMul 影响收入与事故率; fee 为魅力出场的随机出场费） ---------- */
 const ACTIONS = [
-  {id:'work',   name:'接单打工', icon:'💻', tier:0, stamina:38, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
-  {id:'learn',  name:'学习充电', icon:'📚', tier:0, stamina:32, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
-  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
-  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, stamina:42, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
-  {id:'social', name:'社交聚会', icon:'🍻', tier:0, stamina:24, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
-  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
+  {id:'work',   name:'接单打工', icon:'💻', tier:0, slots:3, stamina:24, money:0,  desc:'接私活赚钱，吃技术、心情、职级与伙伴加成'},
+  {id:'learn',  name:'学习充电', icon:'📚', tier:0, slots:2, stamina:20, money:0,  skill:[2,4], mood:-4, desc:'提升技术，心情低落时效率打折'},
+  {id:'play',   name:'娱乐摸鱼', icon:'🎮', tier:0, slots:2, stamina:0,  money:60, mood:18, charm:1, desc:'花点小钱买快乐'},
+  {id:'gym',    name:'健身撸铁', icon:'🏋️', tier:0, slots:2, stamina:28, money:60, staminaMax:1, charm:2, desc:'最累的一档，但上限成长是真金白银（每天 1 次就够）'},
+  {id:'social', name:'社交聚会', icon:'🍻', tier:0, slots:3, stamina:16, money:80, charm:3, mood:6, favor:2, desc:'结交朋友，随行伙伴好感 +2'},
+  {id:'rest',   name:'躺平休息', icon:'🛌', tier:0, slots:1, stamina:0,  money:0,  recover:40, mood:5, desc:'不花钱，原地回血（每天 1 次）'},
   /* 职级解锁 */
-  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, stamina:55, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
-  {id:'training', name:'公司内训', icon:'🏫', tier:1, stamina:20, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
-  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, stamina:30, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
-  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, stamina:18, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
-  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, stamina:50, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
-  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, stamina:15, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
-  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, stamina:45, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
-  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, stamina:20, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
+  {id:'overtime', name:'加班冲刺', icon:'🌙', tier:1, slots:4, stamina:38, money:0, workMult:1.6, riskMul:2.5, desc:'用健康换钱：收入 ×1.6，但事故率翻倍还多'},
+  {id:'training', name:'公司内训', icon:'🏫', tier:1, slots:2, stamina:14, money:0, skill:[1,3], mood:-2, desc:'带薪学习：便宜，但涨得少'},
+  {id:'bigorder', name:'外包大单', icon:'📦', tier:2, slots:3, stamina:22, money:0, workMult:1.5, riskMul:2, desc:'合同大、预付高，验收翻车也赔得狠'},
+  {id:'salon',    name:'行业沙龙', icon:'🎤', tier:2, slots:2, stamina:12, money:100, charm:3, mood:5, favor:3, desc:'露脸攒人脉：魅力心情双收，伙伴好感 +3'},
+  {id:'lead',     name:'带队攻坚', icon:'🧑‍✈️', tier:3, slots:4, stamina:34, money:0, workMult:1.9, mood:-8, desc:'带人打仗最耗神：钱多，心情也掉'},
+  {id:'mentor',   name:'指导新人', icon:'🧑‍🏫', tier:3, slots:1, stamina:10, money:0, charm:2, mood:8, favor:4, desc:'教学相长：心情与羁绊双收'},
+  {id:'biz',      name:'公司经营', icon:'🏢', tier:4, slots:4, stamina:30, money:200, workMult:2.2, desc:'给自家干活：营收最厚，还要倒贴运营费'},
+  {id:'lecture',  name:'巡回演讲', icon:'✈️', tier:4, slots:3, stamina:14, money:0, fee:[300,800], charm:4, mood:6, desc:'出场费看人气：名气的直接变现'},
 ];
 /* 周目标可统计的行动计数键（与 ACTIONS id 对应 + pulls/item 特殊项） */
 const WEEK_STAT_KEYS = ['work','learn','play','gym','social','rest','overtime','training','bigorder','salon','lead','mentor','biz','lecture','pulls','item','duo'];
@@ -1182,7 +1193,8 @@ const PARTNER_EVENTS = [
 ];
 
 /* ---------- 满好感专属同行卡（随行且好感 ≥90 的伙伴解锁，每人每日一次） ---------- */
-const DUO_STAMINA = 10;                      // 同行卡体力成本
+const DUO_STAMINA = 8;                       // 同行卡体力成本
+const DUO_SLOTS = 2;                         // 同行卡时间格成本
 const DUO_EFFECT_MIN = 90;                    // 解锁好感线（FAVOR_LEVELS 顶档）
 const DUO_FX = {                              // 各效果通道的基础回报
   work:    {money:150},
@@ -1568,7 +1580,7 @@ function defaultState(){
     ng:0, endingsSeen:{},
     /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
     chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
       staminaMax:LIFE.STAMINA_MAX,
       weekStats:freshWeekStats(), goals:null,
@@ -1610,7 +1622,7 @@ function normalizeV2(s){
   // 字段级兜底（v2 起步；未来 ver 升级在此追加迁移段）
   if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
   if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
-  for(const k of ['day','age','staminaMax','tier','house']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+  for(const k of ['day','age','staminaMax','tier','house','timeLeft']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
   if(s.life.restUsed==null) s.life.restUsed = 0;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
   if(s.life.goals != null && (typeof s.life.goals!=='object' || !Array.isArray(s.life.goals.items))) s.life.goals = null;
@@ -2390,6 +2402,7 @@ function doDuo(actionId){
   const fx = DUO_FX[effectOf(m)] || {};
   const mul = 1 + (p.stars || 0) * DUO_STAR_PCT;
   S.life.attrs.stamina -= DUO_STAMINA;
+  S.life.timeLeft -= DUO_SLOTS;
   const applied = [];
   if(fx.money){
     const amt = Math.round(fx.money * mul);
@@ -2421,6 +2434,7 @@ function canDo(actionId){
     const inSlot = p && S.slots.includes(uid);
     if(!p || !inSlot || p.favor < DUO_EFFECT_MIN) return {ok:false, reason:'同行卡需要该伙伴随行且好感满级（90）'};
     if((S.life.duoUsed || {})[uid] === S.life.day) return {ok:false, reason:'今天就同行过一次了，来日方长'};
+    if(DUO_SLOTS > S.life.timeLeft) return {ok:false, reason:'今天的时间格不够了，收工歇着吧'};
     if(DUO_STAMINA > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
     return {ok:true};
   }
@@ -2428,7 +2442,8 @@ function canDo(actionId){
   if(!a) return {ok:false, reason:'未知行动'};
   if((a.tier||0) > S.life.tier) return {ok:false, reason:`职级不足：晋升「${CAREERS[a.tier].name}」后解锁`};
   if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
-    return {ok:false, reason:'今天已经躺平过了，再用道具回体力或结束今天'};
+    return {ok:false, reason:'今天已经躺平过了，再用道具回体力或提前收工'};
+  if((a.slots || 1) > S.life.timeLeft) return {ok:false, reason:'今天的时间格不够了，收工歇着吧'};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
   if(a.money > S.money) return {ok:false, reason:'钱包不够了，先去打工'};
   return {ok:true};
@@ -2453,8 +2468,10 @@ function doAction(actionId){
     logToday(line);
     for(const m of checkMilestones()) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
     for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
+    const dayEnded = S.life.timeLeft <= 0;
+    if(dayEnded) lines.push('🌙 今天的格数用完了，收工');
     save();
-    return {ok:true, line, lines};
+    return {ok:true, line, lines, dayEnded};
   }
   const a = ACTION_MAP[actionId];
   const boosts = slotBoosts();
@@ -2462,6 +2479,7 @@ function doAction(actionId){
   const applied = [];
 
   if(a.stamina) attr.stamina -= a.stamina;
+  if(a.slots) S.life.timeLeft -= a.slots;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
   if(actionId === 'rest') S.life.restUsed++;
   bumpWeekStat(actionId);
@@ -2524,9 +2542,11 @@ function doAction(actionId){
   const msNew = checkMilestones();
   for(const m of msNew) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
   for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
-  if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或结束今天');
+  const dayEnded = S.life.timeLeft <= 0;
+  if(dayEnded) lines.push('🌙 今天的格数用完了，收工');
+  else if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或提前收工');
   save();
-  return {ok:true, line, lines};
+  return {ok:true, line, lines, dayEnded};
 }
 
 /* ---------- 加权抽取事件（chainOnly 后续事件不进随机池） ---------- */
@@ -2685,6 +2705,7 @@ function endDay(){
   }
   S.life.day++;
   S.life.restUsed = 0;
+  S.life.timeLeft = LIFE.SLOTS_PER_DAY; // 新的一天满格
   tickMarket(); // 行情逐日随机游走
   dueChains(lines); // 旧决定的下文：到期注入（负面效果也照常结算）
   const attr = S.life.attrs;
@@ -2883,6 +2904,14 @@ function renderLife(){
   bar('bar-charm', a.charm);
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
+  // 时间格点阵（今日剩余）：格尽即自动收工，玩家一眼看到还剩多少事能做
+  const track = $('slot-track');
+  if(track){
+    const left = Math.max(0, S.life.timeLeft || 0);
+    track.innerHTML = Array.from({length: LIFE.SLOTS_PER_DAY}, (_, i) =>
+      `<i class="${i < left ? 'on' : ''}"></i>`).join('');
+    const stxt = $('slot-txt'); if(stxt) stxt.textContent = `${left}/${LIFE.SLOTS_PER_DAY} 格`;
+  }
 
   // 行动按钮：按职级 + 满好感同行卡重建（此后只刷禁用态）
   const barEl = $('act-bar');
@@ -2905,7 +2934,7 @@ function renderLife(){
       <button class="act-btn duo" data-actbtn="${c.id}" title="${c.desc}">
         <div class="ic">${c.icon}</div>
         <div class="nm">${c.name}</div>
-        <div class="cost">⚡-${DUO_STAMINA}</div>
+        <div class="cost">🕒${DUO_SLOTS}格 ⚡-${DUO_STAMINA}</div>
         <div class="desc">${c.desc}</div>
       </button>`),
       ...previews.map(x => `
@@ -2994,6 +3023,7 @@ function renderLife(){
 
 function costText(x){
   const parts = [];
+  if(x.slots) parts.push(`🕒${x.slots}格`);
   if(x.stamina) parts.push(`⚡-${x.stamina}`);
   if(x.money) parts.push(`¥-${x.money}`);
   if(x.recover) parts.push(`⚡+${x.recover}`);
@@ -3362,7 +3392,7 @@ function showEnding(end){
 function welcomeHTML(){
   return `<h3>🧑‍💻 欢迎来到 LLMLife<button class="x" onclick="closeModal()">×</button></h3>
   <p>你是 2026 年毕业的程序员，兜里揣着 <b>¥800</b>。<b>22 岁到 30 岁，一局 8 章</b>——一章一年，一年 24 天：</p>
-  <p>📅 <b>章节</b>——每天行动不设上限、体力说话；日切必发随机事件；<b>年末触发年度结算</b>：盘点收支、解锁下一章。</p>
+  <p>📅 <b>章节</b>——一天 <b>12 格时间</b>（1 格≈2 小时），行动既吃格也吃体力，<b>格尽自动收工日切</b>；日切必发随机事件；<b>年末触发年度结算</b>：盘点收支、解锁下一章。</p>
   <p>💼 <b>职业</b>——实习生 → 正式员工 → 骨干 → 主管 → 自立门户，每一档晋升都会<b>解锁新行动卡</b>。</p>
   <p>🎯 <b>目标</b>——每周刷新周目标，完成拿抽卡券/现金/体力上限奖励，不用再盯着屏幕想「现在干嘛」。</p>
   <p>🤝 <b>伙伴</b>——抽 AI 伙伴随行：数值加成、好感满级解锁<b>专属行动卡</b>、重复卡升星。抽卡是次要玩法（大概）。</p>
@@ -3373,10 +3403,10 @@ function welcomeHTML(){
 
 function helpHTML(){
   return `<h3>❓ 玩法说明<button class="x" onclick="closeModal()">×</button></h3>
-  <p><b>主循环</b>：行动不设上限，体力说话 → 日切（事件 1~2 个，选择型事件当场拍板 + 睡一觉体力回满，心情 -8）→ 周结算（房租+伙食）→ <b>24 天 = 1 年 = 1 章</b>，章末年度结算 + 晋升抉择。</p>
+  <p><b>主循环</b>：一天 12 格时间 + 一管体力，两者同时限制行动 → 格尽自动收工日切（也可手动提前收工，剩格不补发）→ 日切（事件 1~2 个，选择型事件当场拍板 + 体力回满，心情 -8）→ 周结算（房租+生活）→ <b>24 天 = 1 年 = 1 章</b>，章末年度结算 + 晋升抉择。</p>
   <p><b>职业</b>：五档职级，年度结算时达门槛即可晋升（或躺平换补偿）。职级提升收入倍率并解锁新行动卡（加班冲刺 / 外包大单 / 带队攻坚 / 公司经营……）。</p>
   <p><b>周目标</b>：每周一随机 2 条目标（打工 N 次 / 攒钱 X / 抽卡 Y 次……），完成自动发奖。</p>
-  <p><b>属性</b>：体力限制行动（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
+  <p><b>属性</b>：时间格决定一天能做几件事（每个行动占用 1~4 格）；体力是身体底（睡眠恢复）；心情影响打工学习效率（低于 ${LIFE.MOOD_LOW} 打工更容易翻车）；技术决定接单收入；魅力靠社交与健身。</p>
   <p><b>打工</b>：收入 = 基础价 × 职级倍率 × 技术系数 × 心情系数 × 伙伴加成，大成功 ×2.5 / 返工 ×0.4 / 事故倒赔，概率公示页可查。</p>
   <p><b>伙伴</b>：最多 3 位随行。效果看厂商（Anthropic=收入、DeepSeek/阿里=学习、谷歌=体力上限、Meta=娱乐心情、OpenAI=魅力、智谱=全能六折），强度看稀有度（UR +50%、UTR +75% 起）与好感（×1.0/1.15/1.3）。<b>好感满 90 解锁该伙伴专属行动卡</b>（每天 1 次）；重复卡折好感 +10，同卡满 3 张升 1 星（每星效果 +8%）。</p>
   <p><b>资产</b>：住房升级链改善周租与睡眠；行情系统低买高卖（波动真实且与事件联动），持仓与房产计入净资产。</p>
@@ -3521,7 +3551,13 @@ function handleAction(id){
   }
   renderAll();
   if(S.ending){ setTimeout(()=>showEnding(S.ending), 450); return; }
-  if(!anyActionAvailable()) toast('💤 体力见底：结束今天，或用道具/明天再战', 2600);
+  if(res.dayEnded){
+    // 时间格耗尽：自动进入日切（不需要确认，节奏由时钟驱动）
+    toast('🌙 今天的格数用完了，收工', 1600);
+    setTimeout(()=>handleConfirmEndDay(), 600);
+    return;
+  }
+  if(!anyActionAvailable()) toast('💤 体力见底：提前收工，或用道具/明天再战', 2600);
 }
 function goldSmall(){ const g=document.getElementById('goldflash'); if(g){ g.classList.remove('go'); void g.offsetWidth; g.classList.add('go'); } }
 function bigMoneyFromLine(line){
@@ -3532,13 +3568,14 @@ function bigMoneyFromLine(line){
   bigMoneyPop(amt);
 }
 
-/** 「结束今天」→ 确认弹窗 */
+/** 「提前收工」→ 确认弹窗（时间格没用完也不补发，纯粹提前结束） */
 function handleEndDay(){
   if(S.ending){ toast('本局已结束，开个新周目再战'); return; }
-  showModal(`<h3>🛏 结束今天<button class="x" data-act="close-modal">×</button></h3>
-  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡一觉<b>体力回满</b>（心情 -8，好房子有加成）${dayHint()}</p>
+  const left = Math.max(0, S.life.timeLeft || 0);
+  showModal(`<h3>🛏 提前收工<button class="x" data-act="close-modal">×</button></h3>
+  <p>今天还剩 <b>${left}/${LIFE.SLOTS_PER_DAY} 格</b>没用掉（不补发）。睡觉后：<b>随机事件 1~2 个</b> → <b>体力回满</b>（心情 -8，好房子有加成）${dayHint()}</p>
   <button class="big-btn" data-act="confirm-end-day">天黑了，睡觉 →</button>
-  <button class="big-btn ghost" data-act="close-modal">再肝一会儿 →</button>`);
+  <button class="big-btn ghost" data-act="close-modal">再干一会儿 →</button>`);
 }
 function dayHint(){
   const nextDay = S.life.day + 1;

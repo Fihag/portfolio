@@ -2,7 +2,7 @@
    LLMLife · 渲染层 (ui/render.js)
    状态变化后全量重渲：头部芯片 / 生活页 / 伙伴页 / 背包页 / 数据页
    ================================================================ */
-import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA, HOUSES, HOUSE_EQUITY, MARKET, STOCK_SLOTS, assetsOf, houseOf } from "../config.js";
+import { ACTIONS, MODELS, MMAP, RARITY, LIFE, POOLS, MILESTONES, ENDINGS, ITEMS, PITY_MAX, endingScore, CHAPTER_TITLES, CAREERS, DUO_STAMINA, DUO_SLOTS, HOUSES, HOUSE_EQUITY, MARKET, STOCK_SLOTS, assetsOf, houseOf } from "../config.js";
 import { S, $, fmt, dayLog } from "../state.js";
 import { holdingsValue } from "../market.js";
 import { iconImg } from "../fx.js";
@@ -49,6 +49,14 @@ function renderLife(){
   bar('bar-charm', a.charm);
   const moodCard = $('attr-mood-card'); if(moodCard) moodCard.classList.toggle('low', a.mood < LIFE.MOOD_LOW);
   const stCard = $('attr-stamina-card'); if(stCard) stCard.classList.toggle('low', a.stamina < 25);
+  // 时间格点阵（今日剩余）：格尽即自动收工，玩家一眼看到还剩多少事能做
+  const track = $('slot-track');
+  if(track){
+    const left = Math.max(0, S.life.timeLeft || 0);
+    track.innerHTML = Array.from({length: LIFE.SLOTS_PER_DAY}, (_, i) =>
+      `<i class="${i < left ? 'on' : ''}"></i>`).join('');
+    const stxt = $('slot-txt'); if(stxt) stxt.textContent = `${left}/${LIFE.SLOTS_PER_DAY} 格`;
+  }
 
   // 行动按钮：按职级 + 满好感同行卡重建（此后只刷禁用态）
   const barEl = $('act-bar');
@@ -71,7 +79,7 @@ function renderLife(){
       <button class="act-btn duo" data-actbtn="${c.id}" title="${c.desc}">
         <div class="ic">${c.icon}</div>
         <div class="nm">${c.name}</div>
-        <div class="cost">⚡-${DUO_STAMINA}</div>
+        <div class="cost">🕒${DUO_SLOTS}格 ⚡-${DUO_STAMINA}</div>
         <div class="desc">${c.desc}</div>
       </button>`),
       ...previews.map(x => `
@@ -160,6 +168,7 @@ function renderLife(){
 
 function costText(x){
   const parts = [];
+  if(x.slots) parts.push(`🕒${x.slots}格`);
   if(x.stamina) parts.push(`⚡-${x.stamina}`);
   if(x.money) parts.push(`¥-${x.money}`);
   if(x.recover) parts.push(`⚡+${x.recover}`);

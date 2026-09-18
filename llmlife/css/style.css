@@ -593,3 +593,11 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .mkt-btns{display:flex;gap:5px}
 .mkt-btns .mini-btn{padding:4px 9px;font-size:10.5px}
 .mkt-btns .mini-btn.sell{background:#f6ffed;border-color:#c9e7bd;color:var(--green)}
+
+/* ---------- 时间格（主玩法改造）：今日剩余时间点阵 ---------- */
+.slot-line{display:flex;align-items:center;gap:8px;margin:8px 0 2px}
+.slot-lb{font-size:11px;color:var(--dim);font-weight:700;white-space:nowrap}
+.slot-track{display:flex;gap:3px;flex:1}
+.slot-track i{flex:1;height:9px;border-radius:3px;background:var(--line);display:block;transition:.15s}
+.slot-track i.on{background:linear-gradient(135deg,var(--blue),#7c3aed)}
+.slot-tx{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;min-width:54px;text-align:right}

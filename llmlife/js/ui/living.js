@@ -45,7 +45,13 @@ export function handleAction(id){
   }
   renderAll();
   if(S.ending){ setTimeout(()=>showEnding(S.ending), 450); return; }
-  if(!anyActionAvailable()) toast('💤 体力见底：结束今天，或用道具/明天再战', 2600);
+  if(res.dayEnded){
+    // 时间格耗尽：自动进入日切（不需要确认，节奏由时钟驱动）
+    toast('🌙 今天的格数用完了，收工', 1600);
+    setTimeout(()=>handleConfirmEndDay(), 600);
+    return;
+  }
+  if(!anyActionAvailable()) toast('💤 体力见底：提前收工，或用道具/明天再战', 2600);
 }
 function goldSmall(){ const g=document.getElementById('goldflash'); if(g){ g.classList.remove('go'); void g.offsetWidth; g.classList.add('go'); } }
 function bigMoneyFromLine(line){
@@ -56,13 +62,14 @@ function bigMoneyFromLine(line){
   bigMoneyPop(amt);
 }
 
-/** 「结束今天」→ 确认弹窗 */
+/** 「提前收工」→ 确认弹窗（时间格没用完也不补发，纯粹提前结束） */
 export function handleEndDay(){
   if(S.ending){ toast('本局已结束，开个新周目再战'); return; }
-  showModal(`<h3>🛏 结束今天<button class="x" data-act="close-modal">×</button></h3>
-  <p>跳过剩余行动进入日切：<b>随机事件 1~2 个</b> → 睡一觉<b>体力回满</b>（心情 -8，好房子有加成）${dayHint()}</p>
+  const left = Math.max(0, S.life.timeLeft || 0);
+  showModal(`<h3>🛏 提前收工<button class="x" data-act="close-modal">×</button></h3>
+  <p>今天还剩 <b>${left}/${LIFE.SLOTS_PER_DAY} 格</b>没用掉（不补发）。睡觉后：<b>随机事件 1~2 个</b> → <b>体力回满</b>（心情 -8，好房子有加成）${dayHint()}</p>
   <button class="big-btn" data-act="confirm-end-day">天黑了，睡觉 →</button>
-  <button class="big-btn ghost" data-act="close-modal">再肝一会儿 →</button>`);
+  <button class="big-btn ghost" data-act="close-modal">再干一会儿 →</button>`);
 }
 function dayHint(){
   const nextDay = S.life.day + 1;

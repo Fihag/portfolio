@@ -3,7 +3,7 @@
    行动执行 / 日切 / 周结算 / 随机事件 / 年龄与结局判定 / 成就
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
-import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP, houseOf } from "./config.js";
+import { ACTIONS, EVENTS, LIFE, PROBS, MILESTONES, ENDINGS, ENDING_BROKE, ENDING_CHOSEN, endingScore, CLIENT_REQS, WORK_TXT, CHAPTER_TITLES, CAREERS, CHOICE_EVENTS, PARTNER_EVENTS, DUO_FX, DUO_STAMINA, DUO_SLOTS, DUO_EFFECT_MIN, DUO_STAR_PCT, MMAP, houseOf } from "./config.js";
 import { tickMarket, shockMarket } from "./market.js";
 import { S, save, addLedger, fmt, setState, defaultState, logToday, pick, bumpWeekStat } from "./state.js";
 import { slotBoosts, favorAll, staminaCeiling, activePartners, effectOf } from "./partners.js";
@@ -61,6 +61,7 @@ function doDuo(actionId){
   const fx = DUO_FX[effectOf(m)] || {};
   const mul = 1 + (p.stars || 0) * DUO_STAR_PCT;
   S.life.attrs.stamina -= DUO_STAMINA;
+  S.life.timeLeft -= DUO_SLOTS;
   const applied = [];
   if(fx.money){
     const amt = Math.round(fx.money * mul);
@@ -92,6 +93,7 @@ export function canDo(actionId){
     const inSlot = p && S.slots.includes(uid);
     if(!p || !inSlot || p.favor < DUO_EFFECT_MIN) return {ok:false, reason:'同行卡需要该伙伴随行且好感满级（90）'};
     if((S.life.duoUsed || {})[uid] === S.life.day) return {ok:false, reason:'今天就同行过一次了，来日方长'};
+    if(DUO_SLOTS > S.life.timeLeft) return {ok:false, reason:'今天的时间格不够了，收工歇着吧'};
     if(DUO_STAMINA > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
     return {ok:true};
   }
@@ -99,7 +101,8 @@ export function canDo(actionId){
   if(!a) return {ok:false, reason:'未知行动'};
   if((a.tier||0) > S.life.tier) return {ok:false, reason:`职级不足：晋升「${CAREERS[a.tier].name}」后解锁`};
   if(actionId === 'rest' && S.life.restUsed >= LIFE.REST_PER_DAY)
-    return {ok:false, reason:'今天已经躺平过了，再用道具回体力或结束今天'};
+    return {ok:false, reason:'今天已经躺平过了，再用道具回体力或提前收工'};
+  if((a.slots || 1) > S.life.timeLeft) return {ok:false, reason:'今天的时间格不够了，收工歇着吧'};
   if(a.stamina > S.life.attrs.stamina) return {ok:false, reason:'体力不够了，先躺平休息'};
   if(a.money > S.money) return {ok:false, reason:'钱包不够了，先去打工'};
   return {ok:true};
@@ -124,8 +127,10 @@ export function doAction(actionId){
     logToday(line);
     for(const m of checkMilestones()) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
     for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
+    const dayEnded = S.life.timeLeft <= 0;
+    if(dayEnded) lines.push('🌙 今天的格数用完了，收工');
     save();
-    return {ok:true, line, lines};
+    return {ok:true, line, lines, dayEnded};
   }
   const a = ACTION_MAP[actionId];
   const boosts = slotBoosts();
@@ -133,6 +138,7 @@ export function doAction(actionId){
   const applied = [];
 
   if(a.stamina) attr.stamina -= a.stamina;
+  if(a.slots) S.life.timeLeft -= a.slots;
   if(a.money){ S.money -= a.money; addLedger(a.name, -a.money); }
   if(actionId === 'rest') S.life.restUsed++;
   bumpWeekStat(actionId);
@@ -195,9 +201,11 @@ export function doAction(actionId){
   const msNew = checkMilestones();
   for(const m of msNew) lines.push(`🏅 成就达成「${m.title}」${m.tag}`);
   for(const gl of checkGoals()){ lines.push(gl); logToday(gl); }
-  if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或结束今天');
+  const dayEnded = S.life.timeLeft <= 0;
+  if(dayEnded) lines.push('🌙 今天的格数用完了，收工');
+  else if(!anyActionAvailable()) lines.push('💤 体力见底，躺平/道具回血或提前收工');
   save();
-  return {ok:true, line, lines};
+  return {ok:true, line, lines, dayEnded};
 }
 
 /* ---------- 加权抽取事件（chainOnly 后续事件不进随机池） ---------- */
@@ -356,6 +364,7 @@ export function endDay(){
   }
   S.life.day++;
   S.life.restUsed = 0;
+  S.life.timeLeft = LIFE.SLOTS_PER_DAY; // 新的一天满格
   tickMarket(); // 行情逐日随机游走
   dueChains(lines); // 旧决定的下文：到期注入（负面效果也照常结算）
   const attr = S.life.attrs;

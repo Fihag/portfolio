@@ -57,6 +57,10 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect(play.disabled).toBe(false);
     const rest = btns.find(b => b.dataset.actbtn === "rest");
     expect(rest.disabled).toBe(false);
+    // 时间格：卡片成本行显示格数，点阵 12 格全亮
+    expect(work.querySelector(".cost").textContent).toContain("🕒3格");
+    expect(document.querySelectorAll("#slot-track i").length).toBe(12);
+    expect($("slot-txt").textContent).toBe("12/12 格");
   });
 
   it("职业芯片与本周目标面板渲染", async () => {
@@ -73,7 +77,7 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     const btn = document.querySelector('[data-actbtn="work"]');
     btn.click();
     expect(NS.S.money).not.toBe(before);
-    expect($("h-stamina").textContent).toBe("62/100");
+    expect($("h-stamina").textContent).toBe("76/100");
     expect($("day-log").textContent.length).toBeGreaterThan(5);
   });
 
@@ -138,6 +142,24 @@ describe("整应用冒烟（main.js + 真实 index.html）", () => {
     expect(houses.length).toBe(4);
     renderAll();
     expect(document.querySelector("#house-zone .house-card.cur").textContent).toContain("一居室");
+  });
+
+  it("时间格耗尽 → 自动收工日切（不必点收工按钮）", async () => {
+    PROBS.EVENT = 0;
+    NS.S.life.attrs.stamina = 100;
+    NS.S.money = 5000;
+    NS.S.life.timeLeft = 3; // 只留一次打工的量
+    renderAll();
+    const day = NS.S.life.day;
+    document.querySelector('[data-actbtn="work"]').click();
+    expect(NS.S.life.timeLeft).toBe(0);
+    expect(NS.S.life.day).toBe(day); // 此刻尚未日切（留 toast 演出）
+    await new Promise(r => setTimeout(r, 900));
+    expect(NS.S.life.day).toBe(day + 1);                       // 自动收工
+    expect(NS.S.life.timeLeft).toBe(CFG.LIFE.SLOTS_PER_DAY);    // 新的一天满格
+    expect($("modal-mask").classList.contains("show")).toBe(true); // 新的一天弹窗
+    document.querySelector("#modal-box .big-btn").click();
+    expect($("modal-mask").classList.contains("show")).toBe(false);
   });
 
   it("结束今天 → 新的一天弹窗 → 日期推进", () => {

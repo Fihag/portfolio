@@ -130,20 +130,29 @@ describe("回合引擎", () => {
     expect(canDo("work").ok).toBe(true);  // 其他行动不受躺平限制
   });
 
-  it("无行动点上限：体力足够时可连续行动，日切只由结束今天触发", () => {
+  it("时间格制：行动吃格、格不够被拒、格尽标记收工、日切回满", () => {
     PROBS.EVENT = 0;
-    S.life.attrs.stamina = 100;
     S.money = 1000;
+    S.life.attrs.stamina = LIFE.STAMINA_MAX;
     const day = S.life.day;
-    doAction("work"); // 100 → 62
-    doAction("work"); // 62 → 24
-    expect(S.stats.workDays).toBe(2);
-    expect(S.life.day).toBe(day); // 不再自动日切
-    doAction("rest"); // 24 → 64（每天 1 次）
-    doAction("work"); // 64 → 26，一天第三份工
-    expect(S.stats.workDays).toBe(3);
-    expect(S.life.day).toBe(day);
-    expect(S.life.restUsed).toBe(1);
+    expect(S.life.timeLeft).toBe(LIFE.SLOTS_PER_DAY);
+    doAction("work"); // 🕒3 ⚡24
+    expect(S.life.timeLeft).toBe(LIFE.SLOTS_PER_DAY - 3);
+    doAction("learn"); // 🕒2 ⚡20
+    expect(S.life.timeLeft).toBe(LIFE.SLOTS_PER_DAY - 5);
+    S.life.timeLeft = 1; // 只剩 1 格
+    expect(canDo("work").ok).toBe(false);
+    expect(canDo("work").reason).toContain("时间格");
+    expect(canDo("rest").ok).toBe(true); // 1 格的行动还做得动
+    S.life.timeLeft = 3;
+    S.life.attrs.stamina = LIFE.STAMINA_MAX;
+    const r = doAction("work");
+    expect(S.life.timeLeft).toBe(0);
+    expect(r.dayEnded).toBe(true);   // 引擎侧标记「该收工了」
+    expect(S.life.day).toBe(day);    // 日切本身仍由 endDay 执行
+    endDay();
+    expect(S.life.day).toBe(day + 1);
+    expect(S.life.timeLeft).toBe(LIFE.SLOTS_PER_DAY);
   });
 
   it("结束今天：日切推进、躺平次数重置", () => {
@@ -211,8 +220,8 @@ describe("回合引擎", () => {
     expect(S.life.attrs.stamina).toBe(60);
   });
 
-  it("撸铁比打工更累：42 体力门槛", () => {
-    S.life.attrs.stamina = 38; // 够打工但不够撸铁
+  it("撸铁比打工更累：体力门槛更高", () => {
+    S.life.attrs.stamina = 26; // 够打工（24）但不够撸铁（28）
     expect(canDo("work").ok).toBe(true);
     expect(canDo("gym").ok).toBe(false);
   });

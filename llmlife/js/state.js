@@ -29,7 +29,7 @@ export function defaultState(){
     ng:0, endingsSeen:{},
     /* 本章起点快照（年度结算做同比差用），随章节推进滚动更新 */
     chStart:{ day:1, money:START_MONEY, earned:0, spent:0, workDays:0, pulls:0 },
-    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0,
+    life:{ day:1, restUsed:0, age:LIFE.START_AGE, tier:0, house:0, timeLeft:LIFE.SLOTS_PER_DAY,
       attrs:{stamina:LIFE.STAMINA_MAX, mood:70, skill:5, charm:10},
       staminaMax:LIFE.STAMINA_MAX,
       weekStats:freshWeekStats(), goals:null,
@@ -71,7 +71,7 @@ function normalizeV2(s){
   // 字段级兜底（v2 起步；未来 ver 升级在此追加迁移段）
   if(!s.life || typeof s.life!=='object') s.life = defaultState().life;
   if(!s.life.attrs) s.life.attrs = {stamina:100,mood:70,skill:5,charm:10};
-  for(const k of ['day','age','staminaMax','tier','house']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
+  for(const k of ['day','age','staminaMax','tier','house','timeLeft']) if(s.life[k]==null) s.life[k] = defaultState().life[k];
   if(s.life.restUsed==null) s.life.restUsed = 0;
   if(!s.life.weekStats || typeof s.life.weekStats!=='object') s.life.weekStats = freshWeekStats();
   if(s.life.goals != null && (typeof s.life.goals!=='object' || !Array.isArray(s.life.goals.items))) s.life.goals = null;

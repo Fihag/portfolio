@@ -58,16 +58,19 @@ describe("周目标引擎", () => {
     S.life.goals = { wk: weekOf(), items: [{ id: "g_learn5", done: false }] };
     for(let i = 0; i < 4; i++){
       S.life.attrs.stamina = 100;
+      S.life.timeLeft = LIFE.SLOTS_PER_DAY; // 本用例测目标计数，显式补满日预算
       doAction("learn");
     }
     expect(S.life.weekStats.learn).toBe(4);
     expect(goalProg(S.life.goals.items[0])).toBeCloseTo(0.8);
     S.life.attrs.stamina = 100;
+    S.life.timeLeft = LIFE.SLOTS_PER_DAY;
     const hit = doAction("learn"); // 第 5 次 → 达成
     expect(S.life.goals.items[0].done).toBe(true);
     expect(hit.lines.join("\n")).toContain("周目标「本周学习 5 次」达成");
     expect(S.life.attrs.skill).toBeGreaterThanOrEqual(5 + 4 * 2 + 3); // 5次学习 + 奖励技能
     S.life.attrs.stamina = 100;
+    S.life.timeLeft = LIFE.SLOTS_PER_DAY;
     const again = doAction("learn");
     expect(again.lines.join("\n")).not.toContain("周目标"); // 不重复发奖
     expect(again.lines.join("\n")).not.toContain("🎯");
