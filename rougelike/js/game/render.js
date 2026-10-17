@@ -183,9 +183,7 @@
                             const sy = st.y - (1 - p) * 380;
                             ctx.save();
                             ctx.translate(st.x, sy);
-                            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
-                            grad.addColorStop(0, '#ffff88'); grad.addColorStop(0.4, '#ff6600'); grad.addColorStop(1, 'rgba(255,0,0,0)');
-                            ctx.fillStyle = grad;
+                            ctx.fillStyle = cachedRadial('divineMeteor', 0, 18, [[0, '#ffff88'], [0.4, '#ff6600'], [1, 'rgba(255,0,0,0)']]);
                             ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
                             ctx.restore();
                             ctx.strokeStyle = 'rgba(255,150,0,0.65)'; ctx.lineWidth = 4;
@@ -287,14 +285,14 @@
                 if (game.clouds && game.clouds.length) {
                     for (const c of game.clouds) {
                         const a = clamp(c.life / c.maxLife, 0, 1);
+                        const cr = Math.ceil(c.radius * 0.8);
                         for (let k = 0; k < 3; k++) {
                             const ang = game.time * 2 + (Math.PI * 2 / 3) * k;
                             const ox = Math.cos(ang) * c.radius * 0.25, oy = Math.sin(ang) * c.radius * 0.25;
-                            const g = ctx.createRadialGradient(c.x + ox, c.y + oy, 0, c.x + ox, c.y + oy, c.radius * 0.8);
-                            g.addColorStop(0, `rgba(90,200,60,${0.16 * a})`);
-                            g.addColorStop(1, 'rgba(90,200,60,0)');
-                            ctx.fillStyle = g;
-                            ctx.beginPath(); ctx.arc(c.x + ox, c.y + oy, c.radius * 0.8, 0, Math.PI * 2); ctx.fill();
+                            // 三团共用同一缓存渐变，仅位置不同；α 从色标挪到 globalAlpha（0.16×a 等价）
+                            ctx.save(); ctx.translate(c.x + ox, c.y + oy); ctx.globalAlpha = a;
+                            ctx.fillStyle = cachedRadial('plagueCloud', 0, cr, [[0, 'rgba(90,200,60,0.16)'], [1, 'rgba(90,200,60,0)']]);
+                            ctx.beginPath(); ctx.arc(0, 0, cr, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                         }
                         ctx.strokeStyle = `rgba(120,220,80,${0.5 * a})`;
                         ctx.lineWidth = 2;
@@ -314,10 +312,9 @@
                             ctx.arc(wl.x, wl.y, wl.radius * (0.30 + 0.10 * k), wl.spin + Math.PI * k, wl.spin + Math.PI * k + Math.PI * 1.2);
                             ctx.stroke();
                         }
-                        const g = ctx.createRadialGradient(wl.x, wl.y, 0, wl.x, wl.y, 26);
-                        g.addColorStop(0, '#0a0410'); g.addColorStop(0.7, '#241038'); g.addColorStop(1, 'rgba(80,40,140,0)');
-                        ctx.fillStyle = g;
-                        ctx.beginPath(); ctx.arc(wl.x, wl.y, 26, 0, Math.PI * 2); ctx.fill();
+                        ctx.save(); ctx.translate(wl.x, wl.y);
+                        ctx.fillStyle = cachedRadial('wellCore', 0, 26, [[0, '#0a0410'], [0.7, '#241038'], [1, 'rgba(80,40,140,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                         ctx.fillStyle = '#e8d5ff';
                         ctx.beginPath(); ctx.arc(wl.x, wl.y, 3, 0, Math.PI * 2); ctx.fill();
                     }

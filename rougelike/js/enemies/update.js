@@ -1,3 +1,54 @@
+            // ==================== 敌人分离力空间网格 ====================
+            // 64px 网格 + 3×3 邻域：最大分离距离 (34+34)*0.9≈61 < 64，距离 <61 的一对必然落在邻格。
+            // 公式/系数与逐对遍历一致，仅浮点累加顺序不同；月领域等越界坐标进 overflow 列表全量参与。
+            const SEP_CELL = 64;
+            const SEP_COLS = Math.ceil(WORLD_W / SEP_CELL);
+            const SEP_ROWS = Math.ceil(WORLD_H / SEP_CELL);
+            const _sepGrid = [];
+            for (let i = 0; i < SEP_COLS * SEP_ROWS; i++) _sepGrid.push([]);
+            const _sepOverflow = [];
+            let _sepBuiltTime = -1;
+            let _sepOutX = 0, _sepOutY = 0;
+            function buildSepGrid(enemies, stamp) {
+                for (let i = 0; i < _sepGrid.length; i++) _sepGrid[i].length = 0;
+                _sepOverflow.length = 0;
+                for (const e of enemies) {
+                    if (!e.alive) continue;
+                    const cx = Math.floor(e.x / SEP_CELL), cy = Math.floor(e.y / SEP_CELL);
+                    if (cx >= 0 && cx < SEP_COLS && cy >= 0 && cy < SEP_ROWS) _sepGrid[cy * SEP_COLS + cx].push(e);
+                    else _sepOverflow.push(e);
+                }
+                _sepBuiltTime = stamp;
+            }
+            // 结果写入 _sepOutX/_sepOutY，避免每帧每敌人返回数组的分配
+            function sepForce(e) {
+                if (_sepBuiltTime !== game.time) buildSepGrid(game.enemies, game.time);
+                let sx = 0, sy = 0;
+                const cx = Math.floor(e.x / SEP_CELL), cy = Math.floor(e.y / SEP_CELL);
+                const gx0 = cx < 0 ? 0 : (cx >= SEP_COLS ? SEP_COLS - 1 : cx);
+                const gy0 = cy < 0 ? 0 : (cy >= SEP_ROWS ? SEP_ROWS - 1 : cy);
+                for (let gy = gy0 - 1; gy <= gy0 + 1; gy++) {
+                    if (gy < 0 || gy >= SEP_ROWS) continue;
+                    for (let gx = gx0 - 1; gx <= gx0 + 1; gx++) {
+                        if (gx < 0 || gx >= SEP_COLS) continue;
+                        const cell = _sepGrid[gy * SEP_COLS + gx];
+                        for (let i = 0; i < cell.length; i++) {
+                            const other = cell[i];
+                            if (other === e || !other.alive) continue;
+                            const od = dist(e, other), minDist = (e.size + other.size) * 0.9;
+                            if (od < minDist && od > 0) { sx += (e.x - other.x) / od * (minDist - od) * 0.5; sy += (e.y - other.y) / od * (minDist - od) * 0.5; }
+                        }
+                    }
+                }
+                for (let i = 0; i < _sepOverflow.length; i++) {
+                    const other = _sepOverflow[i];
+                    if (other === e || !other.alive) continue;
+                    const od = dist(e, other), minDist = (e.size + other.size) * 0.9;
+                    if (od < minDist && od > 0) { sx += (e.x - other.x) / od * (minDist - od) * 0.5; sy += (e.y - other.y) / od * (minDist - od) * 0.5; }
+                }
+                _sepOutX = sx; _sepOutY = sy;
+            }
+
             Enemy.prototype.update = function(dt, player) {
                     if (!this.alive) return;
                     if (this.flashTimer > 0) this.flashTimer -= dt;
@@ -839,15 +890,10 @@
                         const rd = Math.hypot(rx, ry) || 0.01;
                         mx = rx / rd; my = ry / rd;
                     }
-                    let sepX = 0, sepY = 0;
-                    for (const other of game.enemies) {
-                        if (other === this || !other.alive) continue;
-                        const od = dist(this, other), minDist = (this.size + other.size) * 0.9;
-                        if (od < minDist && od > 0) { sepX += (this.x - other.x) / od * (minDist - od) * 0.5; sepY += (this.y - other.y) / od * (minDist - od) * 0.5; }
-                    }
                     // 天罚炮台固定阵地：完全跳过位置更新（speed 0 + 免分离力）
                     if (this.typeKey !== 'turret') {
-                        this.x += mx * spd * dt + sepX * dt * 0.8; this.y += my * spd * dt + sepY * dt * 0.8;
+                        sepForce(this);
+                        this.x += mx * spd * dt + _sepOutX * dt * 0.8; this.y += my * spd * dt + _sepOutY * dt * 0.8;
                     }
                     if ((this.typeKey === 'moonwitch' || this.typeKey === 'moonshade') && game.moonDomain && game.moonDomain.active) {
                         // 月之领域内实体：只受领域圆约束（领域位于世界外坐标，禁用世界钳制）

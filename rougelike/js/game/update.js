@@ -269,7 +269,7 @@
                                         if (proj.pierceHit.has(enemy)) continue;
                                         proj.pierceHit.add(enemy);
                                     }
-                                    enemy.takeDamage(proj.damage, 'projectile');
+                                    enemy.takeDamage(proj.damage, proj.source || 'projectile');
                                     sound.play('hit');
                                     if (proj.knockback) {
                                         const kd = Math.hypot(enemy.x - proj.x, enemy.y - proj.y) || 1;
@@ -283,7 +283,7 @@
                                         const splashDmg = proj.damage * proj.splashDamagePercent;
                                         for (const other of game.enemies) {
                                             if (!other.alive || other === enemy) continue;
-                                            if (dist(proj, other) < proj.splashRadius) other.takeDamage(splashDmg, 'projectile');
+                                            if (dist(proj, other) < proj.splashRadius) other.takeDamage(splashDmg, proj.source || 'projectile');
                                         }
                                     }
                                     if (!proj.pierceAll) proj.alive = false;
@@ -303,6 +303,8 @@
                             }
                         }
                     }
+                    // 分离力网格每帧基于最新位置构建一次（sepForce 内按 game.time 戳兜底）
+                    buildSepGrid(game.enemies, game.time);
                     for (const enemy of game.enemies) if (enemy.alive) enemy.update(cappedDt, player);
                     game.enemies = game.enemies.filter(e => e.alive);
                     // 贪婪之石：经验球自动飞向玩家（全图吸引）
@@ -335,6 +337,11 @@
                             spawnWaveElites();
                         }
                     } else if (game.waveState === 'active') {
+                        // 分批刷精英：由游戏循环驱动（本分支仅在 playing 态执行，暂停/升级/掉落/结算期间自然不推进）
+                        if (game.waveEliteLeft > 0) {
+                            game.waveBatchTimer -= cappedDt;
+                            if (game.waveBatchTimer <= 0) game.waveBatchTimer = spawnWaveBatch();
+                        }
                         // 精英全部清除后空投宝箱
                         const eliteLeft = game.enemies.filter(e => e.alive && e.isElite).length;
                         if (eliteLeft <= 0) {
@@ -404,7 +411,9 @@
                                     const ang = Math.atan2(target.y - game.cloneY, target.x - game.cloneX);
                                     const spd = 340;
                                     const dmg = (30 + player.level * 2) * (player.globalDamageMultiplier || 1) * player.getRiskMult() * player.getLowHpMult();
-                                    game.projectiles.push(new Projectile(game.cloneX, game.cloneY, Math.cos(ang) * spd, Math.sin(ang) * spd, dmg, 0, 0, '#7a3aff', 5));
+                                    const cloneProj = new Projectile(game.cloneX, game.cloneY, Math.cos(ang) * spd, Math.sin(ang) * spd, dmg, 0, 0, '#7a3aff', 5);
+                                    cloneProj.source = 'guard';
+                                    game.projectiles.push(cloneProj);
                                 }
                                 sound.play('shoot');
                                 spawnParticles(game.cloneX, game.cloneY, 8, '#7a3aff', 70, 0.35, 3);
@@ -527,9 +536,9 @@
                         const diffNow = DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal;
                         game.spawnInterval = Math.max(diffNow.spawnMin, diffNow.spawnInterval - (newDiff - diffNow.diffStart) * diffNow.spawnStep);
                     }
-                    for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
-                    for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
-                    for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
+                    updateParticlesInPlace(cappedDt);
+                    updateDamageNumbersInPlace(cappedDt);
+                    updateDeathTextsInPlace(cappedDt);
                     // 特效环扩散
                     if (game.rings) {
                         for (let i = game.rings.length - 1; i >= 0; i--) {
@@ -559,9 +568,9 @@
                             if (lockHint) lockHint.textContent = Math.ceil(game.levelupLock) + ' 秒后可选择';
                         }
                     }
-                    for (const p of particles) p.update(cappedDt); particles = particles.filter(p => p.alive);
-                    for (const dn of damageNumbers) dn.update(cappedDt); damageNumbers = damageNumbers.filter(dn => dn.alive);
-                    for (const dt2 of deathTexts) dt2.update(cappedDt); deathTexts = deathTexts.filter(dt2 => dt2.alive);
+                    updateParticlesInPlace(cappedDt);
+                    updateDamageNumbersInPlace(cappedDt);
+                    updateDeathTextsInPlace(cappedDt);
                     if (game.rings) {
                         for (let i = game.rings.length - 1; i >= 0; i--) {
                             const rg = game.rings[i];

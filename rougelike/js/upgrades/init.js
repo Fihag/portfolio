@@ -40,7 +40,7 @@
                     game.player.soulShieldAmount = game.player.soulShieldMax;
                 }
                 game.soulShards = 0;
-                game.waveTimer = WAVE_INTERVAL; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0;
+                game.waveTimer = WAVE_INTERVAL; game.waveState = 'idle'; game.waveEliteLeft = 0; game.waveNoticeTimer = 0; game.waveBatchTimer = 0;
                 game.chests = [];
                 game.lavaWarns = [];
                 // 定时炸弹：穿戴时首爆固定在开局 10 秒后（此前提前赋值被下方清零覆盖，导致开局瞬间即爆）
@@ -49,12 +49,12 @@
                 // 影侍守卫/时停领域计时器复位；时停为主动技能，开局即可使用
                 game.cloneTimer = 10; game.cloneAngle = 0; game.cloneX = undefined; game.cloneY = undefined;
                 game.timeStopTimer = 0;
-                game.superBossSpawned = false; game.bossKilledCount = 0;
+                game.superBossSpawned = false; game.bossKilledCount = 0; game.bossKillsTotal = 0;
                 game.lastBossKillTime = undefined;
                 game.achievements = {};
                 game.enemies = []; game.projectiles = []; game.experienceOrbs = [];
-                particles = []; damageNumbers = [];
-                game.time = 0; game.score = 0; game.kills = 0; game.totalDamageDealt = 0;
+                particles.length = 0; damageNumbers.length = 0; deathTexts.length = 0;
+                game.time = 0; game.score = 0; game.kills = 0; game.totalDamageDealt = 0; game.damageBySource = {};
                 game.spawnTimer = 0; game.spawnInterval = diff.spawnInterval;
                 game.difficultyLevel = diff.diffStart; game.diffMult = diff.mult;
                 game.state = 'playing'; game.currentChoices = null;

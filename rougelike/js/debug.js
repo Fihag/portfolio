@@ -69,6 +69,14 @@
                 game.burningZones = [];
                 game.meteorVisuals = [];
                 game.chainLightningVisuals = [];
+                game.lavaWarns = [];
+                game.beams = [];
+                game.clouds = [];
+                game.wells = [];
+                game.divineStrikes = [];
+                game.shadowZones = [];
+                game.shadowTrails = [];
+                deathTexts.length = 0;
                 game.warningText = '[DEBUG] 已清空场上怪物'; game.warningTimer = 1.2;
             }
             function dbgSyncInputs() {

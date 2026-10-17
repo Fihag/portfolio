@@ -503,6 +503,19 @@ describe("幽月魔女与月之领域", () => {
     expect(R(`Math.abs(game.player.getEffectiveSpeed() / (game.player.speed * game.player.speedMultiplier) - 0.90) < 0.01`)).toBe(true);
   });
 
+  it("进入领域不再瞬掉血：hp 180 保持、上限锁 200，出场恢复原上限", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state = 'playing';
+       game.player.maxHp = 300; game.player.hp = 180;
+       game.moonDomain = { x: MOON_DOMAIN.x, y: MOON_DOMAIN.y, r: MOON_DOMAIN.r, active: true };
+       moonDomainEnter(game.player);`);
+    expect(R("game.player.maxHp")).toBe(200);
+    expect(R("game.player.hp")).toBe(180);
+    R("moonDomainExit(game.player)");
+    expect(R("game.player.maxHp")).toBe(300);
+    expect(R("game.player.hp")).toBe(180);
+  });
+
   it("领域钳制：玩家被拉出边界立即拉回圆内", () => {
     const { R } = loadGame();
     reachDomain(R);
@@ -722,5 +735,31 @@ describe("幽月魔女专属音频", () => {
     // 旧通用音效不应再出现在 moonAudio 之外的魔女技能调用中
     expect(src.includes("sound.play('spirit')")).toBe(false);
     expect(src.includes("sound.play('meteor')")).toBe(false);
+  });
+});
+
+describe("死亡结算复盘", () => {
+  it("展示击败 Boss 数、本局武器与伤害构成", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state = 'playing';
+       game.player.weapons.push(START_WEAPON_DEFS.orbit_blade());
+       const e = new Enemy(600, 400, 'zombie', 0);
+       e.maxHp = 10000; e.hp = 10000;
+       game.enemies.push(e);
+       e.takeDamage(75, 'magic_missile');
+       e.takeDamage(25, 'orbit');
+       const b = new Enemy(700, 400, 'boss', 0);
+       b.invincible = false; b.shieldHp = 0; b.hp = 1;
+       game.enemies.push(b);
+       b.takeDamage(10, 'magic_missile');
+       game.player.hp = 1; game.player.maxHp = 100;
+       game.player.takeDamage(999);`);
+    expect(R("game.state")).toBe("gameover");
+    expect(R("game.bossKillsTotal")).toBe(1);
+    expect(R("goBosses.textContent")).toBe("1");
+    expect(R("goWeapons.textContent")).toContain("魔法弹");
+    expect(R("goWeapons.textContent")).toContain("飞刃");
+    expect(R("goDamageSplit.textContent")).toContain("魔法弹");
+    expect(R("goDamageSplit.textContent")).toContain("飞刃");
   });
 });

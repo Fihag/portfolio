@@ -179,7 +179,7 @@
                         this.turretSplitDmg = Math.floor(22 * skGrow);      // 分裂环形弹
                         this.turretLaserDmg = Math.floor(24 * skGrow);      // 扫射激光
                         this.turretMeteorDmg = Math.floor(50 * skGrow);     // 死亡神罚陨石
-                        // 子弹弹速随难度系数（简单×0.85 → 不可能×1.3，单源 DIFFICULTIES.bulletSpd）
+                        // 子弹弹速随难度系数（简单×0.85 → 不可能×1.2，单源 DIFFICULTIES.bulletSpd）
                         this.turretSpdMult = (DIFFICULTIES[game.selectedDifficulty] || DIFFICULTIES.normal).bulletSpd || 1;
                     }
                     // ===== 幽月魔女：固定技能伤害（不走出场成长），第二次降临血量等数值 ×3、伤害单独 ×1.5，且全阶段 +15% 减伤 =====
@@ -242,6 +242,8 @@
                     this.hp -= amount;
                     this.flashTimer = 0.08;
                     game.totalDamageDealt += amount;
+                    // 结算伤害构成：按来源累计实际扣血量（护盾吸收部分不计，与 totalDamageDealt 同口径）
+                    game.damageBySource[sourceType] = (game.damageBySource[sourceType] || 0) + amount;
                     // 吸血之爪：造成伤害的 6% 回复生命；内置冷却 1 秒 + 受击后 1.5 秒失效——
                     // 高频低伤弹幕无法靠命中频率堆回血，价值锚定在单发高伤武器，且站撸循环被打破
                     if (game.player && game.player.relicVamp && amount > 0 && this.alive
@@ -325,6 +327,8 @@
                             const value = Math.floor((this.isBoss ? 80 : Math.floor(this.xpValue / orbCount)) * expBonus);
                             game.experienceOrbs.push({ x: this.x + rand(-8, 8), y: this.y + rand(-8, 8), value: value, life: 30, floatOffset: rand(0, Math.PI * 2) });
                         }
+                        // 结算用总 Boss 击杀数（含超级 Boss 与幽月魔女；与 bossKilledCount 的触发语义区分）
+                        if (this.isBoss) game.bossKillsTotal = (game.bossKillsTotal || 0) + 1;
                         if (this.isBoss && game.player) {
                             game.player.hp = Math.min(game.player.maxHp, game.player.hp + game.player.maxHp * 0.3);
                             spawnParticles(game.player.x, game.player.y, 20, '#ffd700', 80, 0.6, 6);

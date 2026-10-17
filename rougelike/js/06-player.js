@@ -1,3 +1,31 @@
+            // ==================== 结算伤害构成 ====================
+            // 武器来源 → 展示名；爆炸/荆棘/死神之指/守卫/调试等统一归入「其他」
+            const DAMAGE_SOURCE_NAMES = {
+                magic_missile: '魔法弹', orbit: '飞刃', frost: '冰霜', lightning: '闪电',
+                meteor: '陨石', fire: '陨石', holy_beam: '圣光棱镜', plague: '诅咒瘴气',
+                gravity: '引力奇点', shadow_spirit: '暗影精灵'
+            };
+            function formatDamageSplit() {
+                const map = game.damageBySource || {};
+                const total = game.totalDamageDealt || 0;
+                if (total <= 0) return '—';
+                const merged = {};
+                for (const k in map) {
+                    const name = DAMAGE_SOURCE_NAMES[k] || '其他';
+                    merged[name] = (merged[name] || 0) + map[k];
+                }
+                const list = Object.entries(merged).sort((a, b) => b[1] - a[1]);
+                const parts = [];
+                let other = 0;
+                for (let i = 0; i < list.length; i++) {
+                    // 前三名展示；「其他」与第四名之后合并为一项
+                    if (i < 3 && list[i][0] !== '其他') parts.push(list[i][0] + ' ' + Math.round(list[i][1] / total * 100) + '%');
+                    else other += list[i][1];
+                }
+                if (other > 0) parts.push('其他 ' + Math.round(other / total * 100) + '%');
+                return parts.join(' · ');
+            }
+
             // ==================== 灵魂碎片结算（死亡或返回主菜单时调用） ====================
             function settleShards() {
                 // 击杀数不足 50 不结算碎片
@@ -147,6 +175,12 @@
                         goKills.textContent = game.kills;
                         goLevel.textContent = this.level;
                         goDamage.textContent = Math.floor(game.totalDamageDealt);
+                        goBosses.textContent = String(game.bossKillsTotal || 0);
+                        goWeapons.textContent = this.weapons.map(w => {
+                            const meta = START_WEAPON_META[w.type];
+                            return (meta ? meta.name : w.type) + (w.evolved ? '·进化' : '');
+                        }).join(' / ') || '—';
+                        goDamageSplit.textContent = formatDamageSplit();
                         // 最佳记录（按难度分档存 localStorage）
                         let bestT = 0, bestK = 0, isNew = false;
                         try {
@@ -299,10 +333,11 @@
                 }
 
                 draw(ctx) {
-                    const glowAlpha = 0.5 + Math.sin(game.time * 4) * 0.2;
-                    const grad = ctx.createRadialGradient(this.x, this.y, this.size * 0.5, this.x, this.y, this.size * 2.2);
-                    grad.addColorStop(0, 'rgba(100,200,255,0.9)'); grad.addColorStop(0.5, 'rgba(60,140,220,0.4)'); grad.addColorStop(1, 'rgba(20,60,180,0)');
-                    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 2.2, 0, Math.PI * 2); ctx.fill();
+                    // 本体辉光缓存：半径整数量化后作 key，translate 到玩家位置复用同一 CanvasGradient
+                    const glowR = Math.ceil(this.size * 2.2), glowR0 = Math.ceil(this.size * 0.5);
+                    ctx.save(); ctx.translate(this.x, this.y);
+                    ctx.fillStyle = cachedRadial('playerGlow', glowR0, glowR, [[0, 'rgba(100,200,255,0.9)'], [0.5, 'rgba(60,140,220,0.4)'], [1, 'rgba(20,60,180,0)']]);
+                    ctx.beginPath(); ctx.arc(0, 0, glowR, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                     const flashOn = this.flashTimer > 0 && Math.floor(this.flashTimer * 30) % 2 === 0;
                     ctx.fillStyle = flashOn ? '#ffffff' : '#88ddff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5;
                     ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -317,12 +352,10 @@
                     if (this.soulShield) {
                         if (this.soulShieldAmount >= this.soulShieldMax - 0.01) {
                             const pulse = 0.78 + Math.sin(game.time * 6) * 0.14;
-                            const rReady = this.size + 8 + pulse * 2;
-                            const g = ctx.createRadialGradient(this.x, this.y, this.size, this.x, this.y, rReady);
-                            g.addColorStop(0, 'rgba(136,170,255,0)');
-                            g.addColorStop(0.82, 'rgba(136,170,255,0.22)');
-                            g.addColorStop(1, 'rgba(136,170,255,0)');
-                            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(this.x, this.y, rReady, 0, Math.PI * 2); ctx.fill();
+                            const rReady = Math.round(this.size + 8 + pulse * 2);
+                            ctx.save(); ctx.translate(this.x, this.y);
+                            ctx.fillStyle = cachedRadial('soulShieldReady', this.size, rReady, [[0, 'rgba(136,170,255,0)'], [0.82, 'rgba(136,170,255,0.22)'], [1, 'rgba(136,170,255,0)']]);
+                            ctx.beginPath(); ctx.arc(0, 0, rReady, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                             ctx.strokeStyle = 'rgba(136,170,255,0.9)'; ctx.lineWidth = 2.5;
                             ctx.beginPath(); ctx.arc(this.x, this.y, rReady, 0, Math.PI * 2); ctx.stroke();
                         } else {

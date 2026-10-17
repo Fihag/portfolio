@@ -44,36 +44,35 @@
             function spawnWaveElites() {
                 game.waveState = 'active';
                 game.waveEliteLeft = WAVE_ELITE_COUNT;
-                const spawnBatch = () => {
-                    if (game.waveState !== 'active' || game.waveEliteLeft <= 0) return;
-                    if (game.enemies.length >= MAX_ENEMIES) {
-                        // 场上满怪：稍后重试，避免波次卡死
-                        setTimeout(spawnBatch, 500);
-                        return;
-                    }
-                    const count = Math.min(4, game.waveEliteLeft);
-                    for (let i = 0; i < count; i++) {
-                        // 精英从玩家周围环形带空降（远离视口边缘，避免小屏贴脸）
-                        const spot = pickWorldSpot(650, 850);
-                        let x = spot.x, y = spot.y;
-                        // 精英：较高血量/伤害/速度的变体（随机类型），强化属性 + 自愈
-                        const types = ['zombie', 'runner', 'brute', 'wraith', 'pyromancer'];
-                        const typeKey = types[randInt(0, types.length - 1)];
-                        const e = new Enemy(x, y, typeKey, game.difficultyLevel + 1);
-                        e.hp = Math.floor(e.hp * 2.2); e.maxHp = e.hp;
-                        e.damage = Math.floor(e.damage * 1.8);
-                        // 突袭者（疾行者）限速：精英速度加成从 1.25 降为 1.05
-                        e.speed = e.speed * (typeKey === 'runner' ? 1.05 : 1.25);
-                        e.size = e.size * 1.3;
-                        e.isElite = true;
-                        e.eliteRegen = 0.005;
-                        game.enemies.push(e);
-                        game.waveEliteLeft--;
-                    }
-                    // 分批生成（0.4s 一批）
-                    if (game.waveEliteLeft > 0) setTimeout(spawnBatch, 400);
-                };
-                spawnBatch();
+                game.waveBatchTimer = 0; // 首批由游戏循环立即刷出
+            }
+
+            // 单批精英生成：由游戏循环在 waveState==='active' 时驱动（暂停/升级/结算期间不推进），
+            // 不再用 setTimeout——定时器回调会绕过状态机在冻结期间继续向场上推怪。
+            // 返回距下一批的秒数（场上满怪时返回更长的重试间隔，避免波次卡死）。
+            function spawnWaveBatch() {
+                if (game.enemies.length >= MAX_ENEMIES) return 0.5;
+                const count = Math.min(4, game.waveEliteLeft);
+                for (let i = 0; i < count; i++) {
+                    // 精英从玩家周围环形带空降（远离视口边缘，避免小屏贴脸）
+                    const spot = pickWorldSpot(650, 850);
+                    let x = spot.x, y = spot.y;
+                    // 精英：较高血量/伤害/速度的变体（随机类型），强化属性 + 自愈
+                    const types = ['zombie', 'runner', 'brute', 'wraith', 'pyromancer'];
+                    const typeKey = types[randInt(0, types.length - 1)];
+                    const e = new Enemy(x, y, typeKey, game.difficultyLevel + 1);
+                    e.hp = Math.floor(e.hp * 2.2); e.maxHp = e.hp;
+                    e.damage = Math.floor(e.damage * 1.8);
+                    // 突袭者（疾行者）限速：精英速度加成从 1.25 降为 1.05
+                    e.speed = e.speed * (typeKey === 'runner' ? 1.05 : 1.25);
+                    e.size = e.size * 1.3;
+                    e.isElite = true;
+                    e.eliteRegen = 0.005;
+                    game.enemies.push(e);
+                    game.waveEliteLeft--;
+                }
+                // 分批生成（0.4s 一批）
+                return 0.4;
             }
 
             function spawnChest() {
@@ -319,7 +318,7 @@
                 spawnParticles(x, y, 20, '#b090ff', 100, 0.7, 5);
             }
 
-            // 进入月之领域：锁血上限 150、受伤 +10%、禁用死神之指与全部圣物（快照备份）
+            // 进入月之领域：锁血上限 200（与 Player.update 领域内强制值一致）、禁用死神之指与全部圣物（快照备份）
             function moonDomainEnter(p) {
                 const dom = game.moonDomain;
                 if (!dom) return;
@@ -332,8 +331,8 @@
                 dom.deathMarkEnabled = game.deathMark.enabled;
                 game.deathMark.enabled = false;
                 dom.prevMaxHp = p.maxHp;
-                p.maxHp = 150;
-                p.hp = Math.min(p.hp, 150);
+                p.maxHp = 200;
+                p.hp = Math.min(p.hp, 200);
                 game.warningText = '月之领域：回复-70% 移速-10% 圣物失效';
                 game.warningTimer = 3;
             }

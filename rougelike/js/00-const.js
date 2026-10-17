@@ -14,6 +14,9 @@
             const goKills = document.getElementById('go-kills');
             const goLevel = document.getElementById('go-level');
             const goDamage = document.getElementById('go-damage');
+            const goBosses = document.getElementById('go-bosses');
+            const goWeapons = document.getElementById('go-weapons');
+            const goDamageSplit = document.getElementById('go-damage-split');
             const goShards = document.getElementById('go-shards');
             const goBestTime = document.getElementById('go-best-time');
             const goBestKills = document.getElementById('go-best-kills');
@@ -164,25 +167,27 @@ const $inp = (id) => document.getElementById(id);
                 // 起始武器记忆上次选择；合法性（是否在编队内）由 initGame 校验回落
                 selectedWeapon: (function () { try { return localStorage.getItem('rogue_weapon') || 'magic_missile'; } catch (e) { return 'magic_missile'; } })(),
                 player: null, enemies: [], projectiles: [], experienceOrbs: [],
-                time: 0, score: 0, kills: 0, totalDamageDealt: 0, spawnTimer: 0, spawnInterval: 1.3,
+                time: 0, score: 0, kills: 0, totalDamageDealt: 0, damageBySource: {}, spawnTimer: 0, spawnInterval: 1.3,
                 difficultyLevel: 1, currentChoices: null, waveNoteShown: {}, upgradeCount: 0,
                 bossTimer: 90, bossAppearedCount: 0, bossOnField: false,
                 bossWarnTimer: 0, superBossDelay: 0, levelupLock: 0, pendingSuperBoss: false,
                 warningText: '', warningTimer: 0,
                 fireZones: [], // 炎术士死亡火焰区域
+                lavaWarns: [], // 熔岩巨兽喷发预警圈
                                 chainLightningVisuals: [], // 闪电链视觉效果
                 burningZones: [], // 星落燃烧区域
                 shadowZones: [], // 暗影刺客残影减速区域
                 shadowTrails: [], // 暗影刺客瞬移拖影
                 bossDropChoices: null,
                 bossDropPending: false,
+                rerollUsed: false,
                 runId: 0,
                 soulShards: 0,
-                waveTimer: 60, waveState: 'idle', waveEliteLeft: 0, waveNoticeTimer: 0,
+                waveTimer: 60, waveState: 'idle', waveEliteLeft: 0, waveNoticeTimer: 0, waveBatchTimer: 0,
                 chests: [],
                 bombTimer: 0,
                 altars: [], altarTimer: 45,
-                superBossSpawned: false, bossKilledCount: 0,
+                superBossSpawned: false, bossKilledCount: 0, bossKillsTotal: 0,
                 achievements: {},
                 meteorVisuals: [],
                 noBossDrop: false,

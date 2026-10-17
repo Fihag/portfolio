@@ -134,7 +134,7 @@ describe("常规 Boss 数值回归", () => {
   });
 });
 
-describe("六把基础武器数值回归", () => {
+describe("基础武器数值回归（经典六把）", () => {
   it("基础字段（伤害 / 冷却 / 半径 / 数量 / 溅射）", () => {
     const { R } = loadGame();
     const BASE = {

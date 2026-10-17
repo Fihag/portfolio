@@ -66,10 +66,12 @@
                         const charging = this.turretLaserState === 'charging';
                         const firing = this.turretLaserState === 'firing';
                         const cp = charging ? 0.6 + Math.sin(game.time * 25) * 0.4 : 0.5 + Math.sin(game.time * 4) * 0.2;
-                        const coreG = ctx.createRadialGradient(this.x, this.y, 2, this.x, this.y, this.size * 0.75);
-                        coreG.addColorStop(0, firing ? 'rgba(255,80,60,0.85)' : charging ? `rgba(255,60,40,${cp})` : `rgba(255,215,120,${cp})`);
-                        coreG.addColorStop(1, 'rgba(120,90,30,0)');
-                        ctx.fillStyle = coreG; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.75, 0, Math.PI * 2); ctx.fill();
+                        const coreR = Math.ceil(this.size * 0.75);
+                        // 三态渐变各自只烘焙一次，动态 α 交给 globalAlpha（firing 原固定 0.85）
+                        const coreKey = firing ? 'fire' : charging ? 'charge' : 'idle';
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = firing ? 0.85 : cp;
+                        ctx.fillStyle = cachedRadial('turretCore' + coreKey, 2, coreR, [[0, firing ? 'rgba(255,80,60,1)' : charging ? 'rgba(255,60,40,1)' : 'rgba(255,215,120,1)'], [1, 'rgba(120,90,30,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, coreR, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                         // 扫射激光：预警虚线 / 发射光柱
                         if (charging) {
                             ctx.strokeStyle = `rgba(255,60,40,${0.35 + cp * 0.4})`; ctx.lineWidth = 2;
@@ -299,10 +301,10 @@
                             ctx.stroke();
                         }
                         // 熔核辉光
-                        const coreG = ctx.createRadialGradient(this.x, this.y, 2, this.x, this.y, this.size * 0.7);
-                        coreG.addColorStop(0, `rgba(255,200,80,${0.5 + lp * 0.4})`);
-                        coreG.addColorStop(1, 'rgba(255,120,30,0)');
-                        ctx.fillStyle = coreG; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2); ctx.fill();
+                        const coreR = Math.ceil(this.size * 0.7);
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = 0.5 + lp * 0.4;
+                        ctx.fillStyle = cachedRadial('lavaCore', 2, coreR, [[0, 'rgba(255,200,80,1)'], [1, 'rgba(255,120,30,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, coreR, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                         // 熔火硬化石壳
                         if (this.hardened > 0) {
                             ctx.strokeStyle = 'rgba(165,165,175,0.95)'; ctx.lineWidth = 5;

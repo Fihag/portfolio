@@ -164,6 +164,10 @@
             // ==================== 粒子系统 ====================
             class Particle {
                 constructor(x, y, vx, vy, life, color, size = 3, opts = {}) {
+                    this.reset(x, y, vx, vy, life, color, size, opts);
+                }
+                // 池化复用入口：字段重置顺序与构造期一致，rand 调用次数不变（否则会扰动全局随机序列）
+                reset(x, y, vx, vy, life, color, size = 3, opts = {}) {
                     this.x = x; this.y = y; this.vx = vx; this.vy = vy;
                     this.life = life; this.maxLife = life; this.color = color; this.size = size;
                     this.alive = true;
@@ -173,6 +177,7 @@
                     this.drag = opts.drag || 0;
                     this.rot = opts.rot !== undefined ? opts.rot : rand(0, Math.PI * 2);
                     this.rotSpeed = opts.rotSpeed || 0;
+                    return this;
                 }
                 update(dt) {
                     this.vy += (this.gravity || 0) * dt;
@@ -224,14 +229,40 @@
             let particles = [];
             const MAX_PARTICLES = 200;
             const MAX_ENEMIES = 160;
+            // 对象池 + 原地压缩：避免爆发期反复 new 与每帧 filter 产生的数组分配
+            const _particlePool = [];
+            function acquireParticle(x, y, vx, vy, life, color, size, opts) {
+                if (_particlePool.length) return _particlePool.pop().reset(x, y, vx, vy, life, color, size, opts);
+                return new Particle(x, y, vx, vy, life, color, size, opts);
+            }
+            function releaseParticle(p) {
+                if (_particlePool.length < MAX_PARTICLES) _particlePool.push(p);
+            }
+            function trimParticles() {
+                if (particles.length <= MAX_PARTICLES) return;
+                const drop = particles.length - MAX_PARTICLES;
+                for (let i = 0; i < drop; i++) releaseParticle(particles[i]);
+                particles.copyWithin(0, drop);
+                particles.length = MAX_PARTICLES;
+            }
+            function updateParticlesInPlace(dt) {
+                let w = 0;
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.update(dt);
+                    if (p.alive) particles[w++] = p;
+                    else releaseParticle(p);
+                }
+                particles.length = w;
+            }
 
             function spawnParticles(x, y, count, color, speed = 80, life = 0.4, size = 3) {
                 for (let i = 0; i < count; i++) {
                     const angle = rand(0, Math.PI * 2);
                     const spd = rand(speed * 0.4, speed);
-                    particles.push(new Particle(x, y, Math.cos(angle) * spd, Math.sin(angle) * spd, rand(life * 0.6, life), color, rand(size * 0.5, size)));
+                    particles.push(acquireParticle(x, y, Math.cos(angle) * spd, Math.sin(angle) * spd, rand(life * 0.6, life), color, rand(size * 0.5, size)));
                 }
-                if (particles.length > MAX_PARTICLES) particles = particles.slice(particles.length - MAX_PARTICLES);
+                trimParticles();
             }
 
             // 高级特效粒子：发光/形状/重力/阻尼/旋转
@@ -247,12 +278,12 @@
                         angle = rand(0, Math.PI * 2);
                     }
                     const spd = rand(speed * 0.4, speed);
-                    particles.push(new Particle(x, y, Math.cos(angle) * spd, Math.sin(angle) * spd, rand(life * 0.6, life), color, rand(size * 0.5, size), {
+                    particles.push(acquireParticle(x, y, Math.cos(angle) * spd, Math.sin(angle) * spd, rand(life * 0.6, life), color, rand(size * 0.5, size), {
                         shape: opts.shape || 'circle', glow: opts.glow, gravity: opts.gravity || 0,
                         drag: opts.drag || 0, rotSpeed: opts.rotSpeed || 0
                     }));
                 }
-                if (particles.length > MAX_PARTICLES) particles = particles.slice(particles.length - MAX_PARTICLES);
+                trimParticles();
             }
 
             // ==================== 背景漂浮尘埃 ====================
@@ -271,8 +302,12 @@
             // ==================== 伤害数字 ====================
             class DamageNumber {
                 constructor(x, y, value, color = '#fff') {
+                    this.reset(x, y, value, color);
+                }
+                reset(x, y, value, color = '#fff') {
                     this.x = x; this.y = y; this.value = typeof value === 'number' ? Math.round(value) : value; this.color = color;
                     this.life = 0.7; this.maxLife = 0.7; this.vy = -60; this.alive = true;
+                    return this;
                 }
                 update(dt) {
                     this.y += this.vy * dt; this.vy *= 0.96; this.life -= dt;
@@ -290,10 +325,32 @@
             }
             let damageNumbers = [];
             const MAX_DMG_NUMBERS = 80;
-
+            const _damageNumberPool = [];
             function spawnDamageNumber(x, y, value, color = '#fff') {
-                damageNumbers.push(new DamageNumber(x + rand(-8, 8), y + rand(-6, 6), value, color));
-                if (damageNumbers.length > MAX_DMG_NUMBERS) damageNumbers = damageNumbers.slice(damageNumbers.length - MAX_DMG_NUMBERS);
+                // 抖动值先算，保证与未池化实现的 rand 调用顺序一致
+                const px = x + rand(-8, 8), py = y + rand(-6, 6);
+                let dn = _damageNumberPool.pop();
+                if (dn) dn.reset(px, py, value, color);
+                else dn = new DamageNumber(px, py, value, color);
+                damageNumbers.push(dn);
+                if (damageNumbers.length > MAX_DMG_NUMBERS) {
+                    const drop = damageNumbers.length - MAX_DMG_NUMBERS;
+                    for (let i = 0; i < drop; i++) {
+                        if (_damageNumberPool.length < MAX_DMG_NUMBERS) _damageNumberPool.push(damageNumbers[i]);
+                    }
+                    damageNumbers.copyWithin(0, drop);
+                    damageNumbers.length = MAX_DMG_NUMBERS;
+                }
+            }
+            function updateDamageNumbersInPlace(dt) {
+                let w = 0;
+                for (let i = 0; i < damageNumbers.length; i++) {
+                    const dn = damageNumbers[i];
+                    dn.update(dt);
+                    if (dn.alive) damageNumbers[w++] = dn;
+                    else if (_damageNumberPool.length < MAX_DMG_NUMBERS) _damageNumberPool.push(dn);
+                }
+                damageNumbers.length = w;
             }
 
             // ==================== 死亡文字特效（DIE 字样） ====================
@@ -332,6 +389,16 @@
             function spawnDeathText(x, y, text = 'DIE') {
                 deathTexts.push(new DeathText(x, y, text));
                 if (deathTexts.length > MAX_DEATH_TEXTS) deathTexts.shift();
+            }
+            // 数量少不池化，只做原地压缩消除每帧数组分配
+            function updateDeathTextsInPlace(dt) {
+                let w = 0;
+                for (let i = 0; i < deathTexts.length; i++) {
+                    const d = deathTexts[i];
+                    d.update(dt);
+                    if (d.alive) deathTexts[w++] = d;
+                }
+                deathTexts.length = w;
             }
 
             // ==================== 通用 Buff 计时（Player/Enemy 共用） ====================

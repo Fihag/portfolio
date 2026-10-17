@@ -51,7 +51,8 @@
                 const tsCd = game.timeStopTimer || 0;
                 hudSet(btnTimeStop, 'opacity', tsCd > 0 ? '0.4' : '1');
                 hudSet(btnTimeStop, 'title', tsCd > 0 ? '时停领域 (T)：冷却 ' + Math.ceil(tsCd) + ' 秒' : '时停领域 (T)：就绪');
-                const boss = game.enemies.find(e => e.isBoss && e.alive);
+                // bossOnField 在 Boss 生成/死亡两处维护：无 Boss 时跳过全敌人扫描（n 上限 160）
+                const boss = game.bossOnField ? game.enemies.find(e => e.isBoss && e.alive) : null;
                 if (boss) {
                     hudSet(hudBoss, 'display', 'flex');
                     hudSet(hudBossName, 'text', ENEMY_TYPES[boss.typeKey].name);
@@ -446,6 +447,10 @@
                     btnDeathMark.classList.add('death-auto');
                 } else {
                     btnDeathMark.classList.remove('death-auto');
+                    // 关闭（卸下圣物/调试禁用）时清理已标记目标：enabled=false 后 updateDeathMark 不再运行，
+                    // 残留标记会让目标对一切非真伤永久免伤、精英波次无法清怪（与 debug 面板路径的清理一致）
+                    for (const t of game.deathMark.targets) t.deathMarked = false;
+                    game.deathMark.targets = [];
                 }
             }
             window.addEventListener('keydown', (e) => {

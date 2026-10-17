@@ -28,6 +28,7 @@
                                     const vx = Math.cos(a) * w.projectileSpeed, vy = Math.sin(a) * w.projectileSpeed;
                                     const dmg = w.damage * w.damageMultiplier * player.globalDamageMultiplier * player.getRiskMult() * player.getLowHpMult();
                                     const proj = new Projectile(player.x, player.y, vx, vy, dmg, w.splashRadius || 0, w.splashDamagePercent || 0, '#ff9933');
+                                    proj.source = 'magic_missile';
                                     proj.knockback = w.knockback || 0;
                                     game.projectiles.push(proj);
                                     sound.play('shoot');
@@ -216,6 +217,7 @@
                                         const dd = Math.hypot(dx, dy) || 1;
                                         const spd = 300;
                                         const proj = new Projectile(st.x, st.y, dx / dd * spd, dy / dd * spd, dmg, 0, 0, '#9955ff', 5);
+                                        proj.source = 'shadow_spirit';
                                         proj.shadowSlow = true;
                                         proj.slowChance = w.slowChance || 0;
                                         proj.slowAmount = w.slowAmount || 0.3;
@@ -225,6 +227,7 @@
                                         if ((w.doubleStrike || 0) > 0 && Math.random() < w.doubleStrike) {
                                             const ja = (Math.random() - 0.5) * 0.4, cos = Math.cos(ja), sin = Math.sin(ja);
                                             const pj = new Projectile(st.x, st.y, (dx * cos - dy * sin) / dd * spd, (dx * sin + dy * cos) / dd * spd, dmg, 0, 0, '#b06aff', 5);
+                                            pj.source = 'shadow_spirit';
                                             pj.shadowSlow = true;
                                             pj.slowChance = w.slowChance || 0;
                                             pj.slowAmount = w.slowAmount || 0.3;
@@ -398,6 +401,7 @@
                             for (let i = 0; i < 8; i++) {
                                 const a = (Math.PI * 2 / 8) * i;
                                 const pj = new Projectile(wl.x, wl.y, Math.cos(a) * 260, Math.sin(a) * 260, wl.explodeDmg * 0.5, 0, 0, '#cc99ff', 7);
+                                pj.source = 'gravity';
                                 pj.pierceAll = true; pj.maxLifetime = 0.9;
                                 game.projectiles.push(pj);
                             }
@@ -429,9 +433,9 @@
                         for (let i = 0; i < w.bladeCount; i++) {
                             const ba = w.angle + (Math.PI * 2 / w.bladeCount) * i;
                             const bx = player.x + Math.cos(ba) * w.radius, by = player.y + Math.sin(ba) * w.radius;
-                            const grad = ctx.createRadialGradient(bx, by, 0, bx, by, 10);
-                            grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.5, '#88ccff'); grad.addColorStop(1, 'rgba(100,180,255,0)');
-                            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(bx, by, 10, 0, Math.PI * 2); ctx.fill();
+                            ctx.save(); ctx.translate(bx, by);
+                            ctx.fillStyle = cachedRadial('bladeGlow', 0, 10, [[0, '#ffffff'], [0.5, '#88ccff'], [1, 'rgba(100,180,255,0)']]);
+                            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                             ctx.save(); ctx.translate(bx, by); ctx.rotate(ba + Math.PI / 2);
                             ctx.fillStyle = '#ddeeff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
                             ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(4, 7); ctx.lineTo(-4, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -464,10 +468,10 @@
                 if (game.shadowZones) {
                     for (const sz of game.shadowZones) {
                         const alpha = Math.min(1, sz.remaining / 1.5) * 0.35;
-                        const grad = ctx.createRadialGradient(sz.x, sz.y, 0, sz.x, sz.y, 90);
-                        grad.addColorStop(0, `rgba(176,106,255,${alpha * 0.6})`);
-                        grad.addColorStop(1, 'rgba(176,106,255,0)');
-                        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(sz.x, sz.y, 90, 0, Math.PI * 2); ctx.fill();
+                        // 烘焙 0.6α 的色标，用 globalAlpha=α 还原（原 stop0 α = α×0.6）
+                        ctx.save(); ctx.translate(sz.x, sz.y); ctx.globalAlpha = alpha;
+                        ctx.fillStyle = cachedRadial('shadowZone', 0, 90, [[0, 'rgba(176,106,255,0.6)'], [1, 'rgba(176,106,255,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, 90, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                         ctx.strokeStyle = `rgba(200,160,255,${alpha * 0.8})`; ctx.lineWidth = 2; ctx.setLineDash([6, 8]);
                         ctx.beginPath(); ctx.arc(sz.x, sz.y, 90, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
                     }
@@ -488,11 +492,7 @@
                             // 下落中的陨石
                             ctx.save();
                             ctx.translate(m.x, m.y);
-                            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 20);
-                            grad.addColorStop(0, '#ffff88');
-                            grad.addColorStop(0.4, '#ff6600');
-                            grad.addColorStop(1, 'rgba(255,0,0,0)');
-                            ctx.fillStyle = grad;
+                            ctx.fillStyle = cachedRadial('meteorFall', 0, 20, [[0, '#ffff88'], [0.4, '#ff6600'], [1, 'rgba(255,0,0,0)']]);
                             ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill();
                             ctx.fillStyle = '#ffcc44';
                             ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
@@ -539,12 +539,9 @@
                                 ctx.lineWidth = 2;
                                 ctx.beginPath(); ctx.arc(st.x, st.y, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog); ctx.stroke();
                             }
-                            const glow = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, 12);
-                            glow.addColorStop(0, 'rgba(200, 150, 255, 0.9)');
-                            glow.addColorStop(0.5, 'rgba(150, 80, 255, 0.5)');
-                            glow.addColorStop(1, 'rgba(100, 0, 200, 0)');
-                            ctx.fillStyle = glow;
-                            ctx.beginPath(); ctx.arc(st.x, st.y, 12, 0, Math.PI * 2); ctx.fill();
+                            ctx.save(); ctx.translate(st.x, st.y);
+                            ctx.fillStyle = cachedRadial('spiritGlow', 0, 12, [[0, 'rgba(200,150,255,0.9)'], [0.5, 'rgba(150,80,255,0.5)'], [1, 'rgba(100,0,200,0)']]);
+                            ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                             ctx.fillStyle = '#e0c0ff';
                             ctx.beginPath(); ctx.arc(st.x, st.y, 4, 0, Math.PI * 2); ctx.fill();
                         }
