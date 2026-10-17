@@ -370,24 +370,43 @@
                         }
                     }
                     if (this.typeKey === 'assassin') {
-                        // 角色特征：旋转暗影刀锋环 + 暗影波动
+                        if (this.isSuperBoss) {
+                            // 暗黑镜像专属：左右镜像残影 + 反向双虚线镜环
+                            const t = game.time;
+                            ctx.save(); ctx.translate(this.x, this.y);
+                            ctx.globalAlpha = 0.16; ctx.fillStyle = '#e0c0ff';
+                            for (const off of [-22, 22]) {
+                                ctx.beginPath();
+                                ctx.moveTo(off, -this.size); ctx.lineTo(off + this.size * 0.87, this.size * 0.5); ctx.lineTo(off - this.size * 0.87, this.size * 0.5); ctx.closePath(); ctx.fill();
+                            }
+                            ctx.globalAlpha = 1;
+                            ctx.strokeStyle = 'rgba(255,90,255,0.6)'; ctx.lineWidth = 2;
+                            ctx.setLineDash([10, 8]); ctx.lineDashOffset = -t * 40;
+                            ctx.beginPath(); ctx.arc(0, 0, this.size + 28, 0, Math.PI * 2); ctx.stroke();
+                            ctx.strokeStyle = 'rgba(180,140,255,0.5)'; ctx.setLineDash([4, 10]); ctx.lineDashOffset = t * 50;
+                            ctx.beginPath(); ctx.arc(0, 0, this.size + 38, 0, Math.PI * 2); ctx.stroke();
+                            ctx.setLineDash([]); ctx.lineDashOffset = 0;
+                            ctx.restore();
+                        }
+                        // 角色特征：旋转暗影刀锋环 + 暗影波动（镜像为 6 刃）
                         const spin = game.time * 2.2;
                         const pr2 = this.size + 16 + Math.sin(game.time * 5) * 2;
-                        for (let k = 0; k < 3; k++) {
-                            const ba = spin + k * Math.PI * 2 / 3;
+                        const bladeN = this.isSuperBoss ? 6 : 3;
+                        for (let k = 0; k < bladeN; k++) {
+                            const ba = spin + k * Math.PI * 2 / bladeN;
                             const bx = this.x + Math.cos(ba) * pr2;
                             const by = this.y + Math.sin(ba) * pr2;
                             ctx.save();
                             ctx.translate(bx, by);
                             ctx.rotate(ba + Math.PI / 2);
-                            ctx.fillStyle = 'rgba(200,160,255,0.85)';
+                            ctx.fillStyle = this.isSuperBoss ? 'rgba(255,170,255,0.9)' : 'rgba(200,160,255,0.85)';
                             ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
                             ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(3, 6); ctx.lineTo(-3, 6); ctx.closePath();
                             ctx.fill(); ctx.stroke();
                             ctx.restore();
                         }
                         const wv = 0.4 + Math.sin(game.time * 4) * 0.2;
-                        ctx.strokeStyle = `rgba(120,60,190,${wv})`; ctx.lineWidth = 2;
+                        ctx.strokeStyle = this.isSuperBoss ? `rgba(255,80,255,${wv})` : `rgba(120,60,190,${wv})`; ctx.lineWidth = 2;
                         ctx.beginPath(); ctx.arc(this.x, this.y, this.size + 22 + Math.sin(game.time * 3) * 3, 0, Math.PI * 2); ctx.stroke();
                     }
                     if (this.typeKey === 'assassin' && this.teleporting) {

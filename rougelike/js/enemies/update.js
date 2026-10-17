@@ -49,6 +49,57 @@
                 _sepOutX = sx; _sepOutY = sy;
             }
 
+            // ==================== 暗黑镜像：按玩家武器类型发射仿制品 ====================
+            // 与旧实现同基数（武器伤害 × 倍率 × 0.8，最低 10），按弹数/跳数分摊，不改出手节奏
+            function mirrorFire(boss, player, w) {
+                const base = Math.atan2(player.y - boss.y, player.x - boss.x);
+                const baseDmg = Math.max(10, Math.floor((w.damage || 15) * (w.damageMultiplier || 1) * 0.8));
+                const shot = (angle, speed, damage, color, size, kind) => {
+                    const pj = new Projectile(boss.x, boss.y, Math.cos(angle) * speed, Math.sin(angle) * speed, damage, 0, 0, color, size, true);
+                    pj.mirror = kind;
+                    game.projectiles.push(pj);
+                    return pj;
+                };
+                switch (w.type) {
+                    case 'magic_missile':
+                        for (let k = -1; k <= 1; k++) shot(base + k * 0.12, 350, baseDmg * 0.45, '#ff9933', 4.5, 'magic_missile');
+                        break;
+                    case 'orbit_blade':
+                        for (let k = -1; k <= 1; k++) shot(base + k * 0.22, 320, baseDmg * 0.55, '#88ccff', 7, 'orbit_blade');
+                        break;
+                    case 'frost_nova':
+                        for (let k = 0; k < 8; k++) shot(base + Math.PI * 2 / 8 * k, 260, baseDmg * 0.30, '#aaddff', 5, 'frost_nova');
+                        game.rings.push({ x: boss.x, y: boss.y, r: 12, maxR: 150, life: 0.4, maxLife: 0.4, color: '#aaddff', width: 4 });
+                        break;
+                    case 'lightning_chain':
+                        shot(base, 520, baseDmg, '#ffff44', 5, 'lightning_chain');
+                        game.chainLightningVisuals.push({ x1: boss.x, y1: boss.y, x2: player.x, y2: player.y, life: 0.2 });
+                        break;
+                    case 'meteor':
+                        game.divineStrikes.push({ x: player.x, y: player.y, radius: 95, dmg: Math.floor(baseDmg * 1.4), phase: 'warn', warn: 0.9, delay: 0 });
+                        break;
+                    case 'shadow_spirit':
+                        for (let k = 0; k < 2; k++) {
+                            const pj = shot(base + (k === 0 ? -0.18 : 0.18), 240, baseDmg * 0.55, '#b06aff', 5, 'shadow_spirit');
+                            pj.homing = 1.8;
+                        }
+                        break;
+                    case 'holy_beam':
+                        game.mirrorFx.push({ kind: 'beam', x: boss.x, y: boss.y, angle: base, warn: 0.5, life: 0, maxLife: 0.3, width: 24, dmg: Math.floor(baseDmg * 1.1), hit: false, len: 1000 });
+                        break;
+                    case 'plague_cloud':
+                        game.mirrorFx.push({ kind: 'cloud', x: player.x, y: player.y, radius: 95, life: 2.5, maxLife: 2.5, tickTimer: 0, tickRate: 0.5, dmg: Math.max(4, Math.floor(baseDmg * 0.22)) });
+                        break;
+                    case 'gravity_well':
+                        game.mirrorFx.push({ kind: 'well', x: player.x, y: player.y, radius: 150, life: 1.4, maxLife: 1.4, pull: 150, exploded: false, dmg: Math.floor(baseDmg * 1.4) });
+                        break;
+                    default:
+                        shot(base, 300, baseDmg, '#cc44ff', 5, 'magic_missile');
+                }
+                spawnParticles(boss.x, boss.y, 8, '#cc44ff', 60, 0.3, 3);
+                sound.play('shoot');
+            }
+
             Enemy.prototype.update = function(dt, player) {
                     if (!this.alive) return;
                     if (this.flashTimer > 0) this.flashTimer -= dt;
@@ -326,39 +377,14 @@
                             }
                         } else if (this.typeKey === 'assassin') {
                             // ===== 暗影刺客：瞬影突进 + 残影 + 影刃回旋 =====
-                            // 超级Boss：暗黑镜像——复制玩家武器攻击
-                            if (this.isSuperBoss && game.player) {
+                            // 暗黑镜像：每 1.2 秒镜像玩家一把武器（九类各有对应弹道/视觉）
+                            if (this.isSuperBoss && game.player && game.player.weapons.length > 0) {
                                 this.mirrorTimer = (this.mirrorTimer || 0) - dt;
                                 if (this.mirrorTimer <= 0) {
                                     this.mirrorTimer = 1.2;
                                     const p = game.player;
-                                    // 朝玩家发射：魔法弹（如果玩家有）
-                                    const anyWep = p.weapons.length > 0 ? p.weapons[randInt(0, p.weapons.length - 1)] : null;
-                                    if (anyWep) {
-                                        const base = Math.atan2(player.y - this.y, player.x - this.x);
-                                        const spd = 290;
-                                        const dmg = Math.max(10, Math.floor((anyWep.damage || 15) * (anyWep.damageMultiplier || 1) * 0.8));
-                                        if (anyWep.type === 'orbit_blade') {
-                                            for (let k = -1; k <= 1; k++) {
-                                                const a = base + k * 0.22;
-                                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * spd, Math.sin(a) * spd, dmg, 0, 0, '#cc44ff', 8, true));
-                                            }
-                                        } else if (anyWep.type === 'frost_nova') {
-                                            for (let k = 0; k < 8; k++) {
-                                                const a = base + (Math.PI * 2 / 8) * k;
-                                                game.projectiles.push(new Projectile(this.x, this.y, Math.cos(a) * spd, Math.sin(a) * spd, dmg * 0.7, 0, 0, '#88ccff', 6, true));
-                                            }
-                                        } else if (anyWep.type === 'lightning_chain') {
-                                            const nearest = p.getNearestEnemy();
-                                            const tgt = nearest && nearest.alive ? nearest : player;
-                                            game.projectiles.push(new Projectile(this.x, this.y, Math.cos(base) * spd, Math.sin(base) * spd, dmg * 1.2, 0, 0, '#ffff44', 5, true));
-                                        } else if (anyWep.type === 'meteor') {
-                                            game.meteorVisuals.push({ x: player.x, y: player.y - 300, targetY: player.y, fallSpeed: 500, damage: dmg * 1.5, radius: 90, landed: false, leaveBurning: false });
-                                        } else {
-                                            game.projectiles.push(new Projectile(this.x, this.y, Math.cos(base) * spd, Math.sin(base) * spd, dmg, 0, 0, '#cc44ff', 5, true));
-                                        }
-                                        spawnParticles(this.x, this.y, 8, '#cc44ff', 60, 0.3, 3);
-                                    }
+                                    const w = p.weapons[randInt(0, p.weapons.length - 1)];
+                                    if (w) mirrorFire(this, p, w);
                                 }
                             }
                             const enraged = hpRatio < 0.25 ? 2 : (hpRatio < 0.5 ? 1 : 0);

@@ -9,6 +9,18 @@
                 }
                 update(dt) {
                     if (this.acidFuse !== undefined) { this.acidFuse -= dt; if (this.acidFuse <= 0) this.alive = false; }
+                    // 镜像精灵的轻度追踪：仅显式设置 homing 的敌方弹生效
+                    if (this.homing && this.isEnemy && game.player) {
+                        const target = Math.atan2(game.player.y - this.y, game.player.x - this.x);
+                        const cur = Math.atan2(this.vy, this.vx);
+                        let diff = target - cur;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        const maxTurn = this.homing * dt;
+                        const na = cur + Math.max(-maxTurn, Math.min(maxTurn, diff));
+                        const spd = Math.hypot(this.vx, this.vy);
+                        this.vx = Math.cos(na) * spd; this.vy = Math.sin(na) * spd;
+                    }
                     this.lifetime += dt; if (this.lifetime > this.maxLifetime) this.alive = false;
                     if (this.lifetime > 0.02) { this.trailPositions.push({ x: this.x, y: this.y, life: 0.2 }); if (this.trailPositions.length > 12) this.trailPositions.shift(); }
                     for (const tp of this.trailPositions) tp.life -= dt;
@@ -21,6 +33,7 @@
                 }
                 draw(ctx) {
                     if (this.isEnemy) {
+                        if (this.mirror) { this.drawMirror(ctx); return; }
                         if (this.acid) {
                             // 毒液拖尾
                             for (let i = 0; i < this.trailPositions.length; i++) {
@@ -85,5 +98,53 @@
                         ctx.restore();
                         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2); ctx.fill();
                     }
+                }
+                // 暗黑镜像仿制弹：按玩家武器类型绘制对应外形（飞刃/冰晶/电弧/四类光球）
+                drawMirror(ctx) {
+                    const type = this.mirror;
+                    if (type === 'magic_missile' || type === 'shadow_spirit' || type === 'plague_cloud' || type === 'gravity_well') {
+                        for (let i = 0; i < this.trailPositions.length; i++) {
+                            const tp = this.trailPositions[i];
+                            ctx.globalAlpha = (tp.life / 0.2) * 0.45;
+                            ctx.fillStyle = this.color;
+                            ctx.beginPath(); ctx.arc(tp.x, tp.y, this.size * (0.3 + i / this.trailPositions.length * 0.5), 0, Math.PI * 2); ctx.fill();
+                        }
+                        ctx.globalAlpha = 1;
+                    }
+                    if (type === 'orbit_blade') {
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.lifetime * 10);
+                        ctx.fillStyle = '#ddeeff'; ctx.strokeStyle = '#88ccff'; ctx.lineWidth = 1.2;
+                        ctx.beginPath(); ctx.moveTo(0, -this.size); ctx.lineTo(this.size * 0.5, this.size); ctx.lineTo(-this.size * 0.5, this.size); ctx.closePath(); ctx.fill(); ctx.stroke();
+                        ctx.restore();
+                        return;
+                    }
+                    if (type === 'frost_nova') {
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.lifetime * 4);
+                        ctx.fillStyle = 'rgba(170,220,255,0.7)'; ctx.strokeStyle = '#dff4ff'; ctx.lineWidth = 1.2;
+                        for (let i = 0; i < 3; i++) {
+                            ctx.rotate(Math.PI / 3);
+                            ctx.beginPath(); ctx.moveTo(0, -this.size); ctx.lineTo(this.size * 0.45, 0); ctx.lineTo(0, this.size); ctx.lineTo(-this.size * 0.45, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+                        }
+                        ctx.restore();
+                        return;
+                    }
+                    if (type === 'lightning_chain') {
+                        ctx.save(); ctx.translate(this.x, this.y);
+                        ctx.strokeStyle = '#ffff66'; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(-this.size * 1.6, -this.size * 0.6); ctx.lineTo(0, 0); ctx.lineTo(this.size * 1.6, this.size * 0.6); ctx.stroke();
+                        ctx.fillStyle = '#ffffaa'; ctx.beginPath(); ctx.arc(0, 0, this.size * 0.8, 0, Math.PI * 2); ctx.fill();
+                        ctx.restore();
+                        return;
+                    }
+                    const stops = type === 'shadow_spirit' ? [[0, '#ffffff'], [0.4, '#b06aff'], [1, 'rgba(100,0,200,0)']]
+                        : type === 'plague_cloud' ? [[0, '#eaffea'], [0.4, '#66cc44'], [1, 'rgba(60,180,40,0)']]
+                        : type === 'gravity_well' ? [[0, '#f0e0ff'], [0.35, '#8844cc'], [1, 'rgba(60,20,120,0)']]
+                        : [[0, '#ffffff'], [0.3, '#ff9933'], [1, 'rgba(255,150,30,0)']];
+                    const r = Math.ceil(this.size * 2.2);
+                    ctx.save(); ctx.translate(this.x, this.y);
+                    ctx.fillStyle = cachedRadial('mirror' + type, 0, r, stops);
+                    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    ctx.fillStyle = type === 'gravity_well' ? '#e8d5ff' : '#ffffff';
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.55, 0, Math.PI * 2); ctx.fill();
                 }
             }

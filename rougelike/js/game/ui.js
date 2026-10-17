@@ -55,7 +55,7 @@
                 const boss = game.bossOnField ? game.enemies.find(e => e.isBoss && e.alive) : null;
                 if (boss) {
                     hudSet(hudBoss, 'display', 'flex');
-                    hudSet(hudBossName, 'text', ENEMY_TYPES[boss.typeKey].name);
+                    hudSet(hudBossName, 'text', boss.isSuperBoss ? '暗黑镜像' : ENEMY_TYPES[boss.typeKey].name);
                     hudSet(hudBossFill, 'width', (clamp(boss.hp / boss.maxHp, 0, 1) * 100) + '%');
                     if (boss.invincible && boss.shieldHp > 0) {
                         hudSet(hudShield, 'display', 'block');

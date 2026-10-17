@@ -13,6 +13,52 @@
                     game.projectiles.push(new Projectile(x, y, Math.cos(a) * splitSpd, Math.sin(a) * splitSpd, splitDmg, 0, 0, '#ff8855', 7, true));
                 }
             }
+            // ==================== 暗黑镜像特效：光束 / 毒云 / 奇点 ====================
+            function updateMirrorFx(dt) {
+                const player = game.player;
+                if (!player || !game.mirrorFx || !game.mirrorFx.length) return;
+                for (let i = game.mirrorFx.length - 1; i >= 0; i--) {
+                    const fx = game.mirrorFx[i];
+                    if (fx.kind === 'beam') {
+                        if (fx.warn > 0) { fx.warn -= dt; continue; }
+                        fx.life += dt;
+                        if (!fx.hit) {
+                            fx.hit = true;
+                            // 线段到玩家的最近距离判定（整道光束只结算一次）
+                            const cx = Math.cos(fx.angle), cy = Math.sin(fx.angle);
+                            const t = clamp((player.x - fx.x) * cx + (player.y - fx.y) * cy, 0, fx.len);
+                            const nx = fx.x + cx * t, ny = fx.y + cy * t;
+                            if (Math.hypot(player.x - nx, player.y - ny) < fx.width / 2 + player.size) player.takeDamage(fx.dmg);
+                        }
+                        if (fx.life >= fx.maxLife) game.mirrorFx.splice(i, 1);
+                    } else if (fx.kind === 'cloud') {
+                        fx.life -= dt;
+                        if (fx.life <= 0) { game.mirrorFx.splice(i, 1); continue; }
+                        fx.tickTimer = (fx.tickTimer || 0) + dt;
+                        if (fx.tickTimer >= fx.tickRate) {
+                            fx.tickTimer -= fx.tickRate;
+                            if (Math.hypot(player.x - fx.x, player.y - fx.y) < fx.radius + player.size) player.takeDamage(fx.dmg);
+                        }
+                    } else if (fx.kind === 'well') {
+                        fx.life -= dt;
+                        // 吸附：把玩家往中心拉，结束爆炸
+                        const dx = fx.x - player.x, dy = fx.y - player.y;
+                        const d = Math.hypot(dx, dy) || 0.01;
+                        if (d > 24) { player.x += dx / d * fx.pull * dt; player.y += dy / d * fx.pull * dt; }
+                        if (fx.life <= 0) {
+                            if (!fx.exploded) {
+                                fx.exploded = true;
+                                if (Math.hypot(player.x - fx.x, player.y - fx.y) < fx.radius + player.size) player.takeDamage(fx.dmg);
+                                game.rings.push({ x: fx.x, y: fx.y, r: 10, maxR: fx.radius, life: 0.45, maxLife: 0.45, color: '#c888ff', width: 6 });
+                                spawnParticles(fx.x, fx.y, 20, '#aa66ff', 140, 0.5, 5);
+                                triggerShake(4, 0.18);
+                                sound.play('explosion');
+                            }
+                            game.mirrorFx.splice(i, 1);
+                        }
+                    }
+                }
+            }
             function update(dt) {
                 if (game.state === 'gameover') return;
                 const cappedDt = Math.min(dt, 0.1);
@@ -71,6 +117,7 @@
                         }
                         game.divineStrikes = game.divineStrikes.filter(st => st.phase !== 'impact' || st.impactLife > 0);
                     }
+                    updateMirrorFx(cappedDt);
                     // 更新星落燃烧区域
                     if (game.burningZones) {
                         for (let i = game.burningZones.length - 1; i >= 0; i--) {

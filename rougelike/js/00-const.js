@@ -196,6 +196,7 @@ const $inp = (id) => document.getElementById(id);
                     targets: [], markDuration: 0.5
                 },
                 rings: [], levelFlash: 0, flashWhite: 0,
+                mirrorFx: [], // 暗黑镜像：光束/毒云/奇点
                 // 幽月魔女：整局两次的特殊领域 boss（击杀第 2/5 个常规 boss 后 10s 降临）
                 moonIntroTimer: 0, moonWitchCount: 0, moonDomain: null, moonReturnPos: null,
                 moonWaves: [], moonPullDim: 0, moonWitchStatMult: 0

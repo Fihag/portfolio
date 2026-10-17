@@ -264,6 +264,10 @@
                 const diffBonus = game.difficultyLevel - 1;
                 const boss = new Enemy(x, y, 'assassin', diffBonus);
                 boss.isSuperBoss = true;
+                // 专属外观：深紫黑本体 + 洋红光环 + 略大轮廓（不再是普通刺客换色）
+                boss.color = '#2a0a44';
+                boss.auraColor = 'rgba(255,60,255,0.7)';
+                boss.size = 24;
                 boss.hp = Math.floor(boss.hp * 2.2); boss.maxHp = boss.hp;
                 boss.damage = Math.floor(boss.damage * 1.3);
                 boss.speed = boss.speed * 0.9;

@@ -128,6 +128,50 @@
                 }
             }
 
+            // ==================== 暗黑镜像特效绘制：光束 / 毒云 / 奇点 ====================
+            function drawMirrorFx(ctx) {
+                if (!game.mirrorFx || !game.mirrorFx.length) return;
+                for (const fx of game.mirrorFx) {
+                    if (fx.kind === 'beam') {
+                        const cx = Math.cos(fx.angle), cy = Math.sin(fx.angle);
+                        if (fx.warn > 0) {
+                            ctx.strokeStyle = 'rgba(255,120,255,0.55)'; ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
+                            ctx.beginPath(); ctx.moveTo(fx.x, fx.y); ctx.lineTo(fx.x + cx * fx.len, fx.y + cy * fx.len); ctx.stroke();
+                            ctx.setLineDash([]);
+                        } else {
+                            const a = clamp(fx.life / fx.maxLife, 0, 1);
+                            ctx.save(); ctx.translate(fx.x, fx.y); ctx.rotate(fx.angle);
+                            ctx.globalAlpha = 0.22 * a;
+                            ctx.fillStyle = '#ff88ff'; ctx.fillRect(0, -fx.width / 2, fx.len, fx.width);
+                            ctx.globalAlpha = 0.9 * a;
+                            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, -3, fx.len, 6);
+                            ctx.restore();
+                            ctx.globalAlpha = 1;
+                        }
+                    } else if (fx.kind === 'cloud') {
+                        const a = clamp(fx.life / fx.maxLife, 0, 1);
+                        const pulse = 0.6 + Math.sin(game.time * 5) * 0.2;
+                        const cr = Math.ceil(fx.radius * 0.9);
+                        ctx.save(); ctx.translate(fx.x, fx.y); ctx.globalAlpha = a * pulse;
+                        ctx.fillStyle = cachedRadial('mirrorCloud', 0, cr, [[0, 'rgba(120,220,90,0.35)'], [1, 'rgba(80,180,60,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, cr, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                        ctx.globalAlpha = 1;
+                        ctx.strokeStyle = `rgba(120,220,90,${0.5 * a})`; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius * (0.9 + Math.sin(game.time * 4) * 0.04), 0, Math.PI * 2); ctx.stroke();
+                    } else if (fx.kind === 'well') {
+                        const a = clamp(fx.life / fx.maxLife, 0, 1);
+                        ctx.fillStyle = `rgba(140,80,220,${0.06 + 0.05 * a})`;
+                        ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = `rgba(200,140,255,${0.5 + 0.3 * a})`; ctx.lineWidth = 3;
+                        for (let k = 0; k < 2; k++) {
+                            ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius * (0.32 + 0.12 * k), game.time * 3 + Math.PI * k, game.time * 3 + Math.PI * k + Math.PI * 1.2); ctx.stroke();
+                        }
+                        ctx.save(); ctx.translate(fx.x, fx.y);
+                        ctx.fillStyle = cachedRadial('mirrorWell', 0, 24, [[0, '#0a0410'], [0.7, '#2a1040'], [1, 'rgba(90,40,150,0)']]);
+                        ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    }
+                }
+            }
             function draw(ctx) {
                 // 每帧从确定的变换开始：重置为像素缩放再清屏/铺底色，避免上一帧残留变换导致清屏错位、顶端出现残影
                 ctx.setTransform(PIXEL_SCALE, 0, 0, PIXEL_SCALE, 0, 0);
@@ -264,6 +308,7 @@
                 }
                 if (game.player) game.player.draw(ctx);
                 if (game.player) drawWeaponsVisuals(game.player, ctx);
+                drawMirrorFx(ctx);
                 // 圣光棱镜：贯穿光束（金色辉光柱 + 白芯，随剩余寿命淡出）
                 if (game.beams && game.beams.length) {
                     for (const b of game.beams) {

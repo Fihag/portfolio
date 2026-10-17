@@ -763,3 +763,65 @@ describe("死亡结算复盘", () => {
     expect(R("goDamageSplit.textContent")).toContain("飞刃");
   });
 });
+
+describe("暗黑镜像", () => {
+  it("HUD 名称显示暗黑镜像，九类武器各有对应仿制产物", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state = 'playing'; game.player.x = 1000; game.player.y = 750;
+       const b = new Enemy(1200, 750, 'assassin', 0);
+       b.isSuperBoss = true; b.color = '#2a0a44'; b.size = 24;
+       game.enemies.push(b); game.bossOnField = true;`);
+    R("updateHud()");
+    expect(R("hudBossName.textContent")).toBe("暗黑镜像");
+    const cases = [
+      ["magic_missile", "game.projectiles.some(p => p.mirror === 'magic_missile')"],
+      ["orbit_blade", "game.projectiles.some(p => p.mirror === 'orbit_blade')"],
+      ["frost_nova", "game.projectiles.filter(p => p.mirror === 'frost_nova').length === 8"],
+      ["lightning_chain", "game.projectiles.some(p => p.mirror === 'lightning_chain')"],
+      ["shadow_spirit", "game.projectiles.some(p => p.mirror === 'shadow_spirit' && p.homing > 0)"],
+      ["holy_beam", "game.mirrorFx.some(f => f.kind === 'beam')"],
+      ["plague_cloud", "game.mirrorFx.some(f => f.kind === 'cloud')"],
+      ["gravity_well", "game.mirrorFx.some(f => f.kind === 'well')"],
+    ];
+    for (const [type, check] of cases) {
+      R(`game.projectiles = []; game.mirrorFx = []; game.divineStrikes = [];
+         game.player.weapons = [START_WEAPON_DEFS['${type}']()];
+         var boss = game.enemies.find(e => e.isSuperBoss);
+         boss.mirrorTimer = 0;
+         boss.update(1/60, game.player);`);
+      expect(R(check)).toBe(true);
+    }
+    // 陨石走 divineStrikes（0.9s 预警后坠落）
+    R(`game.projectiles = []; game.mirrorFx = []; game.divineStrikes = [];
+       game.player.weapons = [START_WEAPON_DEFS.meteor()];
+       var boss = game.enemies.find(e => e.isSuperBoss);
+       boss.mirrorTimer = 0;
+       boss.update(1/60, game.player);`);
+    expect(R("game.divineStrikes.length")).toBe(1);
+    expect(R("game.divineStrikes[0].phase")).toBe("warn");
+  });
+
+  it("镜像特效推帧不抛错：光束命中、毒云 tick、奇点吸附与爆炸", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state = 'playing';
+       game.player.x = 1000; game.player.y = 750; game.player.hp = 100; game.player.maxHp = 100;
+       game.mirrorFx = [
+         { kind:'beam', x:800, y:750, angle:0, warn:0.01, life:0, maxLife:0.3, width:24, dmg:10, hit:false, len:1000 },
+         { kind:'cloud', x:1000, y:750, radius:95, life:0.4, maxLife:2.5, tickTimer:0, tickRate:0.2, dmg:2 },
+         { kind:'well', x:1010, y:750, radius:150, life:0.3, maxLife:1.4, pull:150, exploded:false, dmg:8 }
+       ];`);
+    for (let i = 0; i < 30; i++) {
+      expect(() => R("update(1/60)")).not.toThrow();
+    }
+    expect(R("game.mirrorFx.length")).toBe(0);
+  });
+
+  it("超级 Boss 专属外观 draw 不抛错", () => {
+    const { R } = loadGame();
+    R(`initGame(); game.state = 'playing';
+       const b = new Enemy(1000, 750, 'assassin', 0);
+       b.isSuperBoss = true; b.color = '#2a0a44'; b.size = 24;
+       game.enemies.push(b); draw(ctx);`);
+    expect(R("game.enemies.length")).toBe(1);
+  });
+});
