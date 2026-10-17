@@ -9,7 +9,7 @@
             const META_RELICS = [
                 { id: 'relic_vamp',  name: '吸血之爪', desc: '造成伤害的 6% 回复生命（每 1 秒最多触发一次；受击后 1.5 秒内失效）', icon: 'heart-pulse', cost: 320 },
                 { id: 'relic_thorn', name: '荆棘光环', desc: '受到近战伤害时反弹 35% 给攻击者', icon: 'shield-half', cost: 320 },
-                { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家（无需靠近；唯一拾取范围来源）', icon: 'magnet', cost: 450 },
+                { id: 'relic_greed', name: '贪婪之石', desc: '经验球自动飞向玩家', icon: 'magnet', cost: 450 },
                 { id: 'relic_bomb',  name: '定时炸弹', desc: '每 10 秒在玩家位置爆炸（伤害随等级提升）', icon: 'bomb', cost: 360 },
                 { id: 'relic_shield_start', name: '开局护盾', icon: 'shield', cost: 300, maxLevel: 3, upgradeCost: 400,
                     desc: (lv) => '开局获得灵魂护盾：护盾量 ' + (50 + 30 * (lv - 1)) + '，' + Math.max(4, 15 - 3 * (lv - 1)) + ' 秒自动恢复（每级：护盾量+30、恢复-3秒）' },
